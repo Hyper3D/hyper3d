@@ -1117,14 +1117,17 @@ module Hyper.Renderer
 				case TextureRenderBufferFormat.SRGBA8:
 				// FIXME: should fail when sRGB is unavailable
 					const ext = manager.core.ext.get('EXT_sRGB');
+					if (!ext) {
+						throw new Error("sRGB not supported");
+					}
 					this.texture = gl.createTexture();
 					gl.bindTexture(gl.TEXTURE_2D, this.texture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texImage2D(gl.TEXTURE_2D, 0, ext ? ext.SRGB_ALPHA_EXT : gl.RGBA, width, height, 0,
-						ext ? ext.SRGB_ALPHA_EXT : gl.RGBA, gl.UNSIGNED_BYTE, null);
+					gl.texImage2D(gl.TEXTURE_2D, 0, ext.SRGB_ALPHA_EXT, width, height, 0,
+						ext.SRGB_ALPHA_EXT, gl.UNSIGNED_BYTE, null);
 					break;
 				case TextureRenderBufferFormat.RGBA8:
 					this.texture = gl.createTexture();
