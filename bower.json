@@ -1,8 +1,21 @@
 {
   "name": "hyper3d",
   "version": "0.0.0",
-  "description": "",
+  "description": "High-end renderer for three.js",
   "main": "dist/hyper3d.js",
+  "authors": [
+    { "name": "Tomoaki KAWADA", "email": "i@yvt.jp", "homepage": "https://yvt.jp/" }
+  ],
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "three",
+    "threejs",
+    "three.js",
+    "3D",
+    "webgl"
+  ],
   "private": true,
   "dependencies": {
     "threejs": "*"
