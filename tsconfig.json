@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"target": "ES5",
+		"declaration": false
+	},
+	"files": [
+		"src/hyper3d.ts"
+	]
+}

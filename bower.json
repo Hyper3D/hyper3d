@@ -1,0 +1,26 @@
+{
+  "name": "hyper3d",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/hyper3d.js",
+  "private": true,
+  "dependencies": {
+    "threejs": "*"
+  },
+  "devDependencies": {},
+  "overrides": {
+    "threejs": {
+      "main": "build/three.min.js"
+    }
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "typescript": {
+    "definition": "dist/hyper3d.d.ts"
+  }
+}
