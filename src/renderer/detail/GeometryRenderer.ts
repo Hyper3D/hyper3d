@@ -434,6 +434,8 @@ module Hyper.Renderer
 			const quadRenderer = this.gr.renderer.quadRenderer;
 			const gl = this.gr.renderer.gl;
 			
+			gl.disable(gl.BLEND);
+			
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.inMosaic.texture);
 			
