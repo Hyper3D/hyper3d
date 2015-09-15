@@ -5,6 +5,7 @@
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
 /// <reference path="Utils.ts" />
+/// <reference path="../WebGLHyperRenderer.ts" />
 module Hyper.Renderer
 {
 	
@@ -18,6 +19,7 @@ module Hyper.Renderer
 	{
 		ext: THREE.WebGLExtensions;
 		
+		supportsSRGB: boolean;
 		supportsHdrTexture: boolean;
 		supportsHdrRenderingBuffer: boolean;
 		hdrMode: HdrMode;
@@ -66,6 +68,7 @@ module Hyper.Renderer
 				throw new Error("required WebGL extension WEBGL_depth_texture is not supported.");
 			}
 			
+			this.supportsSRGB = !!(this.ext.get('EXT_sRGB'));
 			this.supportsHdrTexture = !!(this.ext.get('OES_texture_half_float') && 
 				this.ext.get('OES_texture_half_float_linear'));
 			this.supportsHdrRenderingBuffer = !!(this.ext.get('WEBGL_color_buffer_float') &&
@@ -87,6 +90,7 @@ module Hyper.Renderer
 			
 			// set global shader parameters
 			this.shaderManager.setGlobalParameter('globalUseFullResolutionGBuffer', this.useFullResolutionGBuffer);
+			this.shaderManager.setGlobalParameter('globalSupportsSRGB', this.supportsSRGB);
 			
 			// global uniform values
 			this.updateGlobalUniforms();
