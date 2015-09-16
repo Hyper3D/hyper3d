@@ -74,13 +74,13 @@ void main()
 	highp vec2 coord4 = coord + err; 
 #endif // c_globalUseFullResolutionGBuffer
 
-	highp vec4 retValue = texture2D(u_mosaic, coord1);
+	vec4 retValue = texture2D(u_mosaic, coord1);
 #if NumComparands > 1
 	highp float retDepth = abs(texture2D(u_depth, coord1).x - targetDepth);
 #endif // NumComparands > 1
 
 #if NumComparands >= 2
-	highp vec4 value2 = texture2D(u_mosaic, coord2);
+	vec4 value2 = texture2D(u_mosaic, coord2);
 	highp float depth2 = abs(texture2D(u_depth, coord2).x - targetDepth);
 	if (depth2 < retDepth) {
 		retValue = value2;
@@ -89,7 +89,7 @@ void main()
 #endif
 
 #if NumComparands >= 3
-	highp vec4 value3 = texture2D(u_mosaic, coord3);
+	vec4 value3 = texture2D(u_mosaic, coord3);
 	highp float depth3 = abs(texture2D(u_depth, coord3).x - targetDepth);
 	if (depth3 < retDepth) {
 		retValue = value3;
@@ -98,7 +98,7 @@ void main()
 #endif
 
 #if NumComparands >= 4
-	highp vec4 value4 = texture2D(u_mosaic, coord4);
+	vec4 value4 = texture2D(u_mosaic, coord4);
 	highp float depth4 = abs(texture2D(u_depth, coord4).x - targetDepth);
 	if (depth4 < retDepth) {
 		retValue = value4;
