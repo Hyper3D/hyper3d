@@ -240,10 +240,8 @@ module Hyper.Renderer
 			
 			const gl = this.gr.renderer.gl;
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			gl.disable(gl.BLEND);
-			gl.enable(gl.DEPTH_TEST);
+			this.gr.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderTree(scene);
-			gl.disable(gl.DEPTH_TEST);
 		}
 		private renderTree(obj: THREE.Object3D): void
 		{
@@ -440,7 +438,7 @@ module Hyper.Renderer
 			const quadRenderer = this.gr.renderer.quadRenderer;
 			const gl = this.gr.renderer.gl;
 			
-			gl.disable(gl.BLEND);
+			this.gr.renderer.state.flags = GLStateFlags.Default;
 			
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.inMosaic.texture);

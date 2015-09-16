@@ -27,6 +27,7 @@ module Hyper.Renderer
 		textures: TextureManager;
 		renderBuffers: RenderBufferManager;
 		vertexAttribs: VertexAttribState;
+		state: GLState;
 		
 		geometryRenderer: GeometryRenderer;
 		geometryManager: GeometryManager;
@@ -87,6 +88,7 @@ module Hyper.Renderer
 		{
 			this.shaderManager = new ShaderManager(this);
 			this.vertexAttribs = new VertexAttribState(this.gl);
+			this.state = new GLState(this.gl);
 			
 			// set global shader parameters
 			this.shaderManager.setGlobalParameter('globalUseFullResolutionGBuffer', this.useFullResolutionGBuffer);
@@ -201,6 +203,113 @@ module Hyper.Renderer
 		}
 	}
 	
+	export const enum GLStateFlags
+	{
+		Default = 0,
+		
+		DepthTestEnabled = 1 << 0,
+		DepthWriteDisabled = 1 << 1,
+		StencilTestEnabled = 1 << 2,
+		BlendEnabled = 1 << 3,
+		
+		ColorRedWriteDisabled = 1 << 4,
+		ColorGreenWriteDisabled = 1 << 5,
+		ColorBlueWriteDisabled = 1 << 6,
+		ColorAlphaWriteDisabled = 1 << 7,
+		ColorRGBWriteDisabled = ColorRedWriteDisabled|ColorGreenWriteDisabled|ColorBlueWriteDisabled,
+		ColorWriteDisabled = ColorRGBWriteDisabled | ColorAlphaWriteDisabled,
+		
+		CullFaceDisabled = 1 << 8,
+		
+		FrontFaceCW = 1 << 9
+	}
+	
+	class GLState
+	{
+		private flags_: GLStateFlags;
+		
+		constructor(private gl: WebGLRenderingContext)
+		{
+			gl.disable(gl.DEPTH_TEST);
+			gl.disable(gl.STENCIL_TEST);
+			gl.disable(gl.BLEND);
+			gl.depthMask(true);
+			gl.colorMask(true, true, true, true);
+			gl.enable(gl.CULL_FACE);
+			gl.frontFace(gl.CCW);
+			
+			this.flags_ = 0;
+		}
+		
+		get flags(): GLStateFlags
+		{
+			return this.flags_;
+		}
+		
+		set flags(newValue: GLStateFlags)
+		{
+			const diff = newValue ^ this.flags_;
+			if (!diff) {
+				return;
+			}
+			
+			const gl = this.gl;
+			if (diff & GLStateFlags.DepthTestEnabled) {
+				if (newValue & GLStateFlags.DepthTestEnabled) {
+					gl.enable(gl.DEPTH_TEST);
+				} else {
+					gl.disable(gl.DEPTH_TEST);
+				}
+			}
+			if (diff & GLStateFlags.DepthWriteDisabled) {
+				if (newValue & GLStateFlags.DepthWriteDisabled) {
+					gl.depthMask(false);
+				} else {
+					gl.depthMask(true);
+				}
+			}
+			if (diff & GLStateFlags.ColorWriteDisabled) {
+				gl.colorMask(
+					!(diff & GLStateFlags.ColorRedWriteDisabled),
+					!(diff & GLStateFlags.ColorGreenWriteDisabled),
+					!(diff & GLStateFlags.ColorBlueWriteDisabled),
+					!(diff & GLStateFlags.ColorAlphaWriteDisabled)
+				);
+			}
+			if (diff & GLStateFlags.StencilTestEnabled) {
+				if (newValue & GLStateFlags.StencilTestEnabled) {
+					gl.enable(gl.STENCIL_TEST);
+				} else {
+					gl.disable(gl.STENCIL_TEST);
+				}
+			}
+			if (diff & GLStateFlags.BlendEnabled) {
+				if (newValue & GLStateFlags.BlendEnabled) {
+					gl.enable(gl.BLEND);
+				} else {
+					gl.disable(gl.BLEND);
+				}
+			}
+			if (diff & GLStateFlags.CullFaceDisabled) {
+				if (newValue & GLStateFlags.CullFaceDisabled) {
+					gl.disable(gl.CULL_FACE);
+				} else {
+					gl.enable(gl.CULL_FACE);
+				}
+			}
+			if (diff & GLStateFlags.FrontFaceCW) {
+				if (newValue & GLStateFlags.FrontFaceCW) {
+					gl.frontFace(gl.CW);
+				} else {
+					gl.frontFace(gl.CCW);
+				}
+			}
+			
+			this.flags_ = newValue;
+		}
+		
+	}
+	
 	class PassThroughRenderer
 	{
 		private passthroughProgram: GLProgram;
@@ -302,8 +411,7 @@ module Hyper.Renderer
 			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 			gl.clearColor(0, 0, 0, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT);
-			gl.enable(gl.BLEND);
-			gl.blendFuncSeparate(gl.ONE, gl.ZERO, gl.ZERO, gl.ONE);
+			this.core.state.flags = GLStateFlags.Default;
 			
 			const quad = this.core.quadRenderer;
 			quad.render(this.attributes['a_position']);
