@@ -5,6 +5,7 @@
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
 /// <reference path="Utils.ts" />
+/// <reference path="SRGBValidator.ts" />
 /// <reference path="../WebGLHyperRenderer.ts" />
 module Hyper.Renderer
 {
@@ -90,6 +91,17 @@ module Hyper.Renderer
 			this.vertexAttribs = new VertexAttribState(this.gl);
 			this.state = new GLState(this.gl);
 			
+			// this is required by WebGL comformance test
+			this.quadRenderer = new QuadRenderer(this);
+			
+			// check capability
+			if (this.supportsSRGB) {
+				if (!validateSRGBCompliance(this)) {
+					console.warn("WebGLHyperRenderer: defective EXT_sRGB detected; disabling sRGB support.");
+					this.supportsSRGB = false;
+				}
+			}
+			
 			// set global shader parameters
 			this.shaderManager.setGlobalParameter('globalUseFullResolutionGBuffer', this.useFullResolutionGBuffer);
 			this.shaderManager.setGlobalParameter('globalSupportsSRGB', this.supportsSRGB);
@@ -97,7 +109,6 @@ module Hyper.Renderer
 			// global uniform values
 			this.updateGlobalUniforms();
 			
-			this.quadRenderer = new QuadRenderer(this);
 			this.textures = new TextureManager(this);
 			this.geometryManager = new GeometryManager(this);
 			this.renderBuffers = new RenderBufferManager(this);
