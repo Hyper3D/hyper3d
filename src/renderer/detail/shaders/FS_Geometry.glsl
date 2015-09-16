@@ -48,6 +48,12 @@ void main()
 	vec4 g1 = vec4(m_roughness, m_metallic, m_specular, v_screenVelocity.y);
 	vec4 g2 = vec4(pack16(sphereMap.x), pack16(sphereMap.y));
 	vec4 g3 = vec4(preshaded, aoRatio);
+
+	// mosaiced G-Buffer is not sRGB buffer, so
+	// we have to convert color to gamma space to
+	// prevent the loss of precision
+	g0.xyz = sqrt(g0.xyz);
+	g3.xyz = sqrt(g3.xyz);
 	
 	gl_FragColor = encodeGBufferMosaic(g0, g1, g2, g3);
 }

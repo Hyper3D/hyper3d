@@ -122,13 +122,17 @@ module Hyper.Renderer
 				TextureRenderBufferFormat.Depth);
 			const outp: GeometryPassOutput = {
 				g0: new TextureRenderBufferInfo("G0", width, height,
-					TextureRenderBufferFormat.SRGBA8),
+					this.renderer.supportsSRGB ?
+						TextureRenderBufferFormat.SRGBA8 :
+						TextureRenderBufferFormat.RGBA8),
 				g1: new TextureRenderBufferInfo("G1", width, height,
 					TextureRenderBufferFormat.RGBA8),
 				g2: new TextureRenderBufferInfo("G2", width, height,
 					TextureRenderBufferFormat.RGBA8),
 				g3: new TextureRenderBufferInfo("G3", width, height,
-					TextureRenderBufferFormat.SRGBA8),
+					this.renderer.supportsSRGB ?
+						TextureRenderBufferFormat.SRGBA8 :
+						TextureRenderBufferFormat.RGBA8),
 				depth: new TextureRenderBufferInfo("Depth", width, height,
 					TextureRenderBufferFormat.RGBA8),
 				shadowMapsDepth: new ShadowMapRenderBufferInfo(ShadowMapType.Depth),

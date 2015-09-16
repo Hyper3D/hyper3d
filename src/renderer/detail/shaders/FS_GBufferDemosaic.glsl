@@ -1,6 +1,7 @@
 /** G-Buffer index.
  * 0 : G0, 1 : G1, 2 : G2, 3 : G3, 4 : Depth */
 #pragma parameter gBufferIndex
+#pragma parameter globalSupportsSRGB
 #pragma parameter globalUseFullResolutionGBuffer
 #pragma require DepthFetch
 
@@ -107,4 +108,9 @@ void main()
 	gl_FragColor = retValue;
 #endif // c_gBufferIndex == 4
 
+#if (c_gBufferIndex == 0 || c_gBufferIndex == 3) && !c_globalSupportsSRGB
+	// final G0 and G3 is sRGB buffer; we can rely on hardware
+	// from this point
+	gl_FragColor.xyz *= gl_FragColor.xyz;
+#endif
 }

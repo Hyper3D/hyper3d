@@ -440,6 +440,15 @@ module Hyper.Renderer
 	
 	function importThreeJsMaterial(mat: THREE.Material): MaterialInstance
 	{
+		function importColor(color: THREE.Color): number[]
+		{
+			// gamma correct
+			return [
+				color.r * color.r,
+				color.g * color.g,
+				color.b * color.b	
+			];
+		}
 		if (importedMaterialsCache.get(mat.id)) {
 			return importedMaterialsCache.get(mat.id);
 		}
@@ -453,8 +462,8 @@ module Hyper.Renderer
 			});
 			
 			const inst = new ImportedMaterialInstance(hMat, mat);
-			inst.parameters['color'] = [mat.color.r, mat.color.g, mat.color.b];
-			inst.parameters['emissive'] = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
+			inst.parameters['color'] = importColor(mat.color);
+			inst.parameters['emissive'] = importColor(mat.emissive);
 			inst.parameters['specular'] = Math.max(mat.specular.r, mat.specular.g, mat.specular.b);
 			inst.parameters['metal'] = mat.metal ? 1 : 0;
 			inst.parameters['roughness'] = 1 / (mat.shininess + 1);
