@@ -266,9 +266,18 @@ module Hyper.Renderer
 	
 	class ColorBufferVisualizerInstance implements RenderOperator
 	{
+		private program: GLProgram;
+		private uniforms: GLProgramUniforms;
+		private attributes: GLProgramAttributes;
+		
 		constructor(private core: RendererCore,
 			private input: TextureRenderBuffer)
 		{
+			this.program = core.shaderManager.get('VS_Passthrough', 'FS_VisualizeColor', [
+				'a_position'
+			]);
+			this.attributes = this.program.getAttributes(['a_position']);
+			this.uniforms = this.program.getUniforms(['u_texture', 'u_uvScale']);
 		}
 		dispose(): void
 		{
@@ -286,14 +295,18 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
 			
+			this.program.use();
+			gl.uniform1i(this.uniforms['u_texture'], 0);
+			gl.uniform4f(this.uniforms['u_uvScale'], 0.5, 0.5, 0.5, 0.5);
+			
 			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 			gl.clearColor(0, 0, 0, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			gl.enable(gl.BLEND);
 			gl.blendFuncSeparate(gl.ONE, gl.ZERO, gl.ZERO, gl.ONE);
 			
-			const passthrough = this.core.passthroughRenderer;
-			passthrough.render();
+			const quad = this.core.quadRenderer;
+			quad.render(this.attributes['a_position']);
 		}
 		afterRender(): void
 		{ }
