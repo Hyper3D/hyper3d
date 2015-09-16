@@ -92,6 +92,7 @@ module Hyper.Renderer
 		g1: TextureRenderBufferInfo;
 		g2: TextureRenderBufferInfo;
 		g3: TextureRenderBufferInfo;
+		linearDepth: TextureRenderBufferInfo;
 		depth: TextureRenderBufferInfo;
 		shadowMapsDepth: ShadowMapRenderBufferInfo;
 		shadowMapsColor: ShadowMapRenderBufferInfo;
@@ -133,8 +134,9 @@ module Hyper.Renderer
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8),
-				depth: new TextureRenderBufferInfo("Depth", width, height,
+				linearDepth: new TextureRenderBufferInfo("Depth", width, height,
 					TextureRenderBufferFormat.RGBA8),
+				depth: rawDepth,
 				shadowMapsDepth: new ShadowMapRenderBufferInfo(ShadowMapType.Depth),
 				shadowMapsColor: new ShadowMapRenderBufferInfo(ShadowMapType.Color)
 			};
@@ -166,7 +168,7 @@ module Hyper.Renderer
 					g1: outp.g1,
 					g2: outp.g2,
 					g3: outp.g3,
-					depth: outp.depth
+					depth: outp.linearDepth
 				},
 				bindings: [],
 				optionalOutputs: [
