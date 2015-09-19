@@ -431,7 +431,7 @@ module Hyper.Renderer
 				}
 			}
 			for (const p of this.programs) {
-				this.uniforms.push(p.getUniforms(['u_uvScale', 'u_mosaic', 'u_depth']));
+				this.uniforms.push(p.getUniforms(['u_uvScale', 'u_mosaic', 'u_depth', 'u_depthLinearizeCoef']));
 				this.attributes.push(p.getAttributes(['a_position']));
 			}
 		}
@@ -456,6 +456,8 @@ module Hyper.Renderer
 			gl.bindTexture(gl.TEXTURE_2D, this.inDepth.texture);
 			
 			gl.viewport(0, 0, this.outWidth, this.outHeight);
+			
+			const proj = this.gr.renderer.currentCamera.projectionMatrix;
 				
 			for (let i = 0; i < fbs.length; ++i) {
 				const unif = uniforms[i];
@@ -468,6 +470,9 @@ module Hyper.Renderer
 				gl.uniform1i(unif['u_mosaic'], 0);
 				gl.uniform1i(unif['u_depth'], 1);
 				gl.uniform4f(unif['u_uvScale'], 0.5, 0.5, 0.5, 0.5);
+				gl.uniform4f(unif['u_depthLinearizeCoef'], 
+					proj.elements[15], -proj.elements[14],
+					proj.elements[11], -proj.elements[10]);
 				
 				quadRenderer.render(attributes[i]['a_position']);
 			}

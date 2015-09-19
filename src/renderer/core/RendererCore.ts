@@ -134,6 +134,7 @@ module Hyper.Renderer
 			this.shaderManager.setGlobalUniform('globalHalfInvRenderSize', [0.5 / this.renderWidth, 0.5 / this.renderHeight]);
 			this.shaderManager.setGlobalUniform('globalQuarterInvRenderSize', [0.25 / this.renderWidth, 0.25 / this.renderHeight]);
 			this.shaderManager.setGlobalUniform('globalDepthFar', 1000); // FIXME
+			this.shaderManager.setGlobalUniform('globalInvDepthFar', 1 / 1000); // FIXME
 		}
 		
 		dispose(): void
@@ -156,8 +157,8 @@ module Hyper.Renderer
 			
 			const lightBuf = this.lightRenderer.setupLightPass(gbuffer, ops);
 			
-			const visualizedBuf = lightBuf.lit;
-			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
+			const visualizedBuf = gbuffer.linearDepth;
+			const visualized = this.bufferVisualizer.setupLinearDepthVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
 			
@@ -401,25 +402,49 @@ module Hyper.Renderer
 				},
 				optionalOutputs: ['output'],
 				name: "Visualize Color Buffer",
-				factory: (cfg) => new ColorBufferVisualizerInstance(
+				factory: (cfg) => new BufferVisualizerInstance(
 					this.core,
-					<TextureRenderBuffer> cfg.inputs['input'])
+					<TextureRenderBuffer> cfg.inputs['input'],
+					'FS_VisualizeColor')
+			});
+			
+			return outp;
+		}
+		
+		setupLinearDepthVisualizer(input: TextureRenderBufferInfo, ops: RenderOperation[]): DummyRenderBufferInfo
+		{
+			const outp = new DummyRenderBufferInfo("Visualized Output");
+			
+			ops.push({
+				inputs: {
+					input: input
+				},
+				outputs: {
+					output: outp
+				},
+				optionalOutputs: ['output'],
+				name: "Visualize Linear Depth Buffer",
+				factory: (cfg) => new BufferVisualizerInstance(
+					this.core,
+					<TextureRenderBuffer> cfg.inputs['input'],
+					'FS_VisualizeLinearDepth')
 			});
 			
 			return outp;
 		}
 	}
 	
-	class ColorBufferVisualizerInstance implements RenderOperator
+	class BufferVisualizerInstance implements RenderOperator
 	{
 		private program: GLProgram;
 		private uniforms: GLProgramUniforms;
 		private attributes: GLProgramAttributes;
 		
 		constructor(private core: RendererCore,
-			private input: TextureRenderBuffer)
+			private input: TextureRenderBuffer,
+			private shader: string)
 		{
-			this.program = core.shaderManager.get('VS_Passthrough', 'FS_VisualizeColor', [
+			this.program = core.shaderManager.get('VS_Passthrough', shader, [
 				'a_position'
 			]);
 			this.attributes = this.program.getAttributes(['a_position']);
