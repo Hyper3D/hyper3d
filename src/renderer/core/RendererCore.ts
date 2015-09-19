@@ -8,6 +8,7 @@
 /// <reference path="../validator/SRGBValidator.ts" />
 /// <reference path="../render/LightRenderer.ts" />
 /// <reference path="../public/WebGLHyperRenderer.ts" />
+/// <reference path="../postfx/SSAORenderer.ts" />
 module Hyper.Renderer
 {
 	
@@ -38,6 +39,8 @@ module Hyper.Renderer
 		passthroughRenderer: PassThroughRenderer;
 		bufferVisualizer: BufferVisualizer;
 		lightRenderer: LightRenderer;
+		
+		ssaoRenderer: SSAORenderer;
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
@@ -119,6 +122,8 @@ module Hyper.Renderer
 			this.bufferVisualizer = new BufferVisualizer(this);
 			this.lightRenderer = new LightRenderer(this);
 			
+			this.ssaoRenderer = new SSAORenderer(this);
+			
 			this.compilePipeline();
 		}
 		
@@ -139,6 +144,8 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.ssaoRenderer.dispose();
+			
 			this.lightRenderer.dispose();
 			this.bufferVisualizer.dispose();
 			this.passthroughRenderer.dispose();
@@ -157,8 +164,10 @@ module Hyper.Renderer
 			
 			const lightBuf = this.lightRenderer.setupLightPass(gbuffer, ops);
 			
-			const visualizedBuf = gbuffer.linearDepth;
-			const visualized = this.bufferVisualizer.setupLinearDepthVisualizer(visualizedBuf, ops);
+			const ssao = this.ssaoRenderer.setupFilter(gbuffer, ops);
+			
+			const visualizedBuf = ssao.output; // lightBuf.lit;
+			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
 			
