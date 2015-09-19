@@ -219,8 +219,10 @@ module Hyper.Renderer
 				colorB *= light.intensity;
 				
 				const dir = light.position;
-				const sq = dir.length();
-				gl.uniform3f(p.uniforms['u_lightDir'], dir.x / sq, dir.y / sq, dir.z / sq);
+				tmpVec.set(dir.x, dir.y, dir.z, 0.);
+				tmpVec.applyMatrix4(this.parent.renderer.currentCamera.matrixWorldInverse);
+				tmpVec.normalize();
+				gl.uniform3f(p.uniforms['u_lightDir'], tmpVec.x, tmpVec.y, tmpVec.z);
 				
 				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
 				

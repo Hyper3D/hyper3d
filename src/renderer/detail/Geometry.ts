@@ -8,9 +8,9 @@ module Hyper.Renderer
 		coefY: THREE.Vector2;
 	}
 	
-	const tmpM = new THREE.Matrix4();
-	const tmpVec = new THREE.Vector4();
-	const tmpVec2 = new THREE.Vector4();
+	export const tmpM = new THREE.Matrix4();
+	export const tmpVec = new THREE.Vector4();
+	export const tmpVec2 = new THREE.Vector4();
 	
 	export function computeViewVectorCoefFromProjectionMatrix(m: THREE.Matrix4, old?: ViewVectors): ViewVectors
 	{
