@@ -35,8 +35,7 @@ float evaluateLambertDiffuse(float nlDot)
 
 float evaluateDisneyPrincipledDiffuse(float nlDot, float nvDot, float hlDot, float roughness)
 {
-	float fd90 = 0.5 + hlDot * hlDot * 2. * roughness;
-	float fd90m1 = fd90 - 1.;
+	float fd90m1 = -0.5 + hlDot * hlDot * 2. * roughness;
 	float f1a = 1. - nlDot, f2a = 1. - nvDot;
 	float f1b = f1a * f1a, f2b = f2a * f2a;
 	float f1 = f1a * f1b * f1b, f2 = f2a * f2b * f2b;
@@ -79,7 +78,7 @@ vec3 evaluatePointLight(
 	vec3 refl = mix(minRefl, vec3(1.), fresnel);
 
 	float diffuseMix = 1. - material.metallic;
-	diffuseMix = mix(diffuseMix, 0., fresnel);
+	diffuseMix *= evaluateDisneyPrincipledDiffuse(params.nlDot, params.nvDot, params.hlDot, material.roughness);
 
 	float specular = evaluateGGXSpecularDistribution(params.nhDot, material.roughness);
 	specular *= evaluateBeckmannGeometryShadowing(params.nlDot, params.nvDot, material.roughness);
@@ -117,6 +116,6 @@ PointLightBRDFParameters computePointLightBRDFParameters(
 
 MaterialInfo getMaterialInfoFromGBuffer(GBufferContents g)
 {
-	return MaterialInfo(g.albedo, mix(0.1, 1., g.roughness), g.metallic, g.specular);
+	return MaterialInfo(g.albedo, mix(0.001, 1., g.roughness), g.metallic, g.specular);
 }
 
