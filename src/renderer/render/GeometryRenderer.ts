@@ -240,6 +240,7 @@ module Hyper.Renderer
 			
 			const gl = this.gr.renderer.gl;
 			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
+			gl.clearColor(0, 0, 0, 0);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			this.gr.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderTree(scene);
@@ -461,6 +462,8 @@ module Hyper.Renderer
 			
 				fbs[i].bind();
 				programs[i].use();
+				
+				this.gr.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT);
 				
 				gl.uniform1i(unif['u_mosaic'], 0);
 				gl.uniform1i(unif['u_depth'], 1);

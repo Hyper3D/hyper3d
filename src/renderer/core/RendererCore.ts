@@ -165,6 +165,25 @@ module Hyper.Renderer
 			
 		}
 		
+		invalidateFramebuffer(...attachments: number[]): void
+		{
+			// FIXME: variadic functions in TypeScript comes with dynamic allocation...
+			// FIXME: this is only needed on TBR like mobile GPUs
+			let bits: number = 0;
+			const gl = this.gl;
+			for (let i = 0; i < attachments.length; ++i) {
+				switch (attachments[i]) {
+					case gl.COLOR_ATTACHMENT0:
+						bits |= gl.COLOR_BUFFER_BIT;
+						break;
+					case gl.DEPTH_ATTACHMENT:
+						bits |= gl.DEPTH_BUFFER_BIT;
+						break;
+				}
+			}
+			gl.clear(bits);
+		}
+		
         render(scene: THREE.Scene, camera: THREE.Camera): void
 		{
 			const gl = this.gl;
