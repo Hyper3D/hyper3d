@@ -1,6 +1,6 @@
 #pragma parameter globalSupportsSRGB
 #pragma require SphereMap
-#pragma require Pack16
+#pragma require Pack
 
 struct GBufferContents
 {
