@@ -1,6 +1,6 @@
-/// <reference path="detail/Prefix.d.ts" />
-/// <reference path="version.ts" />
-/// <reference path="detail/RendererCore.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../version.ts" />
+/// <reference path="../core/RendererCore.ts" />
 module Hyper 
 {
 	export interface WebGLHyperRendererParameters

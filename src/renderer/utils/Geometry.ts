@@ -1,4 +1,4 @@
-/// <reference path="Prefix.d.ts" />
+/// <reference path="../Prefix.d.ts" />
 module Hyper.Renderer
 {
 	export interface ViewVectors

@@ -1,11 +1,11 @@
-/// <reference path="Prefix.d.ts" />
+/// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="RenderBufferManager.ts" />
-/// <reference path="RendererCore.ts" />
+/// <reference path="../core/RenderBufferManager.ts" />
+/// <reference path="../core/RendererCore.ts" />
 /// <reference path="MaterialManager.ts" />
-/// <reference path="GLFramebuffer.ts" />
+/// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="GeometryRenderer.ts" />
-/// <reference path="Geometry.ts" />
+/// <reference path="../utils/Geometry.ts" />
 module Hyper.Renderer
 {
 	export interface LightPassInput

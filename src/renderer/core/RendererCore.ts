@@ -1,13 +1,13 @@
-/// <reference path="Prefix.d.ts" />
-/// <reference path="TextureManager.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../render/TextureManager.ts" />
 /// <reference path="RenderBufferManager.ts" />
-/// <reference path="GeometryRenderer.ts" />
+/// <reference path="../render/GeometryRenderer.ts" />
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
-/// <reference path="Utils.ts" />
-/// <reference path="SRGBValidator.ts" />
-/// <reference path="LightRenderer.ts" />
-/// <reference path="../WebGLHyperRenderer.ts" />
+/// <reference path="../utils/Utils.ts" />
+/// <reference path="../validator/SRGBValidator.ts" />
+/// <reference path="../render/LightRenderer.ts" />
+/// <reference path="../public/WebGLHyperRenderer.ts" />
 module Hyper.Renderer
 {
 	

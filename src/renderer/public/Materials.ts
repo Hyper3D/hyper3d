@@ -1,5 +1,5 @@
-/// <reference path="detail/Prefix.d.ts" />
-/// <reference path="version.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../version.ts" />
 
 // public material properties
 module Hyper

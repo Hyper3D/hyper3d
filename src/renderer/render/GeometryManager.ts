@@ -1,7 +1,7 @@
-/// <reference path="Prefix.d.ts" />
+/// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="RenderBufferManager.ts" />
-/// <reference path="RendererCore.ts" />
+/// <reference path="../core/RenderBufferManager.ts" />
+/// <reference path="../core/RendererCore.ts" />
 module Hyper.Renderer
 {
 	interface GeometryTable

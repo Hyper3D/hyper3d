@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../Shaders.ts" />
+/// <reference path="../core/Shaders.ts" />
 module Hyper.Renderer
 {
 	interface ShaderChunkMap

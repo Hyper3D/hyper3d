@@ -1,4 +1,4 @@
-/// <reference path="Prefix.d.ts" />
+/// <reference path="../Prefix.d.ts" />
 /// <reference path="RendererCore.ts" />
 /// <reference path="GLProgram.ts" />
 module Hyper.Renderer

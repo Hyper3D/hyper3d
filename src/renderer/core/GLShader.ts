@@ -1,5 +1,5 @@
-/// <reference path="Prefix.d.ts" />
-/// <reference path="Utils.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../utils/Utils.ts" />
 /// <reference path="RendererCore.ts" />
 /// <reference path="Shaders.ts" />
 module Hyper.Renderer

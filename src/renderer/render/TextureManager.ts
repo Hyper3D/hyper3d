@@ -1,5 +1,5 @@
-/// <reference path="Prefix.d.ts" />
-/// <reference path="RendererCore.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../core/RendererCore.ts" />
 module Hyper.Renderer
 {
 	export class TextureManager

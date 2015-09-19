@@ -25,10 +25,10 @@ var sources = {
     js: ['./src/**/*.js'],
     tsd: ['./src/*.d.ts'],
     ts: ['./src/**/*.ts', '!./src/*.d.ts'],
-    shaders: ['./src/renderer/detail/shaders/*.glsl']
+    shaders: ['./src/renderer/shaders/*.glsl']
   }
 };
-var shaderTemplateSource = './src/renderer/detail/shaders/ShadersTemplate.txt';
+var shaderTemplateSource = './src/renderer/shaders/ShadersTemplate.txt';
 
 var destinations = {
   pub_js: './dist/',

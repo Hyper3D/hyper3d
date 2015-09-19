@@ -1,10 +1,10 @@
-/// <reference path="Prefix.d.ts" />
+/// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="RenderBufferManager.ts" />
-/// <reference path="RendererCore.ts" />
-/// <reference path="Utils.ts" />
+/// <reference path="../core/RenderBufferManager.ts" />
+/// <reference path="../core/RendererCore.ts" />
+/// <reference path="../utils/Utils.ts" />
 /// <reference path="GeometryManager.ts" />
-/// <reference path="../Materials.ts" />
+/// <reference path="../public/Materials.ts" />
 module Hyper.Renderer
 {
 	

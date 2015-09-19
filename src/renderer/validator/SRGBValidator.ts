@@ -1,8 +1,7 @@
-/// <reference path="Prefix.d.ts" />
-/// <reference path="RendererCore.ts" />
-/// <reference path="Utils.ts" />
-/// <reference path="GLFramebuffer.ts" />
-/// <reference path="../WebGLHyperRenderer.ts" />
+/// <reference path="../Prefix.d.ts" />
+/// <reference path="../core/RendererCore.ts" />
+/// <reference path="../utils/Utils.ts" />
+/// <reference path="../core/GLFramebuffer.ts" />
 module Hyper.Renderer
 {
 	export function validateSRGBCompliance(core: RendererCore): boolean
