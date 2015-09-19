@@ -1,6 +1,5 @@
 #pragma parameter useNormalMap
-#pragma require Pack16
-#pragma require SphereMap
+#pragma require GBuffer
 #pragma require GBufferMosaic
 
 varying vec3 v_viewNormal;
@@ -42,12 +41,20 @@ void main()
 	vec3 normal = v_viewNormal;
 #endif
 	normal = normalize(normal);
-	vec2 sphereMap = encodeSpheremap(normal);
 	
-	vec4 g0 = vec4(m_albedo, v_screenVelocity.x);
-	vec4 g1 = vec4(m_roughness, m_metallic, m_specular, v_screenVelocity.y);
-	vec4 g2 = vec4(pack16(sphereMap.x), pack16(sphereMap.y));
-	vec4 g3 = vec4(preshaded, aoRatio);
+	GBufferContents g;
+	g.albedo = m_albedo;
+	g.normal = normal;
+	g.velocity = v_screenVelocity;
+	g.roughness = m_roughness;
+	g.metallic = m_metallic;
+	g.specular = m_specular;
+	g.preshaded = preshaded;
+	g.aoRatio = aoRatio;
+
+	vec4 g0, g1, g2, g3;
+
+	encodeGBuffer(g0, g1, g2, g3, g);
 
 	// mosaiced G-Buffer is not sRGB buffer, so
 	// we have to convert color to gamma space to

@@ -6,6 +6,7 @@
 /// <reference path="ShaderManager.ts" />
 /// <reference path="Utils.ts" />
 /// <reference path="SRGBValidator.ts" />
+/// <reference path="LightRenderer.ts" />
 /// <reference path="../WebGLHyperRenderer.ts" />
 module Hyper.Renderer
 {
@@ -36,6 +37,7 @@ module Hyper.Renderer
 		shaderManager: ShaderManager;
 		passthroughRenderer: PassThroughRenderer;
 		bufferVisualizer: BufferVisualizer;
+		lightRenderer: LightRenderer;
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
@@ -115,6 +117,7 @@ module Hyper.Renderer
 			this.geometryRenderer = new GeometryRenderer(this);
 			this.passthroughRenderer = new PassThroughRenderer(this);
 			this.bufferVisualizer = new BufferVisualizer(this);
+			this.lightRenderer = new LightRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -135,6 +138,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.lightRenderer.dispose();
 			this.bufferVisualizer.dispose();
 			this.passthroughRenderer.dispose();
 			this.geometryRenderer.dispose();
@@ -150,7 +154,10 @@ module Hyper.Renderer
 			const ops: RenderOperation[] = [];
 			const gbuffer = this.geometryRenderer.setupGeometryPass(this.width, this.height, ops);
 			
-			const visualized = this.bufferVisualizer.setupColorVisualizer(gbuffer.g0, ops);
+			const lightBuf = this.lightRenderer.setupLightPass(gbuffer, ops);
+			
+			const visualizedBuf = lightBuf.lit;
+			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
 			

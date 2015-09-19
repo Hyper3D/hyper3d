@@ -12,13 +12,18 @@ varying highp vec4 v_texCoords;
 uniform highp vec2 u_globalDoubleInvRenderSize;
 uniform highp vec2 u_globalQuadInvRenderSize;
 
+uniform highp vec4 u_depthLinearizeCoef;
+
 void main()
 {
 	highp float targetDepth = texture2D(u_depth, v_texCoords.xy).x;
 
 #if c_gBufferIndex == 4
 	// depth
-	gl_FragColor = encodeGDepth(targetDepth);
+	float a = dot(u_depthLinearizeCoef.xy, vec2(targetDepth, 1.));
+	float b = dot(u_depthLinearizeCoef.zw, vec2(targetDepth, 1.));
+
+	gl_FragColor = encodeGDepth(a / b);
 #else // c_gBufferIndex == 4
 
 	// see G-Buffer Demosaicing.ai

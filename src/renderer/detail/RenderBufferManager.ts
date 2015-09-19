@@ -53,9 +53,15 @@ module Hyper.Renderer
 			const inKeys: string[] = [];
 			const outKeys: string[] = [];
 			for (const key in op.inputs) {
+				if (op.inputs[key] == null) {
+					continue;
+				}
 				inKeys.push(key);
 			}
 			for (const key in op.outputs) {
+				if (op.outputs[key] == null) {
+					continue;
+				}
 				outKeys.push(key);
 			}
 			
@@ -210,6 +216,15 @@ module Hyper.Renderer
 		create(manager: RenderBufferManager): TextureRenderBuffer
 		{
 			return new TextureRenderBufferImpl(manager, this.width, this.height, this.format);
+		}
+		get isDepthBuffer(): boolean
+		{
+			switch (this.format) {
+				case TextureRenderBufferFormat.Depth:
+					return true;
+				default:
+					return false;
+			}
 		}
 		toString(): string
 		{

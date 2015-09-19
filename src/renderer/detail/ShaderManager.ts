@@ -97,8 +97,14 @@ module Hyper.Renderer
 		 */
 		get(vert: string, frag: string, attributes: string[], parameters?: any): GLProgram
 		{
+			let keyParts = [vert, '-', frag];
+			for (const key in parameters) {
+				keyParts.push(key);
+				keyParts.push(String(parameters[key]));
+			}
+			const key = keyParts.join('_');
+			
 			const gl = this.core.gl;
-			const key = `${vert}-${frag}`;
 			let prog = this.programs[key];
 			if (!prog) {
 				prog = GLProgram.link(this.core, [
