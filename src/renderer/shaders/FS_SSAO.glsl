@@ -3,10 +3,7 @@
 #pragma require Globals
 #pragma require GBuffer
 
-uniform sampler2D u_g0;
-uniform sampler2D u_g1;
 uniform sampler2D u_g2;
-uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 
 uniform vec3 u_lightDir;
@@ -20,17 +17,11 @@ uniform highp vec2 u_viewDirCoefY;
 
 void main()
 {
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
 	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = texture2D(u_g3, v_texCoord);
-
-	GBufferContents g;
-	decodeGBuffer(g, g0, g1, g2, g3);
 
 	highp float baseDepth = fetchDepth(u_linearDepth, v_texCoord);
 	highp vec3 baseViewPos = vec3(v_viewDir, 1.) * baseDepth;
-	vec3 baseNormal = g.normal;
+	vec3 baseNormal = decodeGBufferNormal(g2);
 
 	highp vec2 patternPos = fract(gl_FragCoord.xy * 0.5);
 	highp float patternPos2 = fract(dot(floor(gl_FragCoord.xy), vec2(0.25)));

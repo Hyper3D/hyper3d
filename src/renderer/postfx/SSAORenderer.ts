@@ -40,10 +40,7 @@ module Hyper.Renderer
 			
 			ops.push({
 				inputs: {
-					g0: input.g0,
-					g1: input.g1,
 					g2: input.g2,
-					g3: input.g3,
 					linearDepth: input.linearDepth
 				},
 				outputs: {
@@ -53,10 +50,7 @@ module Hyper.Renderer
 				optionalOutputs: [],
 				name: "SSAO",
 				factory: (cfg) => new SSAORendererInstance(this,
-					<TextureRenderBuffer> cfg.inputs['g0'],
-					<TextureRenderBuffer> cfg.inputs['g1'],
 					<TextureRenderBuffer> cfg.inputs['g2'],
-					<TextureRenderBuffer> cfg.inputs['g3'],
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.outputs['output'])
 			});
@@ -81,10 +75,7 @@ module Hyper.Renderer
 		
 		constructor(
 			private parent: SSAORenderer,
-			private inG0: TextureRenderBuffer,
-			private inG1: TextureRenderBuffer,
 			private inG2: TextureRenderBuffer,
-			private inG3: TextureRenderBuffer,
 			private inLinearDepth: TextureRenderBuffer,
 			private out: TextureRenderBuffer
 		)
@@ -108,7 +99,7 @@ module Hyper.Renderer
 				this.program = {
 					program,
 					uniforms: program.getUniforms([
-						'u_linearDepth', 'u_g0', 'u_g1', 'u_g2', 'u_g3',
+						'u_linearDepth', 'u_g2',
 						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset'
 					]),
 					attributes: program.getAttributes(['a_position'])
@@ -139,23 +130,14 @@ module Hyper.Renderer
 				GLStateFlags.DepthWriteDisabled;
 			
 			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this.inG0.texture);
-			gl.activeTexture(gl.TEXTURE1);
-			gl.bindTexture(gl.TEXTURE_2D, this.inG1.texture);
-			gl.activeTexture(gl.TEXTURE2);
 			gl.bindTexture(gl.TEXTURE_2D, this.inG2.texture);
-			gl.activeTexture(gl.TEXTURE3);
-			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture);
-			gl.activeTexture(gl.TEXTURE4);
+			gl.activeTexture(gl.TEXTURE1);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
 			
 			const p = this.program;
 			p.program.use();
-			gl.uniform1i(p.uniforms['u_g0'], 0);
-			gl.uniform1i(p.uniforms['u_g1'], 1);
-			gl.uniform1i(p.uniforms['u_g2'], 2);
-			gl.uniform1i(p.uniforms['u_g3'], 3);
-			gl.uniform1i(p.uniforms['u_linearDepth'], 4);
+			gl.uniform1i(p.uniforms['u_g2'], 0);
+			gl.uniform1i(p.uniforms['u_linearDepth'], 1);
 			gl.uniform2f(p.uniforms['u_viewDirOffset'],
 				this.viewVec.offset.x, this.viewVec.offset.y);
 			gl.uniform2f(p.uniforms['u_viewDirCoefX'],

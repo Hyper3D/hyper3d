@@ -15,6 +15,11 @@ struct GBufferContents
 	float aoRatio;
 };
 
+vec3 decodeGBufferNormal(vec4 g2)
+{
+	return decodeSpheremap(vec2(unpack16(g2.xy), unpack16(g2.zw)));
+}
+
 void decodeGBuffer(out GBufferContents g, vec4 g0, vec4 g1, vec4 g2, vec4 g3)
 {
 	g.albedo = g0.xyz;
@@ -22,7 +27,7 @@ void decodeGBuffer(out GBufferContents g, vec4 g0, vec4 g1, vec4 g2, vec4 g3)
 	g.albedo *= g.albedo;
 #endif
 
-	g.normal = decodeSpheremap(vec2(unpack16(g2.xy), unpack16(g2.zw)));
+	g.normal = decodeGBufferNormal(g2);
 
 	g.velocity = vec2(g0.w, g1.w);
 
