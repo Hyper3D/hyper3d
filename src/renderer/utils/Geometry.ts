@@ -31,11 +31,11 @@ module Hyper.Renderer
 		tmpVec2.applyMatrix4(tmpM);
 		old.offset.set(tmpVec2.x, tmpVec2.y);
 		
-		tmpVec2.set(1, 0, tmpVec.z, tmpVec.w);
+		tmpVec2.set(-1, 0, tmpVec.z, tmpVec.w);
 		tmpVec2.applyMatrix4(tmpM);
 		old.coefX.set(tmpVec2.x, tmpVec2.y);
 		
-		tmpVec2.set(0, 1, tmpVec.z, tmpVec.w);
+		tmpVec2.set(0, -1, tmpVec.z, tmpVec.w);
 		tmpVec2.applyMatrix4(tmpM);
 		old.coefY.set(tmpVec2.x, tmpVec2.y);
 		

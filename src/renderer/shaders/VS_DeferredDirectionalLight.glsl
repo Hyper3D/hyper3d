@@ -11,6 +11,6 @@ void main()
 	v_texCoord = a_position * 0.5 + 0.5;
 
 	v_viewDir = u_viewDirOffset;
-	v_viewDir -= u_viewDirCoefX * a_position.x;
-	v_viewDir -= u_viewDirCoefY * a_position.y;
+	v_viewDir += u_viewDirCoefX * a_position.x;
+	v_viewDir += u_viewDirCoefY * a_position.y;
 }
