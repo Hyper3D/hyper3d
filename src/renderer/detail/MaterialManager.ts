@@ -466,7 +466,9 @@ module Hyper.Renderer
 			inst.parameters['emissive'] = importColor(mat.emissive);
 			inst.parameters['specular'] = Math.max(mat.specular.r, mat.specular.g, mat.specular.b);
 			inst.parameters['metal'] = mat.metal ? 1 : 0;
-			inst.parameters['roughness'] = 1 / (mat.shininess + 1);
+			// power = 2 / (roughness^4) - 2
+			// thus roughness = (2 / (power + 2)) ^ (1/4)
+			inst.parameters['roughness'] = Math.pow(2 / (mat.shininess + 2), 0.25);
 			if (mat.map) {
 				inst.parameters['map'] = mat.map;
 			}
