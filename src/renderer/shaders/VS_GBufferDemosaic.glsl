@@ -1,11 +1,9 @@
 #pragma parameter gBufferIndex
 #pragma parameter globalUseFullResolutionGBuffer
+#pragma require Globals
 
 attribute vec2 a_position;
 varying vec4 v_texCoords; // FIXME: remove dependent texture fetch
-uniform vec2 u_globalQuarterInvRenderSize;
-uniform vec2 u_globalHalfRenderSize;
-uniform vec2 u_globalHalfInvRenderSize;
 
 void main()
 {

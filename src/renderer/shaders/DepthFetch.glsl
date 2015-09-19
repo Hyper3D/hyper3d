@@ -1,8 +1,6 @@
 #pragma parameter globalUseFullResolutionGBuffer
+#pragma require Globals
 #pragma require Pack16
-
-uniform highp float u_globalDepthFar;
-uniform highp float u_globalInvDepthFar;
 
 vec4 encodeGDepth(highp float depth)
 {
