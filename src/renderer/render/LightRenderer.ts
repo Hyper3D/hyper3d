@@ -158,7 +158,7 @@ module Hyper.Renderer
 			gl.clearColor(0, 0, 0, 0);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			this.parent.renderer.state.flags = 
-				// GLStateFlags.DepthTestEnabled |
+				GLStateFlags.DepthTestEnabled |
 				GLStateFlags.DepthWriteDisabled |
 				GLStateFlags.BlendEnabled;
 			gl.blendFunc(gl.ONE, gl.ONE); // additive
