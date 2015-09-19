@@ -101,7 +101,7 @@ module Hyper.Renderer
 					throw new Error();
 			}
 			
-			chunks.forEach(scan);
+			chunks.forEach((chunk) => scan(chunk));
 			
 			const globalParams: any = renderer.shaderManager.globalParameters;
 			
