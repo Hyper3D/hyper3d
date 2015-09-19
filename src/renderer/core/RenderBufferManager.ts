@@ -536,14 +536,17 @@ module Hyper.Renderer
 			
 				for (const op of raw) {
 					for (const info in op.inputs) {
+						if (!op.inputs[info]) continue;
 						op.inputs[info].num = index++;
 					}
 					for (const info in op.outputs) {
+						if (!op.outputs[info]) continue;
 						op.outputs[info].num = index++;
 					}
 				}
 				for (const op of raw) {
 					for (const info in op.inputs) {
+						if (!op.inputs[info]) continue;
 						const num = op.inputs[info].num;
 						if (!addedInfos[num]) {
 							addedInfos[num] = true;
@@ -551,6 +554,7 @@ module Hyper.Renderer
 						}
 					}
 					for (const info in op.outputs) {
+						if (!op.outputs[info]) continue;
 						const num = op.outputs[info].num;
 						if (!addedInfos[num]) {
 							addedInfos[num] = true;
@@ -600,10 +604,12 @@ module Hyper.Renderer
 				
 				for (const key of inputs) {
 					const conn = op.inputs[key];
+					if (!conn) continue;
 					parts.push(`"${conn.name}" -> "${op.name}":"in-${key}";\n`);
 				}
 				for (const key of outputs) {
 					const conn = op.outputs[key];
+					if (!conn) continue;
 					parts.push(`"${op.name}":"out-${key}" -> "${conn.name}";\n`);
 				}
 			}

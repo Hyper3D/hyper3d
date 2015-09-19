@@ -119,7 +119,7 @@ module Hyper.Renderer
 				fullRes ? width * 2 : width, fullRes ? height * 2 : height,
 				TextureRenderBufferFormat.RGBA8);
 			const rawDepth = new TextureRenderBufferInfo("Raw Depth", 
-				width, height,
+				fullRes ? width * 2 : width, fullRes ? height * 2 : height,
 				TextureRenderBufferFormat.Depth);
 			const outp: GeometryPassOutput = {
 				g0: new TextureRenderBufferInfo("G0", width, height,
@@ -239,6 +239,7 @@ module Hyper.Renderer
 			this.fb.bind();
 			
 			const gl = this.gr.renderer.gl;
+			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			this.gr.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderTree(scene);
@@ -395,6 +396,8 @@ module Hyper.Renderer
 		private uniforms: GLProgramUniforms[];
 		private attributes: GLProgramAttributes[];
 		private fbs: GLFramebuffer[];
+		private outWidth: number;
+		private outHeight: number;
 		
 		constructor(
 			private gr: GeometryRenderer,
@@ -408,6 +411,9 @@ module Hyper.Renderer
 			this.uniforms = [];
 			this.attributes = [];
 			
+			this.outWidth = 1;
+			this.outHeight = 1;
+			
 			for (let i = 0; i < outG.length; ++i) {
 				const g = outG[i];
 				if (g) {
@@ -419,6 +425,8 @@ module Hyper.Renderer
 						depth: null,
 						colors: [g.texture]
 					}));
+					this.outWidth = g.width;
+					this.outHeight = g.height;
 				}
 			}
 			for (const p of this.programs) {
@@ -446,6 +454,8 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE1);
 			gl.bindTexture(gl.TEXTURE_2D, this.inDepth.texture);
 			
+			gl.viewport(0, 0, this.outWidth, this.outHeight);
+				
 			for (let i = 0; i < fbs.length; ++i) {
 				const unif = uniforms[i];
 			

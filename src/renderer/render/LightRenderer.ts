@@ -154,6 +154,7 @@ module Hyper.Renderer
 			this.fb.bind();
 			
 			const gl = this.parent.renderer.gl;
+			gl.viewport(0, 0, this.outLit.width, this.outLit.height);
 			gl.clearColor(0, 0, 0, 0);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			this.parent.renderer.state.flags = 

@@ -5,6 +5,7 @@ attribute vec2 a_position;
 varying vec4 v_texCoords; // FIXME: remove dependent texture fetch
 uniform vec2 u_globalQuarterInvRenderSize;
 uniform vec2 u_globalHalfRenderSize;
+uniform vec2 u_globalHalfInvRenderSize;
 
 void main()
 {
@@ -16,13 +17,13 @@ void main()
 #if c_globalUseFullResolutionGBuffer
 	v_texCoords = (normCoord - u_globalQuarterInvRenderSize).xyxy;
 #if c_gBufferIndex == 1
-	v_texCoords.x += u_globalHalfInvRenderSize;
-	v_texCoords.z -= u_globalHalfInvRenderSize;
+	v_texCoords.x += u_globalHalfInvRenderSize.x;
+	v_texCoords.z -= u_globalHalfInvRenderSize.x;
 #elif c_gBufferIndex == 2
-	v_texCoords.z += u_globalHalfInvRenderSize;
-	v_texCoords.w -= u_globalHalfInvRenderSize;
+	v_texCoords.y += u_globalHalfInvRenderSize.y;
+	v_texCoords.w -= u_globalHalfInvRenderSize.y;
 #elif c_gBufferIndex == 3
-	v_texCoords.xz += u_globalHalfInvRenderSize;
+	v_texCoords.xy += u_globalHalfInvRenderSize;
 	v_texCoords.zw -= u_globalHalfInvRenderSize;
 #endif // c_gBufferIndex
 #else // c_globalUseFullResolutionGBuffer
