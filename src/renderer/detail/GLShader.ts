@@ -65,7 +65,7 @@ module Hyper.Renderer
 			
 			parameters = parameters || {};
 			
-			function scan(chunk: ShaderChunk): void
+			function scan(chunk: ShaderChunk, name?: string): void
 			{
 				if (chunk.requires) {
 					for (const dep of chunk.requires) {
@@ -74,8 +74,7 @@ module Hyper.Renderer
 							if (!shaderChunks[dep]) {
 								throw new Error(`shader chunk ${dep} not found.`);
 							}
-							parts.push(`/* ---- ${dep} ---- */`);
-							scan(shaderChunks[dep]);
+							scan(shaderChunks[dep], dep);
 						}
 					}
 				}
@@ -83,6 +82,9 @@ module Hyper.Renderer
 					for (const name of chunk.parameters) {
 						foundParams[name] = null;
 					}
+				}
+				if (name) {
+					parts.push(`/* ---- ${name} ---- */`);
 				}
 				parts.push(chunk.source);
 			}
