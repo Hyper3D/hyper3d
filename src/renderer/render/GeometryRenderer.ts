@@ -192,57 +192,31 @@ module Hyper.Renderer
 		
 	}
 	
-	class GeometryPassRenderer implements RenderOperator
+	class BaseGeometryPassRenderer
 	{
-		private fb: GLFramebuffer;
 		private tmpMat: THREE.Matrix4;
 		private projectionViewMat: THREE.Matrix4;
 		private viewMat: THREE.Matrix4;
 		
 		constructor(
-			private gr: GeometryRenderer,
-			private outMosaic: TextureRenderBuffer,
-			private outDepth: TextureRenderBuffer,
-			private outShadowMapDepth: ShadowMapRenderBufferImpl,
-			private outShadowMapColor: ShadowMapRenderBufferImpl
+			public parent: GeometryRenderer
 		)
 		{
-			if (outShadowMapDepth) {
-				outShadowMapDepth.service = this;
-			}
-			if (outShadowMapColor) {
-				outShadowMapColor.service = this;
-			}
-			
-			this.fb = GLFramebuffer.createFramebuffer(gr.renderer.gl, {
-				depth: outDepth.texture,
-				colors: [
-					outMosaic.texture
-				]
-			});
-			
 			this.tmpMat = new THREE.Matrix4();
 			this.projectionViewMat = new THREE.Matrix4();
-			this.viewMat = null;
+			this.viewMat = new THREE.Matrix4();
 		}
-		beforeRender(): void
+		
+		renderGeometry(viewMatrix: THREE.Matrix4, projectionMatrix: THREE.Matrix4): void
 		{
-			this.viewMat = this.gr.renderer.currentCamera.matrixWorldInverse;
+			this.viewMat.copy(viewMatrix);
 			this.projectionViewMat.multiplyMatrices(
-				this.gr.renderer.currentCamera.projectionMatrix,
-				this.gr.renderer.currentCamera.matrixWorldInverse
+				projectionMatrix,
+				viewMatrix
 			);
-		}
-		perform(): void
-		{
-			const scene = this.gr.renderer.currentScene;
-			this.fb.bind();
 			
-			const gl = this.gr.renderer.gl;
-			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
-			gl.clearColor(0, 0, 0, 0);
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			this.gr.renderer.state.flags = GLStateFlags.DepthTestEnabled;
+			const scene = this.parent.renderer.currentScene;
+			
 			this.renderTree(scene);
 		}
 		private renderTree(obj: THREE.Object3D): void
@@ -261,10 +235,10 @@ module Hyper.Renderer
 		}
 		private renderMesh(mesh: THREE.Mesh, geo: any): void
 		{
-			const shaderInst = this.gr.gpMaterials.get(mesh.material);
+			const shaderInst = this.parent.gpMaterials.get(mesh.material);
 			const shader = <GeometryPassShader> shaderInst.shader;
-			const attrBinding = shader.getGeometryBinding(this.gr.renderer.geometryManager.get(geo));
-			const gl = this.gr.renderer.gl;
+			const attrBinding = shader.getGeometryBinding(this.parent.renderer.geometryManager.get(geo));
+			const gl = this.parent.renderer.gl;
 			
 			shader.glProgram.use();
 			shaderInst.updateParameterUniforms();
@@ -278,7 +252,7 @@ module Hyper.Renderer
 			gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
 				this.tmpMat.elements);
 				
-			const geo2 = this.gr.renderer.geometryManager.get(geo);
+			const geo2 = this.parent.renderer.geometryManager.get(geo);
 			const index = geo2.indexAttribute;
 			if (index != null) {
 				index.drawElements();
@@ -293,7 +267,66 @@ module Hyper.Renderer
 		}
 		dispose(): void
 		{
+		}
+	}
+	
+	class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOperator
+	{
+		private fb: GLFramebuffer;
+		
+		constructor(
+			parent: GeometryRenderer,
+			private outMosaic: TextureRenderBuffer,
+			private outDepth: TextureRenderBuffer,
+			private outShadowMapDepth: ShadowMapRenderBufferImpl,
+			private outShadowMapColor: ShadowMapRenderBufferImpl
+		)
+		{
+			super(parent);
+			
+			if (outShadowMapDepth) {
+				outShadowMapDepth.service = this;
+			}
+			if (outShadowMapColor) {
+				outShadowMapColor.service = this;
+			}
+			
+			this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+				depth: outDepth.texture,
+				colors: [
+					outMosaic.texture
+				]
+			});
+			
+		}
+		
+		beforeRender(): void
+		{
+		}
+		perform(): void
+		{
+			
+			const scene = this.parent.renderer.currentScene;
+			this.fb.bind();
+			
+			const gl = this.parent.renderer.gl;
+			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
+			this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
+				this.parent.renderer.currentCamera.projectionMatrix);
+		}
+		afterRender(): void
+		{
+			
+		}
+		
+		dispose(): void
+		{
 			this.fb.dispose();
+			
+			BaseGeometryPassRenderer.prototype.dispose.call(this);
 		}
 	}
 	
@@ -401,7 +434,7 @@ module Hyper.Renderer
 		private outHeight: number;
 		
 		constructor(
-			private gr: GeometryRenderer,
+			private parent: GeometryRenderer,
 			private inMosaic: TextureRenderBuffer,
 			private inDepth: TextureRenderBuffer,
 			private outG: TextureRenderBuffer[]
@@ -418,11 +451,11 @@ module Hyper.Renderer
 			for (let i = 0; i < outG.length; ++i) {
 				const g = outG[i];
 				if (g) {
-					this.programs.push(this.gr.renderer.shaderManager.get('VS_GBufferDemosaic', 'FS_GBufferDemosaic', 
+					this.programs.push(this.parent.renderer.shaderManager.get('VS_GBufferDemosaic', 'FS_GBufferDemosaic', 
 						['a_position'], {
 						gBufferIndex: i
 					}));
-					this.fbs.push(GLFramebuffer.createFramebuffer(gr.renderer.gl, {
+					this.fbs.push(GLFramebuffer.createFramebuffer(parent.renderer.gl, {
 						depth: null,
 						colors: [g.texture]
 					}));
@@ -444,10 +477,10 @@ module Hyper.Renderer
 			const uniforms = this.uniforms;
 			const attributes = this.attributes;
 			const fbs = this.fbs;
-			const quadRenderer = this.gr.renderer.quadRenderer;
-			const gl = this.gr.renderer.gl;
+			const quadRenderer = this.parent.renderer.quadRenderer;
+			const gl = this.parent.renderer.gl;
 			
-			this.gr.renderer.state.flags = GLStateFlags.Default;
+			this.parent.renderer.state.flags = GLStateFlags.Default;
 			
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.inMosaic.texture);
@@ -457,7 +490,7 @@ module Hyper.Renderer
 			
 			gl.viewport(0, 0, this.outWidth, this.outHeight);
 			
-			const proj = this.gr.renderer.currentCamera.projectionMatrix;
+			const proj = this.parent.renderer.currentCamera.projectionMatrix;
 				
 			for (let i = 0; i < fbs.length; ++i) {
 				const unif = uniforms[i];
@@ -465,7 +498,7 @@ module Hyper.Renderer
 				fbs[i].bind();
 				programs[i].use();
 				
-				this.gr.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT);
+				this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT);
 				
 				gl.uniform1i(unif['u_mosaic'], 0);
 				gl.uniform1i(unif['u_depth'], 1);
