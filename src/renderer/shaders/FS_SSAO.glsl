@@ -46,7 +46,7 @@ void main()
 
 	for (int i = 0; i < 12; ++i) {
 		vec2 sampleOffset = sampleDir * sampleDistance;
-		vec2 sampleCoordOffs = sampleOffset * sampleOffsetScale; // FIXME: this needs to be adjusted
+		vec2 sampleCoordOffs = sampleOffset * sampleOffsetScale;
 		highp vec2 sampleAt = v_texCoord + sampleCoordOffs;
 		highp float depth = fetchDepth(u_linearDepth, sampleAt) + 0.1; // FIXME: this value needs to be tweaked?
 		vec3 viewPos = vec3(v_viewDir + u_viewDirCoefX * sampleCoordOffs.x 
@@ -57,7 +57,7 @@ void main()
 
 		ret = mix(ret, max(ret, cosHorizon), sampleDecay * depthDecay);
 
-		sampleDistance += 1. + sampleDistance * .2;
+		sampleDistance += 1. + sampleDistance * mix(.1, .2, patternPos2);
 		sampleDir = complexMultiply(sampleDir, sampleRot);
 		sampleDecay *= .9;
 	}

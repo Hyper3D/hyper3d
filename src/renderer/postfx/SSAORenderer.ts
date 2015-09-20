@@ -162,6 +162,8 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE1);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
 			
+			const kernelSize = Math.min(this.out.width, this.out.height) * 0.002;
+			
 			const p = this.program;
 			p.program.use();
 			gl.uniform1i(p.uniforms['u_g2'], 0);
@@ -173,7 +175,7 @@ module Hyper.Renderer
 			gl.uniform2f(p.uniforms['u_viewDirCoefY'],
 				this.viewVec.coefY.x, this.viewVec.coefY.y);
 			gl.uniform2f(p.uniforms['u_sampleOffsetScale'],
-				1 / this.out.width, 1 / this.out.height);
+				kernelSize / this.out.width, kernelSize / this.out.height);
 				
 			const quad = this.parent.renderer.quadRenderer;
 			quad.render(p.attributes['a_position']);
