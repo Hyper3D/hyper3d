@@ -134,15 +134,18 @@ PointLightBRDFParameters computePointLightBRDFParameters(
 	vec3 normal, vec3 light, vec3 view)
 {
 	vec3 halfVec = normalize(light + view);
-	return PointLightBRDFParameters(dot(normal, halfVec), dot(normal, light), dot(normal, view),
-		dot(halfVec, light));
+	return PointLightBRDFParameters(
+		clamp(dot(normal, halfVec), 0., 1.), 
+		clamp(dot(normal, light), 0., 1.), 
+		clamp(dot(normal, view), 0., 1.),
+		clamp(dot(halfVec, light), 0., 1.));
 }
 
 UniformLightBRDFParameters computeUniformLightBRDFParameters(
 	vec3 normal, vec3 view)
 {
 	UniformLightBRDFParameters ret;
-	ret.nvDot = dot(normal, view);
+	ret.nvDot = clamp(dot(normal, view), 0., 1.);
 	return ret;
 }
 
