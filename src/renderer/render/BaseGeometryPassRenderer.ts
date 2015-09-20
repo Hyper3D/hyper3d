@@ -11,6 +11,7 @@ module Hyper.Renderer
 		private tmpMat: THREE.Matrix4;
 		private projectionViewMat: THREE.Matrix4;
 		private viewMat: THREE.Matrix4;
+		private frustum: THREE.Frustum;
 		
 		constructor(
 			public core: RendererCore,
@@ -20,6 +21,7 @@ module Hyper.Renderer
 			this.tmpMat = new THREE.Matrix4();
 			this.projectionViewMat = new THREE.Matrix4();
 			this.viewMat = new THREE.Matrix4();
+			this.frustum = new THREE.Frustum();
 		}
 		
 		renderGeometry(viewMatrix: THREE.Matrix4, projectionMatrix: THREE.Matrix4): void
@@ -29,16 +31,22 @@ module Hyper.Renderer
 				projectionMatrix,
 				viewMatrix
 			);
+			this.frustum.setFromMatrix(this.projectionViewMat);
 			
 			const scene = this.core.currentScene;
 			
 			this.renderTree(scene);
 		}
+		private cullObject(obj: THREE.Object3D): boolean
+		{
+			return obj.frustumCulled &&
+				!this.frustum.intersectsObject(obj);
+		}
 		private renderTree(obj: THREE.Object3D): void
 		{
 			const geometry = (<any>obj).geometry;
 			
-			if (geometry != null) {
+			if (geometry != null && !this.cullObject(obj)) {
 				if (obj instanceof THREE.Mesh) {
 					this.renderMesh(obj, geometry);
 				}
