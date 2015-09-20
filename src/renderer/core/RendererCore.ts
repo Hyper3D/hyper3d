@@ -46,6 +46,7 @@ module Hyper.Renderer
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
+		depthFar: number;
 		
 		/** Objects removed from the scene tree are deleted as soon as possible.
 		 * Setting this to true prevents this behavior.
@@ -88,6 +89,7 @@ module Hyper.Renderer
 			this.renderHeight = this.height = gl.drawingBufferHeight;
 			
 			this.deferGC = false;
+			this.depthFar = 1000;
 			
 			this.setup();
 		}
@@ -141,8 +143,8 @@ module Hyper.Renderer
 			this.shaderManager.setGlobalUniform('globalInvRenderSize', [1 / this.renderWidth, 1 / this.renderHeight]);
 			this.shaderManager.setGlobalUniform('globalHalfInvRenderSize', [0.5 / this.renderWidth, 0.5 / this.renderHeight]);
 			this.shaderManager.setGlobalUniform('globalQuarterInvRenderSize', [0.25 / this.renderWidth, 0.25 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalDepthFar', 1000); // FIXME
-			this.shaderManager.setGlobalUniform('globalInvDepthFar', 1 / 1000); // FIXME
+			this.shaderManager.setGlobalUniform('globalDepthFar', this.depthFar);
+			this.shaderManager.setGlobalUniform('globalInvDepthFar', 1 / this.depthFar);
 		}
 		
 		dispose(): void
@@ -222,6 +224,17 @@ module Hyper.Renderer
 			const gl = this.gl;
 			this.currentScene = scene;
 			this.currentCamera = camera;
+			
+			// compute depth far
+			{
+				const proj = camera.projectionMatrix;
+				const newDepthFar = (proj.elements[15] - proj.elements[14]) /
+					(proj.elements[11] - proj.elements[10]);
+				if (newDepthFar != this.depthFar) {
+					this.depthFar = newDepthFar;
+					this.updateGlobalUniforms();
+				}
+			}
 			
 			if (scene.autoUpdate) {
 				scene.updateMatrixWorld(false);
