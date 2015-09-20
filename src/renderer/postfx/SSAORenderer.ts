@@ -3,6 +3,7 @@
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Geometry.ts" />
+/// <reference path="BilateralFilter.ts" />
 module Hyper.Renderer
 {
 	export interface SSAOInput
@@ -20,12 +21,16 @@ module Hyper.Renderer
 	
 	export class SSAORenderer
 	{
+		private bilateral: BilateralFilterRenderer;
+		
 		constructor(public renderer: RendererCore)
 		{
+			this.bilateral = new BilateralFilterRenderer(renderer);
 		}
 		
 		dispose(): void
 		{
+			this.bilateral.dispose();
 		}
 		
 		setupFilter(input: SSAOInput, ops: RenderOperation[]): SSAOOutput
@@ -33,10 +38,9 @@ module Hyper.Renderer
 			const width = input.linearDepth.width;
 			const height = input.linearDepth.height;
 			
-			const outp: SSAOOutput = {
-				output: new TextureRenderBufferInfo("SSAO Result", width, height,
-					TextureRenderBufferFormat.R8)
-			};
+			
+			const aoBuf = new TextureRenderBufferInfo("SSAO Raw Result", (width+1)>>1, (height+1)>>1,
+				TextureRenderBufferFormat.R8);
 			
 			ops.push({
 				inputs: {
@@ -44,7 +48,7 @@ module Hyper.Renderer
 					linearDepth: input.linearDepth
 				},
 				outputs: {
-					output: outp.output
+					output: aoBuf
 				},
 				bindings: [],
 				optionalOutputs: [],
@@ -54,6 +58,31 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.outputs['output'])
 			});
+			
+			const bilit1 = this.bilateral.setupFilter({
+				input: aoBuf, 
+				linearDepth: input.linearDepth
+			}, {
+				dir: BilateralFilterDirection.Horitonzal,
+				outWidth: width,
+				outHeight: height,
+				kernelScale: 2		
+			}, ops);
+			
+			const bilit2 = this.bilateral.setupFilter({
+				input: bilit1.output, 
+				linearDepth: input.linearDepth
+			}, {
+				dir: BilateralFilterDirection.Vertical,
+				outWidth: width,
+				outHeight: height,
+				kernelScale: 2		
+			}, ops);
+			
+			const outp: SSAOOutput = {
+				output: bilit2.output
+			};
+			
 			return outp;
 		}
 	}
