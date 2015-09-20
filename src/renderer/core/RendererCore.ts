@@ -2,6 +2,7 @@
 /// <reference path="../render/TextureManager.ts" />
 /// <reference path="RenderBufferManager.ts" />
 /// <reference path="../render/GeometryRenderer.ts" />
+/// <reference path="../render/ShadowMapRenderer.ts" />
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
 /// <reference path="../utils/Utils.ts" />
@@ -34,6 +35,7 @@ module Hyper.Renderer
 		state: GLState;
 		
 		geometryRenderer: GeometryRenderer;
+		shadowRenderer: ShadowMapRenderer;
 		geometryManager: GeometryManager;
 		quadRenderer: QuadRenderer;
 		shaderManager: ShaderManager;
@@ -122,6 +124,7 @@ module Hyper.Renderer
 			this.geometryManager = new GeometryManager(this);
 			this.renderBuffers = new RenderBufferManager(this);
 			this.geometryRenderer = new GeometryRenderer(this);
+			this.shadowRenderer = new ShadowMapRenderer(this);
 			this.passthroughRenderer = new PassThroughRenderer(this);
 			this.bufferVisualizer = new BufferVisualizer(this);
 			this.lightRenderer = new LightRenderer(this);
@@ -156,6 +159,7 @@ module Hyper.Renderer
 			this.bufferVisualizer.dispose();
 			this.passthroughRenderer.dispose();
 			this.geometryRenderer.dispose();
+			this.shadowRenderer.dispose();
 			this.textures.dispose();
 			this.quadRenderer.dispose();
 			this.geometryManager.dispose();
@@ -173,6 +177,8 @@ module Hyper.Renderer
 				type: ResampleFilterType.Nearest
 			}, ops);
 			
+			const shadowMaps = this.shadowRenderer.setupShadowPass(ops);
+			
 			const ssao = this.ssaoRenderer.setupFilter({
 				g2: gbuffer.g2,
 				linearDepth: gbuffer.linearDepth,
@@ -186,7 +192,7 @@ module Hyper.Renderer
 				g3: gbuffer.g3,	
 				linearDepth: gbuffer.linearDepth,	
 				depth: gbuffer.depth,	
-				shadowMapsDepth: gbuffer.shadowMapsDepth,
+				shadowMapsDepth: shadowMaps.shadowMapsDepth,
 				ssao: ssao.output
 			}, ops);
 			
