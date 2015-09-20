@@ -67,13 +67,17 @@ module Hyper.Renderer
 			shaderInst.updateParameterUniforms();
 			attrBinding.setupVertexAttribs();
 			
-			this.tmpMat.multiplyMatrices(this.projectionViewMat, mesh.matrixWorld);
-			gl.uniformMatrix4fv(shader.uniforms['u_viewModelProjectionMatrix'], false,
-				this.tmpMat.elements);
+			gl.uniformMatrix4fv(shader.uniforms['u_viewProjectionMatrix'], false,
+				this.projectionViewMat.elements);
 			
 			this.tmpMat.multiplyMatrices(this.viewMat, mesh.matrixWorld);
 			gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
 				this.tmpMat.elements);
+				
+			gl.uniformMatrix4fv(shader.uniforms['u_viewMatrix'], false,
+				this.viewMat.elements);
+			gl.uniformMatrix4fv(shader.uniforms['u_modelMatrix'], false,
+				mesh.matrixWorld.elements);
 				
 			const geo2 = this.core.geometryManager.get(geo);
 			const index = geo2.indexAttribute;
@@ -107,7 +111,7 @@ module Hyper.Renderer
 		
 		uniforms: GLProgramUniforms;
 		
-		constructor(public manager: MaterialManager, public source: Material)
+		constructor(public manager: GeometryPassMaterialManager, public source: Material)
 		{
 			super(manager, source);
 			
@@ -171,7 +175,9 @@ module Hyper.Renderer
 			}
 			
 			this.uniforms = this.program.getUniforms([
-				'u_viewModelProjectionMatrix',
+				'u_viewProjectionMatrix',
+				'u_modelMatrix',
+				'u_viewMatrix',
 				'u_viewModelMatrix'
 			]);
 		}

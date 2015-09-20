@@ -1,6 +1,7 @@
 #pragma parameter useNormalMap
 #pragma require GBuffer
 #pragma require GBufferMosaic
+#pragma require FS_BaseGeometry
 
 varying vec3 v_viewNormal;
 #if c_useNormalMap
@@ -9,27 +10,9 @@ varying vec3 v_viewBitangent;
 #endif
 varying vec2 v_screenVelocity;
 
-vec3 m_albedo;
-float m_roughness;
-float m_metallic;
-float m_specular;
-vec3 m_normal;
-vec3 m_emissive;
-vec3 m_radiosity;
-
-void evaluateShader();
-
 void main()
 {
-	m_albedo = vec3(1.);
-	m_roughness = 0.2;
-	m_metallic = 0.2;
-	m_specular = 0.;
-	m_normal = vec3(0., 0., 1.);
-	m_radiosity = vec3(0.);
-	m_emissive = vec3(0.);
-
-	evaluateShader();
+	evaluateMaterial();
 	
 	vec3 preshaded = m_emissive + m_radiosity;
 	float aoRatio = dot(m_radiosity, vec3(1.)) / dot(m_emissive, vec3(1.));
