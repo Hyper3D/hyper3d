@@ -9,6 +9,7 @@
 /// <reference path="../render/LightRenderer.ts" />
 /// <reference path="../public/WebGLHyperRenderer.ts" />
 /// <reference path="../postfx/SSAORenderer.ts" />
+/// <reference path="../postfx/ResampleFilter.ts" />
 module Hyper.Renderer
 {
 	
@@ -40,6 +41,7 @@ module Hyper.Renderer
 		bufferVisualizer: BufferVisualizer;
 		lightRenderer: LightRenderer;
 		
+		resampler: ResampleFilterRenderer;
 		ssaoRenderer: SSAORenderer;
 		
 		currentScene: THREE.Scene;
@@ -123,6 +125,7 @@ module Hyper.Renderer
 			this.lightRenderer = new LightRenderer(this);
 			
 			this.ssaoRenderer = new SSAORenderer(this);
+			this.resampler = new ResampleFilterRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -144,6 +147,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.resampler.dispose();
 			this.ssaoRenderer.dispose();
 			
 			this.lightRenderer.dispose();
@@ -161,10 +165,19 @@ module Hyper.Renderer
 		{
 			const ops: RenderOperation[] = [];
 			const gbuffer = this.geometryRenderer.setupGeometryPass(this.width, this.height, ops);
+			const linearDepthHalf = this.resampler.setupFilter(gbuffer.linearDepth, {
+				outWidth: (gbuffer.linearDepth.width + 1) >> 1,
+				outHeight: (gbuffer.linearDepth.height + 1) >> 1,
+				type: ResampleFilterType.Nearest
+			}, ops);
 			
 			const lightBuf = this.lightRenderer.setupLightPass(gbuffer, ops);
 			
-			const ssao = this.ssaoRenderer.setupFilter(gbuffer, ops);
+			const ssao = this.ssaoRenderer.setupFilter({
+				g2: gbuffer.g2,
+				linearDepth: gbuffer.linearDepth,
+				linearDepthHalf: linearDepthHalf
+			}, ops);
 			
 			const visualizedBuf = ssao.output; // lightBuf.lit;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);

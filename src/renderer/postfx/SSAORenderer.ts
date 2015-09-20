@@ -8,11 +8,9 @@ module Hyper.Renderer
 {
 	export interface SSAOInput
 	{
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
 		g2: TextureRenderBufferInfo;
-		g3: TextureRenderBufferInfo;
 		linearDepth: TextureRenderBufferInfo;
+		linearDepthHalf: TextureRenderBufferInfo;
 	}
 	export interface SSAOOutput
 	{
@@ -45,7 +43,7 @@ module Hyper.Renderer
 			ops.push({
 				inputs: {
 					g2: input.g2,
-					linearDepth: input.linearDepth
+					linearDepth: input.linearDepthHalf
 				},
 				outputs: {
 					output: aoBuf
@@ -129,7 +127,8 @@ module Hyper.Renderer
 					program,
 					uniforms: program.getUniforms([
 						'u_linearDepth', 'u_g2',
-						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset'
+						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
+						'u_sampleOffsetScale'
 					]),
 					attributes: program.getAttributes(['a_position'])
 				};
@@ -173,6 +172,8 @@ module Hyper.Renderer
 				this.viewVec.coefX.x, this.viewVec.coefX.y);
 			gl.uniform2f(p.uniforms['u_viewDirCoefY'],
 				this.viewVec.coefY.x, this.viewVec.coefY.y);
+			gl.uniform2f(p.uniforms['u_sampleOffsetScale'],
+				1 / this.out.width, 1 / this.out.height);
 				
 			const quad = this.parent.renderer.quadRenderer;
 			quad.render(p.attributes['a_position']);

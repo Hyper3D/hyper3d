@@ -15,6 +15,8 @@ varying mediump vec2 v_viewDir;
 uniform highp vec2 u_viewDirCoefX;
 uniform highp vec2 u_viewDirCoefY;
 
+uniform mediump vec2 u_sampleOffsetScale;
+
 void main()
 {
 	vec4 g2 = texture2D(u_g2, v_texCoord);
@@ -28,7 +30,10 @@ void main()
 
 	float depthDecayScale = -16. / baseDepth;
 
-	float sampleDistance = 2. + patternPos2 * 2.;
+	vec2 sampleOffsetScale = u_sampleOffsetScale;
+
+
+	float sampleDistance = 1. + patternPos2 * 2.;
 	const float sampleRotAngle = 1.0;
 	vec2 sampleRot = vec2(sin(sampleRotAngle), cos(sampleRotAngle));
 
@@ -41,7 +46,7 @@ void main()
 
 	for (int i = 0; i < 12; ++i) {
 		vec2 sampleOffset = sampleDir * sampleDistance;
-		vec2 sampleCoordOffs = sampleOffset * u_globalInvRenderSize; // FIXME: this needs to be adjusted
+		vec2 sampleCoordOffs = sampleOffset * sampleOffsetScale; // FIXME: this needs to be adjusted
 		highp vec2 sampleAt = v_texCoord + sampleCoordOffs;
 		highp float depth = fetchDepth(u_linearDepth, sampleAt) + 0.1; // FIXME: this value needs to be tweaked?
 		vec3 viewPos = vec3(v_viewDir + u_viewDirCoefX * sampleCoordOffs.x 
