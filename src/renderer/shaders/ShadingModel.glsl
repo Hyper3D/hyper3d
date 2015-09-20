@@ -9,6 +9,11 @@ struct PointLightBRDFParameters
 	float hlDot;
 };
 
+struct UniformLightBRDFParameters
+{
+	float nvDot;
+};
+
 struct MaterialInfo
 {
 	vec3 albedo;
@@ -91,6 +96,25 @@ vec3 evaluatePointLight(
 	return final * lightColor;
 }
 
+vec3 evaluateUniformLight(
+	UniformLightBRDFParameters params,
+	MaterialInfo material,
+	vec3 lightColor)
+{
+	// FIXME: verify this model
+	float fresnel = evaluateSchlinkFresnel(params.nvDot);
+
+	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
+	vec3 refl = mix(minRefl, vec3(1.), fresnel);
+
+	float diffuseMix = 1. - material.metallic;
+
+	vec3 diffuse = material.albedo;
+
+	vec3 final = diffuse * diffuseMix + refl;
+	return final * lightColor;
+}
+
 vec4 evaluateReflection(
 	float nvDot,
 	MaterialInfo material)
@@ -112,6 +136,14 @@ PointLightBRDFParameters computePointLightBRDFParameters(
 	vec3 halfVec = normalize(light + view);
 	return PointLightBRDFParameters(dot(normal, halfVec), dot(normal, light), dot(normal, view),
 		dot(halfVec, light));
+}
+
+UniformLightBRDFParameters computeUniformLightBRDFParameters(
+	vec3 normal, vec3 view)
+{
+	UniformLightBRDFParameters ret;
+	ret.nvDot = dot(normal, view);
+	return ret;
 }
 
 MaterialInfo getMaterialInfoFromGBuffer(GBufferContents g)

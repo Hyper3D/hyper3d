@@ -48,3 +48,8 @@ void encodeGBuffer(out vec4 g0, out vec4 g1, out vec4 g2, out vec4 g3, GBufferCo
 	g2 = vec4(pack16(sphereMap.x), pack16(sphereMap.y));
 	g3 = vec4(g.preshaded, g.aoRatio);
 }
+
+bool isGBufferEmpty(vec4 g0, vec4 g1, vec4 g2, vec4 g3)
+{
+	return g2.x < .001;
+}

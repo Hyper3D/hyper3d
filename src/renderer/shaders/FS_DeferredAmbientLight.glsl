@@ -7,8 +7,8 @@ uniform sampler2D u_g1;
 uniform sampler2D u_g2;
 uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
+uniform sampler2D u_ssao;
 
-uniform vec3 u_lightDir;
 uniform vec3 u_lightColor;
 
 varying highp vec2 v_texCoord;
@@ -31,11 +31,14 @@ void main()
 
 	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
 
-	vec3 viewDir = vec3(v_viewDir, 1.);
-	PointLightBRDFParameters params = computePointLightBRDFParameters(
-		g.normal, u_lightDir, normalize(viewDir));
+	float ssao = texture2D(u_ssao, v_texCoord).r;
+	ssao *= ssao;
 
-	vec3 lit = evaluatePointLight(params, mat, u_lightColor);
+	vec3 viewDir = vec3(v_viewDir, 1.);
+	UniformLightBRDFParameters params = computeUniformLightBRDFParameters(
+		g.normal, normalize(viewDir));
+
+	vec3 lit = evaluateUniformLight(params, mat, u_lightColor * ssao);
 
 	vec4 mosaicked = encodeHdrMosaic(lit);
 	gl_FragColor = mosaicked;

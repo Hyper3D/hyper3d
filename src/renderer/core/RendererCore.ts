@@ -171,15 +171,25 @@ module Hyper.Renderer
 				type: ResampleFilterType.Nearest
 			}, ops);
 			
-			const lightBuf = this.lightRenderer.setupLightPass(gbuffer, ops);
-			
 			const ssao = this.ssaoRenderer.setupFilter({
 				g2: gbuffer.g2,
 				linearDepth: gbuffer.linearDepth,
 				linearDepthHalf: linearDepthHalf
 			}, ops);
 			
-			const visualizedBuf = ssao.output; // lightBuf.lit;
+			const lightBuf = this.lightRenderer.setupLightPass({
+				g0: gbuffer.g0,
+				g1: gbuffer.g1,
+				g2: gbuffer.g2,
+				g3: gbuffer.g3,	
+				linearDepth: gbuffer.linearDepth,	
+				depth: gbuffer.depth,	
+				shadowMapsDepth: gbuffer.shadowMapsDepth,
+				ssao: ssao.output
+			}, ops);
+			
+			
+			const visualizedBuf = lightBuf.lit;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));

@@ -16,6 +16,7 @@ module Hyper.Renderer
 		g3: TextureRenderBufferInfo;
 		depth: TextureRenderBufferInfo;
 		linearDepth: TextureRenderBufferInfo;
+		ssao: TextureRenderBufferInfo;
 		shadowMapsDepth: ShadowMapRenderBufferInfo;
 	}
 	
@@ -59,7 +60,8 @@ module Hyper.Renderer
 					g3: input.g3,
 					linearDepth: input.linearDepth,
 					depth: depthCullEnabled ? input.depth : null,
-					shadowMapsDepth: input.shadowMapsDepth
+					shadowMapsDepth: input.shadowMapsDepth,
+					ssao: input.ssao
 				},
 				outputs: {
 					lit: outp.lit
@@ -74,6 +76,7 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['g3'],
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.inputs['depth'],
+					<TextureRenderBuffer> cfg.inputs['ssao'],
 					<ShadowMapRenderService> cfg.inputs['shadowMapsDepth'],
 					<TextureRenderBuffer> cfg.outputs['lit'])
 			});
@@ -89,8 +92,18 @@ module Hyper.Renderer
 		private projectionViewMat: THREE.Matrix4;
 		private viewMat: THREE.Matrix4;
 		private viewVec: ViewVectors;
+		private totalAmbient: {
+			r: number;
+			g: number;
+			b: number;	
+		};
 		
 		private directionalLightProgram: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attributes: GLProgramAttributes;		
+		};
+		private ambientLightProgram: {
 			program: GLProgram;
 			uniforms: GLProgramUniforms;
 			attributes: GLProgramAttributes;		
@@ -105,6 +118,7 @@ module Hyper.Renderer
 			private inG3: TextureRenderBuffer,
 			private inLinearDepth: TextureRenderBuffer,
 			private inDepth: TextureRenderBuffer,
+			private inSSAO: TextureRenderBuffer,
 			private inShadowMaps: ShadowMapRenderService,
 			private outLit: TextureRenderBuffer
 		)
@@ -121,6 +135,7 @@ module Hyper.Renderer
 			this.projectionViewMat = new THREE.Matrix4();
 			this.viewMat = null;
 			this.viewVec = null;
+			this.totalAmbient = {r: 0, g: 0, b: 0};
 			
 			{
 				const program = parent.renderer.shaderManager.get('VS_DeferredDirectionalLight', 'FS_DeferredDirectionalLight',
@@ -130,6 +145,19 @@ module Hyper.Renderer
 					uniforms: program.getUniforms([
 						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth', 
 						'u_lightDir', 'u_lightColor', 
+						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset'
+					]),
+					attributes: program.getAttributes(['a_position'])
+				};
+			}
+			{
+				const program = parent.renderer.shaderManager.get('VS_DeferredAmbientLight', 'FS_DeferredAmbientLight',
+					['a_position']);
+				this.ambientLightProgram = {
+					program,
+					uniforms: program.getUniforms([
+						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth', 'u_ssao',
+						'u_lightColor', 
 						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset'
 					]),
 					attributes: program.getAttributes(['a_position'])
@@ -147,6 +175,9 @@ module Hyper.Renderer
 				this.parent.renderer.currentCamera.projectionMatrix,
 				this.viewVec
 			);
+			this.totalAmbient.r = 0;
+			this.totalAmbient.g = 0;
+			this.totalAmbient.b = 0;
 		}
 		perform(): void
 		{
@@ -174,6 +205,8 @@ module Hyper.Renderer
 			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture);
 			gl.activeTexture(gl.TEXTURE4);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
+			gl.activeTexture(gl.TEXTURE5);
+			gl.bindTexture(gl.TEXTURE_2D, this.inSSAO.texture);
 			
 			// setup common uniforms
 			{
@@ -191,8 +224,41 @@ module Hyper.Renderer
 				gl.uniform2f(p.uniforms['u_viewDirCoefY'],
 					this.viewVec.coefY.x, this.viewVec.coefY.y);
 			}
+			{
+				const p = this.ambientLightProgram;
+				p.program.use();
+				gl.uniform1i(p.uniforms['u_g0'], 0);
+				gl.uniform1i(p.uniforms['u_g1'], 1);
+				gl.uniform1i(p.uniforms['u_g2'], 2);
+				gl.uniform1i(p.uniforms['u_g3'], 3);
+				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
+				gl.uniform1i(p.uniforms['u_ssao'], 5);
+				gl.uniform2f(p.uniforms['u_viewDirOffset'],
+					this.viewVec.offset.x, this.viewVec.offset.y);
+				gl.uniform2f(p.uniforms['u_viewDirCoefX'],
+					this.viewVec.coefX.x, this.viewVec.coefX.y);
+				gl.uniform2f(p.uniforms['u_viewDirCoefY'],
+					this.viewVec.coefY.x, this.viewVec.coefY.y);
+			}
 			
+			// traverse scene
 			this.renderTree(scene);
+			
+			// do ambient light
+			{
+				const t = this.totalAmbient;
+				if (t.r > 0 || t.g > 0 || t.b > 0) {
+					const p = this.ambientLightProgram;
+					p.program.use();
+					
+					gl.uniform3f(p.uniforms['u_lightColor'], t.r, t.g, t.b);
+					
+					const quad = this.parent.renderer.quadRenderer;
+					gl.depthFunc(gl.GREATER);	
+					quad.render(p.attributes['a_position']);
+				}
+			}
+			gl.depthFunc(gl.LESS);
 		}
 		private renderTree(obj: THREE.Object3D): void
 		{
@@ -228,9 +294,15 @@ module Hyper.Renderer
 				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
 				
 				const quad = this.parent.renderer.quadRenderer;
-				gl.depthFunc(gl.GREATER);	
+				gl.depthFunc(gl.GREATER);
 				quad.render(p.attributes['a_position']);
-				gl.depthFunc(gl.LESS);
+			}
+			
+			if (light instanceof THREE.AmbientLight) {
+				const t = this.totalAmbient;
+				t.r += colorR;
+				t.g += colorG;
+				t.b += colorB;
 			}
 		}
 		afterRender(): void
