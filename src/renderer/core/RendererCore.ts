@@ -10,6 +10,7 @@
 /// <reference path="../utils/Geometry.ts" />
 /// <reference path="../validator/SRGBValidator.ts" />
 /// <reference path="../render/LightRenderer.ts" />
+/// <reference path="../render/HdrDemosaicFilter.ts" />
 /// <reference path="../public/WebGLHyperRenderer.ts" />
 /// <reference path="../postfx/SSAORenderer.ts" />
 /// <reference path="../postfx/ResampleFilter.ts" />
@@ -46,6 +47,7 @@ module Hyper.Renderer
 		passthroughRenderer: PassThroughRenderer;
 		bufferVisualizer: BufferVisualizer;
 		lightRenderer: LightRenderer;
+		hdrDemosaic: HdrDemosaicFilterRenderer;
 		
 		resampler: ResampleFilterRenderer;
 		ssaoRenderer: SSAORenderer;
@@ -134,7 +136,7 @@ module Hyper.Renderer
 			this.passthroughRenderer = new PassThroughRenderer(this);
 			this.bufferVisualizer = new BufferVisualizer(this);
 			this.lightRenderer = new LightRenderer(this);
-			
+			this.hdrDemosaic = new HdrDemosaicFilterRenderer(this);
 			this.ssaoRenderer = new SSAORenderer(this);
 			this.resampler = new ResampleFilterRenderer(this);
 			
@@ -160,7 +162,7 @@ module Hyper.Renderer
 		{
 			this.resampler.dispose();
 			this.ssaoRenderer.dispose();
-			
+			this.hdrDemosaic.dispose();
 			this.lightRenderer.dispose();
 			this.bufferVisualizer.dispose();
 			this.passthroughRenderer.dispose();
@@ -204,8 +206,11 @@ module Hyper.Renderer
 				ssao: ssao.output
 			}, ops);
 			
+			const demosaiced = this.hdrDemosaic.setupFilter(lightBuf.lit, {
+				halfSized: false
+			}, ops);
 			
-			const visualizedBuf = lightBuf.lit;
+			const visualizedBuf = demosaiced;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
@@ -272,8 +277,15 @@ module Hyper.Renderer
 		}
         setSize(width:number, height:number): void
 		{
-			width = Math.max(width | 0, 1);
-			height = Math.max(height | 0, 1);
+			if (width & 1) {
+				throw new Error("width cannot be odd");
+			}
+			if (height & 1) {
+				throw new Error("height cannot be odd");
+			}
+			
+			width = Math.max(width | 0, 2);
+			height = Math.max(height | 0, 2);
 			
 			this.renderWidth = this.width = width;
 			this.renderHeight = this.height = height;
