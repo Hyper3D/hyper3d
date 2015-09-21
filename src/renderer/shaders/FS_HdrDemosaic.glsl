@@ -14,7 +14,7 @@ void main()
 	vec4 mosaic3 = texture2D(u_mosaic, vec2(v_texCoord1.x, v_texCoord3.y));
 	vec4 mosaic4 = texture2D(u_mosaic, vec2(v_texCoord2.x, v_texCoord1.y));
 	vec4 mosaic5 = texture2D(u_mosaic, vec2(v_texCoord3.x, v_texCoord1.y));
-	vec3 mosaicAvg = mosaic2.xyz;//(mosaic2 + mosaic3 + mosaic4 + mosaic5).xyz * 0.25;
+	vec3 mosaicAvg = (mosaic2 + mosaic3 + mosaic4 + mosaic5).xyz * 0.25;
 
 	float overflowLevel;
 	{
@@ -39,6 +39,4 @@ void main()
 	vec3 demosaicedRGB = mix(mosaic1.xyz, mosaicAvg, mixamt);
 
 	gl_FragColor = encodeLogRGB(demosaicedRGB);
-
-	gl_FragColor.xyz = demosaicedRGB; // DEBUG
 }

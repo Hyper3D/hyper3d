@@ -14,6 +14,7 @@
 /// <reference path="../public/WebGLHyperRenderer.ts" />
 /// <reference path="../postfx/SSAORenderer.ts" />
 /// <reference path="../postfx/ResampleFilter.ts" />
+/// <reference path="../postfx/ToneMappingFilter.ts" />
 module Hyper.Renderer
 {
 	
@@ -48,7 +49,7 @@ module Hyper.Renderer
 		bufferVisualizer: BufferVisualizer;
 		lightRenderer: LightRenderer;
 		hdrDemosaic: HdrDemosaicFilterRenderer;
-		
+		toneMapFilter: ToneMappingFilterRenderer;
 		resampler: ResampleFilterRenderer;
 		ssaoRenderer: SSAORenderer;
 		
@@ -139,6 +140,7 @@ module Hyper.Renderer
 			this.hdrDemosaic = new HdrDemosaicFilterRenderer(this);
 			this.ssaoRenderer = new SSAORenderer(this);
 			this.resampler = new ResampleFilterRenderer(this);
+			this.toneMapFilter = new ToneMappingFilterRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -160,6 +162,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.toneMapFilter.dispose();
 			this.resampler.dispose();
 			this.ssaoRenderer.dispose();
 			this.hdrDemosaic.dispose();
@@ -210,7 +213,9 @@ module Hyper.Renderer
 				halfSized: false
 			}, ops);
 			
-			const visualizedBuf = demosaiced;
+			const toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
+			
+			const visualizedBuf = toneMapped;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
