@@ -5,6 +5,7 @@
 /// <reference path="../render/ShadowMapRenderer.ts" />
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
+/// <reference path="JitterTexture.ts" />
 /// <reference path="../utils/Utils.ts" />
 /// <reference path="../utils/Geometry.ts" />
 /// <reference path="../validator/SRGBValidator.ts" />
@@ -38,6 +39,8 @@ module Hyper.Renderer
 		geometryRenderer: GeometryRenderer;
 		shadowRenderer: ShadowMapRenderer;
 		geometryManager: GeometryManager;
+		uniformJitter: JitterTexture;
+		gaussianJitter: JitterTexture;
 		quadRenderer: QuadRenderer;
 		shaderManager: ShaderManager;
 		passthroughRenderer: PassThroughRenderer;
@@ -124,6 +127,8 @@ module Hyper.Renderer
 			this.textures = new TextureManager(this);
 			this.geometryManager = new GeometryManager(this);
 			this.renderBuffers = new RenderBufferManager(this);
+			this.uniformJitter = new UniformJitterTexture(this.gl);
+			this.gaussianJitter = new GaussianJitterTexture(this.gl);
 			this.geometryRenderer = new GeometryRenderer(this);
 			this.shadowRenderer = new ShadowMapRenderer(this);
 			this.passthroughRenderer = new PassThroughRenderer(this);
@@ -165,6 +170,8 @@ module Hyper.Renderer
 			this.quadRenderer.dispose();
 			this.geometryManager.dispose();
 			this.renderBuffers.dispose();
+			this.uniformJitter.dispose();
+			this.gaussianJitter.dispose();
 			this.shaderManager.dispose();
 		}
 		
@@ -231,6 +238,9 @@ module Hyper.Renderer
 			const gl = this.gl;
 			this.currentScene = scene;
 			this.currentCamera = camera;
+			
+			this.uniformJitter.update();
+			this.gaussianJitter.update();
 			
 			// compute depth far
 			{

@@ -161,7 +161,8 @@ module Hyper.Renderer
 						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth',
 						'u_lightDir', 'u_lightColor', 
 						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
-						'u_shadowMap', 'u_shadowMapMatrix'
+						'u_shadowMap', 'u_shadowMapMatrix', 
+						'u_jitter', 'u_jitterScale', 'u_jitterAmount'
 					]),
 					attributes: program.getAttributes(['a_position'])
 				});
@@ -258,10 +259,11 @@ module Hyper.Renderer
 			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture); // FIXME: not needed in dynamic light pass
 			gl.activeTexture(gl.TEXTURE4);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
-			gl.activeTexture(gl.TEXTURE5);
-			gl.bindTexture(gl.TEXTURE_2D, this.inSSAO.texture);
+			// TEXTURE5: (none)
 			// TEXTURE6: shadow maps
 			// TEXTURE7: light texture
+			
+			const jitter = this.parent.renderer.gaussianJitter;
 			
 			// setup common uniforms
 			for (const p of this.directionalLightProgram) {
@@ -271,6 +273,10 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g2'], 2);
 				gl.uniform1i(p.uniforms['u_g3'], 3);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
+				gl.uniform1i(p.uniforms['u_jitter'], 5);
+				gl.uniform2f(p.uniforms['u_jitterScale'],
+					this.outLit.width / jitter.size / 2,
+					this.outLit.height / jitter.size / 2);
 				gl.uniform1i(p.uniforms['u_shadowMap'], 6);
 				gl.uniform2f(p.uniforms['u_viewDirOffset'],
 					this.viewVec.offset.x, this.viewVec.offset.y);
@@ -305,6 +311,9 @@ module Hyper.Renderer
 				if (t.r > 0 || t.g > 0 || t.b > 0) {
 					const p = this.ambientLightProgram;
 					p.program.use();
+					
+					gl.activeTexture(gl.TEXTURE5);
+					gl.bindTexture(gl.TEXTURE_2D, this.inSSAO.texture);
 					
 					gl.uniform3f(p.uniforms['u_lightColor'], t.r, t.g, t.b);
 					
@@ -451,12 +460,19 @@ module Hyper.Renderer
 				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
 				
 				if (hasShadowMap) {
+					const gen = this.inShadowMaps;
+					
 					tmpM2.multiplyMatrices(light.shadowCamera.projectionMatrix,
 						light.shadowCamera.matrixWorldInverse);
 					tmpM.multiplyMatrices(tmpM2, this.parent.renderer.currentCamera.matrixWorld);
 					tmpM2.makeScale(.5, .5, .5).multiply(tmpM);
 					tmpM3.makeTranslation(.5, .5, .5).multiply(tmpM2);
 					gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, tmpM3.elements);
+					
+					gl.activeTexture(gl.TEXTURE5);
+					gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
+					
+					gl.uniform2f(p.uniforms['u_jitterAmount'], 8 / gen.shadowMapWidth, 8 / gen.shadowMapHeight);
 				}
 				
 				const quad = this.parent.renderer.quadRenderer;
