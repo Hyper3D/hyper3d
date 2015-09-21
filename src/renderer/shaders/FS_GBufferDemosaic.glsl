@@ -18,6 +18,7 @@ void main()
 
 #if c_gBufferIndex == 4
 	// depth
+	targetDepth = targetDepth * 2. - 1.;
 	highp float a = dot(u_depthLinearizeCoef.xy, vec2(targetDepth, 1.));
 	highp float b = dot(u_depthLinearizeCoef.zw, vec2(targetDepth, 1.));
 
