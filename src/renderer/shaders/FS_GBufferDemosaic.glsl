@@ -31,21 +31,21 @@ void main()
 
 #if c_gBufferIndex == 0
 #define NumComparands 1
-	vec2 coord1 = v_texCoords.xy;
+	highp vec2 coord1 = v_texCoords.xy;
 #elif c_gBufferIndex == 1
 #define NumComparands 2
-	vec2 coord1 = v_texCoords.xy;
-	vec2 coord2 = v_texCoords.zw;
+	highp vec2 coord1 = v_texCoords.xy;
+	highp vec2 coord2 = v_texCoords.zw;
 #elif c_gBufferIndex == 2
 #define NumComparands 2
-	vec2 coord1 = v_texCoords.xy;
-	vec2 coord2 = v_texCoords.zw;
+	highp vec2 coord1 = v_texCoords.xy;
+	highp vec2 coord2 = v_texCoords.zw;
 #elif c_gBufferIndex == 3
 #define NumComparands 4
-	vec2 coord1 = v_texCoords.xy;
-	vec2 coord2 = v_texCoords.zy;
-	vec2 coord3 = v_texCoords.xw;
-	vec2 coord4 = v_texCoords.zw;
+	highp vec2 coord1 = v_texCoords.xy;
+	highp vec2 coord2 = v_texCoords.zy;
+	highp vec2 coord3 = v_texCoords.xw;
+	highp vec2 coord4 = v_texCoords.zw;
 #endif // c_gBufferIndex
 
 #else // c_globalUseFullResolutionGBuffer
