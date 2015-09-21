@@ -2,8 +2,8 @@
 
 #pragma require GBuffer
 #pragma require ShadingModel
-#pragma require HdrMosaic
 #pragma require DepthFetch
+#pragma require FS_BaseLight
 
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
@@ -87,7 +87,5 @@ void main()
 	lit *= shadowValue;
 #endif
 
-	vec4 mosaicked = encodeHdrMosaic(lit);
-	gl_FragColor = mosaicked;
-	gl_FragColor.xyz = lit.xyz; // DEBUG
+	emitLightPassOutput(lit);
 }

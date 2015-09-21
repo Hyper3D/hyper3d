@@ -1,6 +1,6 @@
 #pragma require GBuffer
 #pragma require ShadingModel
-#pragma require HdrMosaic
+#pragma require FS_BaseLight
 
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
@@ -40,7 +40,5 @@ void main()
 
 	vec3 lit = evaluateUniformLight(params, mat, u_lightColor * ssao);
 
-	vec4 mosaicked = encodeHdrMosaic(lit);
-	gl_FragColor = mosaicked;
-	gl_FragColor.xyz = lit.xyz; // DEBUG
+	emitLightPassOutput(lit);
 }
