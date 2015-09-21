@@ -99,6 +99,13 @@ module Hyper.Renderer
 	
 	export class GeometryPassMaterialManager extends MaterialManager
 	{
+		constructor(core: RendererCore,
+			public vsName: string,
+			public fsName: string)
+		{
+			super(core);
+		}
+		
 		createShader(material: Material): Shader // override
 		{
 			return new GeometryPassShader(this, material);
@@ -116,9 +123,9 @@ module Hyper.Renderer
 			super(manager, source);
 			
 			const attrs = this.getVertexAttributesUsedInShader(
-				GLShader.getAllAttributesReferencedByChunk([shaderChunks['VS_Geometry']]), false);
+				GLShader.getAllAttributesReferencedByChunk([shaderChunks[manager.vsName]]), false);
 			const allAttrs = this.getVertexAttributesUsedInShader(
-				GLShader.getAllAttributesReferencedByChunk([shaderChunks['VS_Geometry']]), true);
+				GLShader.getAllAttributesReferencedByChunk([shaderChunks[manager.vsName]]), true);
 			const vsParts: string[] = [];
 			const fsParts: string[] = [];
 			
@@ -135,7 +142,7 @@ module Hyper.Renderer
 			vsParts.push(`}`);
 			
 			const vsChunk: ShaderChunk = {
-				requires: ['VS_Geometry'],
+				requires: [manager.vsName],
 				source: vsParts.join('\n')
 			};
 			
@@ -144,7 +151,7 @@ module Hyper.Renderer
 			fsParts.push(`}`);
 			
 			const fsChunk: ShaderChunk = {
-				requires: ['FS_Geometry'],
+				requires: [manager.fsName],
 				source: fsParts.join('\n')
 			};
 			

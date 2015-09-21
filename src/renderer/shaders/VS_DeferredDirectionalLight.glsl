@@ -1,9 +1,12 @@
+#pragma parameter hasShadowMap
+
 attribute vec2 a_position;
 varying vec2 v_texCoord;
 varying vec2 v_viewDir;
 uniform vec2 u_viewDirCoefX;
 uniform vec2 u_viewDirCoefY;
 uniform vec2 u_viewDirOffset;
+
 
 void main()
 {

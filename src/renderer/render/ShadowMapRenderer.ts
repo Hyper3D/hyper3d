@@ -9,43 +9,75 @@ module Hyper.Renderer
 {
 	export interface ShadowPassOutput
 	{
-		shadowMapsDepth: ShadowMapRenderBufferInfo;
-		shadowMapsColor: ShadowMapRenderBufferInfo;
+		shadowMaps: ShadowMapRenderBufferInfo;
 	}
 	
 	export class ShadowMapRenderer
 	{
 		gpMaterials: GeometryPassMaterialManager;
 		
+		depthShadowMapTexture: WebGLTexture;
+		colorShadowMapTexture: WebGLTexture; // to make framebuffer complete
+		
+		normalShadowMapFramebuffer: GLFramebuffer;
+		
 		constructor(public renderer: RendererCore)
 		{
-			this.gpMaterials = new GeometryPassMaterialManager(renderer);
+			this.gpMaterials = new GeometryPassMaterialManager(renderer, 'VS_ShadowMapGeometry', 'FS_ShadowMapGeometry');
+			
+			const gl = renderer.gl;
+			
+			this.depthShadowMapTexture = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, this.depthShadowMapTexture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, 2048, 2048, 0,
+				gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);
+			
+			this.colorShadowMapTexture = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, this.colorShadowMapTexture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2048, 2048, 0,
+				gl.RGBA, gl.UNSIGNED_BYTE, null);
+				
+			this.normalShadowMapFramebuffer = GLFramebuffer.createFramebuffer(gl, {
+				depth: this.depthShadowMapTexture,
+				colors: [this.colorShadowMapTexture]
+			});
+			
 		}
 		
 		dispose(): void
 		{
 			this.gpMaterials.dispose();
+			
+			const gl = this.renderer.gl;
+			gl.deleteTexture(this.depthShadowMapTexture);
+			
+			this.normalShadowMapFramebuffer.dispose();
 		}
 		
 		setupShadowPass(ops: RenderOperation[]): ShadowPassOutput
 		{
 			const outp: ShadowPassOutput = {
-				shadowMapsDepth: new ShadowMapRenderBufferInfo(ShadowMapType.Depth),
-				shadowMapsColor: new ShadowMapRenderBufferInfo(ShadowMapType.Color)
+				shadowMaps: new ShadowMapRenderBufferInfo()
 			};
 			
 			ops.push({
 				inputs: {},
 				outputs: {
-					shadowMapsDepth: outp.shadowMapsDepth,
-					shadowMapsColor: outp.shadowMapsColor
+					shadowMaps: outp.shadowMaps
 				},
 				bindings: [],
-				optionalOutputs: ['shadowMapsDepth', 'shadowMapsColor'],
+				optionalOutputs: ['shadowMaps'],
 				name: "Geometry Pass",
 				factory: (cfg) => new ShadowGeometryPassRenderer(this,
-					<ShadowMapRenderBufferImpl> cfg.outputs['shadowMapsDepth'],
-					<ShadowMapRenderBufferImpl> cfg.outputs['shadowMapsColor'])
+					<ShadowMapRenderBufferImpl> cfg.outputs['shadowMaps'])
 			});
 			
 			return outp;
@@ -55,56 +87,34 @@ module Hyper.Renderer
 	
 	export enum ShadowMapType
 	{
-		Depth,
-		Color
+		Normal
 	}
 	
 	export class ShadowMapRenderBufferInfo extends RenderBufferInfo
 	{
 		private bufferInfo: TextureRenderBufferInfo;
 		
-		constructor(private shadowMapType: ShadowMapType)
+		constructor()
 		{ 
 			super("Shadow Maps");
 			
 			this.hash = 931810;
-			this.cost = 2048 * 2048;
-			switch (shadowMapType) {
-				case ShadowMapType.Depth:
-					this.cost *= 2;
-					this.bufferInfo = new TextureRenderBufferInfo("Shadow Maps: Depth", 2048, 2048,
-						TextureRenderBufferFormat.Depth);
-					break;
-				case ShadowMapType.Color:
-					this.cost *= 4;
-					this.bufferInfo = new TextureRenderBufferInfo("Shadow Maps: Color", 2048, 2048,
-						TextureRenderBufferFormat.Depth);
-					break;
-			}
+			this.cost = 0;
 		}
 		canMergeWith(o: RenderBufferInfo): boolean
 		{
 			if (o instanceof ShadowMapRenderBufferInfo) {
-				return this == o || this.shadowMapType == o.shadowMapType;
+				return this == o;
 			}
 			return false;
 		}
 		create(manager: RenderBufferManager): ShadowMapRenderBuffer
 		{
-			return new ShadowMapRenderBufferImpl(this.bufferInfo.create(manager));
+			return new ShadowMapRenderBufferImpl();
 		}
 		toString(): string
 		{
-			let fmtStr: string = `${this.shadowMapType}`;
-			switch (this.shadowMapType) {
-				case ShadowMapType.Depth:
-					fmtStr = "Depth";
-					break;
-				case ShadowMapType.Color:
-					fmtStr = "Color";
-					break;
-			}
-			return `${fmtStr} Provider`;
+			return "Shadow Maps Provider";
 		}
 	}
 	
@@ -115,50 +125,42 @@ module Hyper.Renderer
 	
 	export interface ShadowMapRenderService
 	{
+		/** Must be called in `beforeRender`. */
+		prepareShadowMap(camera: THREE.Camera, type: ShadowMapType): void;
 		
+		/** Must be called in `perform`. */
+		renderShadowMap(camera: THREE.Camera, type: ShadowMapType): void;
+		currentShadowMapDepth: WebGLTexture;
+		shadowMapWidth: number;
+		shadowMapHeight: number;
 	}
 	
 	class ShadowMapRenderBufferImpl implements ShadowMapRenderBufferImpl
 	{
 		service: ShadowMapRenderService;
 		
-		constructor(private tex: TextureRenderBuffer)
+		constructor()
 		{
-			
+			this.service = null;
 		}
 		
 		dispose(): void
 		{
-			this.tex.dispose();
 		}
 	}
 	
-	class ShadowGeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOperator
+	class ShadowGeometryPassRenderer extends BaseGeometryPassRenderer 
+		implements RenderOperator, ShadowMapRenderService
 	{
 		private fb: GLFramebuffer;
 		
 		constructor(
 			private parent: ShadowMapRenderer,
-			private outShadowMapDepth: ShadowMapRenderBufferImpl,
-			private outShadowMapColor: ShadowMapRenderBufferImpl
+			private outShadowMap: ShadowMapRenderBufferImpl
 		)
 		{
 			super(parent.renderer, parent.gpMaterials);
-			
-			if (outShadowMapDepth) {
-				outShadowMapDepth.service = this;
-			}
-			if (outShadowMapColor) {
-				outShadowMapColor.service = this;
-			}
-			
-			/*this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
-				depth: outDepth.texture,
-				colors: [
-					outMosaic.texture
-				]
-			});*/
-			
+			this.outShadowMap.service = this;
 		}
 		
 		beforeRender(): void
@@ -166,27 +168,45 @@ module Hyper.Renderer
 		}
 		perform(): void
 		{
-			// TODO
-			/*const scene = this.parent.renderer.currentScene;
-			this.fb.bind();
-			
-			const gl = this.parent.renderer.gl;
-			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
-			gl.clearColor(0, 0, 0, 0);
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
-			this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
-				this.parent.renderer.currentCamera.projectionMatrix);*/
 		}
 		afterRender(): void
 		{
+		}
+		
+		get currentShadowMapDepth(): WebGLTexture
+		{
+			return this.parent.depthShadowMapTexture;
+		}
+		get shadowMapWidth(): number
+		{
+			return 2048;
+		}
+		get shadowMapHeight(): number
+		{
+			return 2048;
+		}
+		
+		prepareShadowMap(camera: THREE.Camera, type: ShadowMapType): void
+		{
+			// nothing to do for now
+		}
+		
+		renderShadowMap(camera: THREE.Camera, type: ShadowMapType): void
+		{
+			const gl = this.parent.renderer.gl;
+			this.parent.normalShadowMapFramebuffer.bind();
+			gl.viewport(0, 0, this.shadowMapWidth, this.shadowMapHeight);
+			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
+			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled |
+				GLStateFlags.ColorWriteDisabled;
 			
+			this.renderGeometry(camera.matrixWorldInverse,
+				camera.projectionMatrix);
 		}
 		
 		dispose(): void
 		{
-			// this.fb.dispose();
-			
 			BaseGeometryPassRenderer.prototype.dispose.call(this);
 		}
 	}

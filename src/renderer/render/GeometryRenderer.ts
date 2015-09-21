@@ -24,7 +24,7 @@ module Hyper.Renderer
 		
 		constructor(public renderer: RendererCore)
 		{
-			this.gpMaterials = new GeometryPassMaterialManager(renderer);
+			this.gpMaterials = new GeometryPassMaterialManager(renderer, 'VS_Geometry', 'FS_Geometry');
 		}
 		
 		dispose(): void
@@ -61,9 +61,7 @@ module Hyper.Renderer
 						TextureRenderBufferFormat.RGBA8),
 				linearDepth: new TextureRenderBufferInfo("Depth", width, height,
 					TextureRenderBufferFormat.RGBA8),
-				depth: rawDepth,
-				shadowMapsDepth: new ShadowMapRenderBufferInfo(ShadowMapType.Depth),
-				shadowMapsColor: new ShadowMapRenderBufferInfo(ShadowMapType.Color)
+				depth: rawDepth
 			};
 			
 			ops.push({

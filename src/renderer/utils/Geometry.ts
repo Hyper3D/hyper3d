@@ -9,8 +9,14 @@ module Hyper.Renderer
 	}
 	
 	export const tmpM = new THREE.Matrix4();
+	export const tmpM2 = new THREE.Matrix4();
+	export const tmpM3 = new THREE.Matrix4();
 	export const tmpVec = new THREE.Vector4();
 	export const tmpVec2 = new THREE.Vector4();
+	export const tmpV3a = new THREE.Vector3();
+	export const tmpV3b = new THREE.Vector3();
+	export const tmpV3c = new THREE.Vector3();
+	export const tmpV3d = new THREE.Vector3();
 	
 	export function computeViewVectorCoefFromProjectionMatrix(m: THREE.Matrix4, old?: ViewVectors): ViewVectors
 	{
@@ -40,5 +46,10 @@ module Hyper.Renderer
 		old.coefY.set(tmpVec2.x, tmpVec2.y);
 		
 		return old;
+	}
+	
+	export function computeFarDepthFromProjectionMatrix(m: THREE.Matrix4): number
+	{
+		return (m.elements[15] - m.elements[14]) / (m.elements[11] - m.elements[10]);
 	}
 }

@@ -6,6 +6,7 @@
 /// <reference path="QuadRenderer.ts" />
 /// <reference path="ShaderManager.ts" />
 /// <reference path="../utils/Utils.ts" />
+/// <reference path="../utils/Geometry.ts" />
 /// <reference path="../validator/SRGBValidator.ts" />
 /// <reference path="../render/LightRenderer.ts" />
 /// <reference path="../public/WebGLHyperRenderer.ts" />
@@ -192,7 +193,7 @@ module Hyper.Renderer
 				g3: gbuffer.g3,	
 				linearDepth: gbuffer.linearDepth,	
 				depth: gbuffer.depth,	
-				shadowMapsDepth: shadowMaps.shadowMapsDepth,
+				shadowMaps: shadowMaps.shadowMaps,
 				ssao: ssao.output
 			}, ops);
 			
@@ -234,8 +235,7 @@ module Hyper.Renderer
 			// compute depth far
 			{
 				const proj = camera.projectionMatrix;
-				const newDepthFar = (proj.elements[15] - proj.elements[14]) /
-					(proj.elements[11] - proj.elements[10]);
+				const newDepthFar = computeFarDepthFromProjectionMatrix(proj)
 				if (newDepthFar != this.depthFar) {
 					this.depthFar = newDepthFar;
 					this.updateGlobalUniforms();
@@ -359,10 +359,10 @@ module Hyper.Renderer
 			}
 			if (diff & GLStateFlags.ColorWriteDisabled) {
 				gl.colorMask(
-					!(diff & GLStateFlags.ColorRedWriteDisabled),
-					!(diff & GLStateFlags.ColorGreenWriteDisabled),
-					!(diff & GLStateFlags.ColorBlueWriteDisabled),
-					!(diff & GLStateFlags.ColorAlphaWriteDisabled)
+					!(newValue & GLStateFlags.ColorRedWriteDisabled),
+					!(newValue & GLStateFlags.ColorGreenWriteDisabled),
+					!(newValue & GLStateFlags.ColorBlueWriteDisabled),
+					!(newValue & GLStateFlags.ColorAlphaWriteDisabled)
 				);
 			}
 			if (diff & GLStateFlags.StencilTestEnabled) {
