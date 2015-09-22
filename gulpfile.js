@@ -25,7 +25,7 @@ var sources = {
     js: ['./src/**/*.js'],
     tsd: ['./src/*.d.ts'],
     ts: ['./src/**/*.ts', '!./src/*.d.ts'],
-    shaders: ['./src/renderer/shaders/*.glsl']
+    shaders: ['./src/renderer/shaders/**/*.glsl']
   }
 };
 var shaderTemplateSource = './src/renderer/shaders/ShadersTemplate.txt';
