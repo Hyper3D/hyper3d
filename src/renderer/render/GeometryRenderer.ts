@@ -121,7 +121,7 @@ module Hyper.Renderer
 			private outDepth: TextureRenderBuffer
 		)
 		{
-			super(parent.renderer, parent.gpMaterials);
+			super(parent.renderer, parent.gpMaterials, true);
 			
 			this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
 				depth: outDepth.texture,
@@ -143,7 +143,7 @@ module Hyper.Renderer
 			
 			const gl = this.parent.renderer.gl;
 			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
-			gl.clearColor(0, 0, 0, 0);
+			gl.clearColor(0, 0, 0, 0); // TODO: clear with appropriate value!
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,

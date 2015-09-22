@@ -159,7 +159,7 @@ module Hyper.Renderer
 			private outShadowMap: ShadowMapRenderBufferImpl
 		)
 		{
-			super(parent.renderer, parent.gpMaterials);
+			super(parent.renderer, parent.gpMaterials, false);
 			this.outShadowMap.service = this;
 		}
 		

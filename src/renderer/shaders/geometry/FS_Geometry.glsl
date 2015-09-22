@@ -8,7 +8,9 @@ varying vec3 v_viewNormal;
 varying vec3 v_viewTangent;
 varying vec3 v_viewBitangent;
 #endif
-varying vec2 v_screenVelocity;
+
+varying highp vec3 v_screenPosition;
+varying highp vec3 v_lastScreenPosition;
 
 void main()
 {
@@ -24,11 +26,15 @@ void main()
 	vec3 normal = v_viewNormal;
 #endif
 	normal = normalize(normal);
+
+	highp vec2 screenPos = v_screenPosition.xy / v_screenPosition.z;
+	highp vec2 lastScreenPos = v_lastScreenPosition.xy / v_lastScreenPosition.z;
+	vec2 screenVel = screenPos - lastScreenPos;
 	
 	GBufferContents g;
 	g.albedo = m_albedo;
 	g.normal = normal;
-	g.velocity = v_screenVelocity;
+	g.velocity = screenVel;
 	g.roughness = m_roughness;
 	g.metallic = m_metallic;
 	g.specular = m_specular;

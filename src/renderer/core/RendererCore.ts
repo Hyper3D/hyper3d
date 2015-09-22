@@ -218,6 +218,7 @@ module Hyper.Renderer
 			
 			const visualizedBuf = toneMapped;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
+			// const visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Velocity, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));
 			

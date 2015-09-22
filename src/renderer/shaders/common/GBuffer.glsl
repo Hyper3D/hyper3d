@@ -1,6 +1,7 @@
 #pragma parameter globalSupportsSRGB
 #pragma require SphereMap
 #pragma require Pack
+#pragma require VelocityMap
 
 struct GBufferContents
 {
@@ -29,7 +30,7 @@ void decodeGBuffer(out GBufferContents g, vec4 g0, vec4 g1, vec4 g2, vec4 g3)
 
 	g.normal = decodeGBufferNormal(g2);
 
-	g.velocity = vec2(g0.w, g1.w);
+	g.velocity = decodeVelocityMap(vec2(g0.w, g1.w));
 
 	g.roughness = g1.x * g1.x;
 	g.metallic = g1.y;
@@ -42,9 +43,10 @@ void decodeGBuffer(out GBufferContents g, vec4 g0, vec4 g1, vec4 g2, vec4 g3)
 void encodeGBuffer(out vec4 g0, out vec4 g1, out vec4 g2, out vec4 g3, GBufferContents g)
 {
 	vec2 sphereMap = encodeSpheremap(g.normal);
+	vec2 vel = encodeVelocityMap(g.velocity);
 
-	g0 = vec4(g.albedo, g.velocity.x);
-	g1 = vec4(sqrt(g.roughness), g.metallic, g.specular, g.velocity.y);
+	g0 = vec4(g.albedo, vel.x);
+	g1 = vec4(sqrt(g.roughness), g.metallic, g.specular, vel.y);
 	g2 = vec4(pack16(sphereMap.x), pack16(sphereMap.y));
 	g3 = vec4(g.preshaded, g.aoRatio);
 }

@@ -4,6 +4,7 @@
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="MaterialManager.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
+/// <reference path="../utils/Utils.ts" />
 module Hyper.Renderer
 {
 	export class BaseGeometryPassRenderer
@@ -13,15 +14,24 @@ module Hyper.Renderer
 		private viewMat: THREE.Matrix4;
 		private frustum: THREE.Frustum;
 		
+		private lastViewProjMat: THREE.Matrix4;
+		private objs: Utils.IntegerMap<BaseGeometryPassRendererObject>; // FIXME: only one instance of this is needed for entire the renderer
+		private nextToken: boolean;
+		
 		constructor(
 			public core: RendererCore,
-			public materialManager: MaterialManager
+			public materialManager: MaterialManager,
+			private needsLastWorldPosition: boolean
 		)
 		{
 			this.tmpMat = new THREE.Matrix4();
 			this.projectionViewMat = new THREE.Matrix4();
 			this.viewMat = new THREE.Matrix4();
 			this.frustum = new THREE.Frustum();
+			
+			this.objs = new Utils.IntegerMap<BaseGeometryPassRendererObject>();
+			this.nextToken = false;
+			this.lastViewProjMat = new THREE.Matrix4();
 		}
 		
 		renderGeometry(viewMatrix: THREE.Matrix4, projectionMatrix: THREE.Matrix4): void
@@ -36,6 +46,16 @@ module Hyper.Renderer
 			const scene = this.core.currentScene;
 			
 			this.renderTree(scene);
+			
+			// remove unneeded objects from this.objs
+			this.objs.forEach((id, obj) => {
+				if (obj.token != this.nextToken) {
+					this.objs.remove(id);
+				}
+			});
+			this.nextToken = !this.nextToken;
+			
+			this.lastViewProjMat.copy(this.projectionViewMat);
 		}
 		private cullObject(obj: THREE.Object3D): boolean
 		{
@@ -62,6 +82,7 @@ module Hyper.Renderer
 			const shader = <GeometryPassShader> shaderInst.shader;
 			const attrBinding = shader.getGeometryBinding(this.core.geometryManager.get(geo));
 			const gl = this.core.gl;
+			let lobj = this.needsLastWorldPosition ? this.objs.get(mesh.id) : null;
 			
 			shader.glProgram.use();
 			shaderInst.updateParameterUniforms();
@@ -69,6 +90,8 @@ module Hyper.Renderer
 			
 			gl.uniformMatrix4fv(shader.uniforms['u_viewProjectionMatrix'], false,
 				this.projectionViewMat.elements);
+			gl.uniformMatrix4fv(shader.uniforms['u_lastViewProjectionMatrix'], false,
+				this.lastViewProjMat.elements);
 			
 			this.tmpMat.multiplyMatrices(this.viewMat, mesh.matrixWorld);
 			gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
@@ -79,6 +102,14 @@ module Hyper.Renderer
 			gl.uniformMatrix4fv(shader.uniforms['u_modelMatrix'], false,
 				mesh.matrixWorld.elements);
 				
+			if (lobj) {
+				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
+					lobj.lastViewModelMatrix.elements);
+			} else {
+				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
+					mesh.matrixWorld.elements);
+			}
+				
 			const geo2 = this.core.geometryManager.get(geo);
 			const index = geo2.indexAttribute;
 			if (index != null) {
@@ -88,13 +119,37 @@ module Hyper.Renderer
 			} else {
 				gl.drawArrays(gl.TRIANGLES, 0, geo2.numFaces * 3);
 			}
-		}
-		afterRender(): void
-		{
+			
+			if (this.needsLastWorldPosition) {
+				if (!lobj) {
+					lobj = new BaseGeometryPassRendererObject(mesh);
+					this.objs.set(mesh.id, lobj);
+				}
+				lobj.save(this.nextToken);
+			}
 		}
 		dispose(): void
 		{
 		}
+	}
+	
+	class BaseGeometryPassRendererObject
+	{
+		token: boolean;
+		lastViewModelMatrix: THREE.Matrix4;
+		
+		constructor(private obj: THREE.Object3D)
+		{
+			this.token = false;
+			this.lastViewModelMatrix = obj.matrixWorld.clone();
+		}
+		
+		save(token: boolean): void
+		{
+			this.lastViewModelMatrix.copy(this.obj.matrixWorld);
+			this.token = token;
+		}
+		
 	}
 	
 	export class GeometryPassMaterialManager extends MaterialManager
@@ -183,7 +238,9 @@ module Hyper.Renderer
 			
 			this.uniforms = this.program.getUniforms([
 				'u_viewProjectionMatrix',
+				'u_lastViewProjectionMatrix',
 				'u_modelMatrix',
+				'u_lastModelMatrix',
 				'u_viewMatrix',
 				'u_viewModelMatrix'
 			]);
