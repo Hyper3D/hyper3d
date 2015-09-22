@@ -79,7 +79,7 @@ module Hyper.Renderer
 		private renderMesh(mesh: THREE.Mesh, geo: any): void
 		{
 			const shaderInst = this.materialManager.get(mesh.material);
-			const shader = <GeometryPassShader> shaderInst.shader;
+			const shader = <BaseGeometryPassShader> shaderInst.shader;
 			const attrBinding = shader.getGeometryBinding(this.core.geometryManager.get(geo));
 			const gl = this.core.gl;
 			let lobj = this.needsLastWorldPosition ? this.objs.get(mesh.id) : null;
@@ -109,6 +109,8 @@ module Hyper.Renderer
 				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
 					mesh.matrixWorld.elements);
 			}
+			
+			this.setupAdditionalUniforms(mesh, shader);
 				
 			const geo2 = this.core.geometryManager.get(geo);
 			const index = geo2.indexAttribute;
@@ -127,6 +129,10 @@ module Hyper.Renderer
 				}
 				lobj.save(this.nextToken);
 			}
+		}
+		setupAdditionalUniforms(mesh: THREE.Mesh, shader: BaseGeometryPassShader): void
+		{
+			// to be overrided
 		}
 		dispose(): void
 		{
@@ -152,7 +158,7 @@ module Hyper.Renderer
 		
 	}
 	
-	export class GeometryPassMaterialManager extends MaterialManager
+	export class BaseGeometryPassMaterialManager extends MaterialManager
 	{
 		constructor(core: RendererCore,
 			public vsName: string,
@@ -163,17 +169,17 @@ module Hyper.Renderer
 		
 		createShader(material: Material): Shader // override
 		{
-			return new GeometryPassShader(this, material);
+			return new BaseGeometryPassShader(this, material);
 		}
 	}
 	
-	export class GeometryPassShader extends Shader
+	export class BaseGeometryPassShader extends Shader
 	{
 		private program: GLProgram;
 		
 		uniforms: GLProgramUniforms;
 		
-		constructor(public manager: GeometryPassMaterialManager, public source: Material)
+		constructor(public manager: BaseGeometryPassMaterialManager, public source: Material)
 		{
 			super(manager, source);
 			

@@ -16,6 +16,7 @@
 /// <reference path="../postfx/SSAORenderer.ts" />
 /// <reference path="../postfx/ResampleFilter.ts" />
 /// <reference path="../postfx/ToneMappingFilter.ts" />
+/// <reference path="../postfx/TemporalAAFilter.ts" />
 module Hyper.Renderer
 {
 	
@@ -53,6 +54,7 @@ module Hyper.Renderer
 		toneMapFilter: ToneMappingFilterRenderer;
 		resampler: ResampleFilterRenderer;
 		ssaoRenderer: SSAORenderer;
+		temporalAA: TemporalAAFilterRenderer;
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
@@ -142,6 +144,7 @@ module Hyper.Renderer
 			this.ssaoRenderer = new SSAORenderer(this);
 			this.resampler = new ResampleFilterRenderer(this);
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
+			this.temporalAA = new TemporalAAFilterRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -163,6 +166,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.temporalAA.dispose();
 			this.toneMapFilter.dispose();
 			this.resampler.dispose();
 			this.ssaoRenderer.dispose();
@@ -214,10 +218,17 @@ module Hyper.Renderer
 				halfSized: false
 			}, ops);
 			
-			const toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
+			let toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
+			
+			toneMapped = this.temporalAA.setupFilter({
+				color: toneMapped,
+				linearDepth: gbuffer.linearDepth,
+				g0: gbuffer.g0, g1: gbuffer.g1
+			}, ops);
 			
 			const visualizedBuf = toneMapped;
 			const visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
+			
 			// const visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Velocity, ops);
 			
 			console.log(this.renderBuffers.dumpRenderOperation(ops));

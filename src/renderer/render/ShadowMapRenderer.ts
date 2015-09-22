@@ -14,7 +14,7 @@ module Hyper.Renderer
 	
 	export class ShadowMapRenderer
 	{
-		gpMaterials: GeometryPassMaterialManager;
+		gpMaterials: ShadowGeometryPassMaterialManager;
 		
 		depthShadowMapTexture: WebGLTexture;
 		colorShadowMapTexture: WebGLTexture; // to make framebuffer complete
@@ -23,7 +23,7 @@ module Hyper.Renderer
 		
 		constructor(public renderer: RendererCore)
 		{
-			this.gpMaterials = new GeometryPassMaterialManager(renderer, 'VS_ShadowMapGeometry', 'FS_ShadowMapGeometry');
+			this.gpMaterials = new ShadowGeometryPassMaterialManager(renderer);
 			
 			const gl = renderer.gl;
 			
@@ -146,6 +146,14 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+		}
+	}
+	
+	class ShadowGeometryPassMaterialManager extends BaseGeometryPassMaterialManager
+	{
+		constructor(core: RendererCore)
+		{
+			super(core, 'VS_ShadowMapGeometry', 'FS_ShadowMapGeometry');
 		}
 	}
 	

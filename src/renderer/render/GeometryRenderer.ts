@@ -17,14 +17,13 @@ module Hyper.Renderer
 		linearDepth: TextureRenderBufferInfo;
 		depth: TextureRenderBufferInfo;
 	}
-	
 	export class GeometryRenderer
 	{
 		gpMaterials: GeometryPassMaterialManager;
 		
 		constructor(public renderer: RendererCore)
 		{
-			this.gpMaterials = new GeometryPassMaterialManager(renderer, 'VS_Geometry', 'FS_Geometry');
+			this.gpMaterials = new GeometryPassMaterialManager(renderer);
 		}
 		
 		dispose(): void
@@ -111,9 +110,42 @@ module Hyper.Renderer
 		
 	}
 	
+	class GeometryPassShader extends BaseGeometryPassShader
+	{
+		geoUniforms: GLProgramUniforms;
+		
+		constructor(public manager: BaseGeometryPassMaterialManager, public source: Material)
+		{
+			super(manager, source);
+			
+			this.geoUniforms = this.glProgram.getUniforms([
+				'u_screenVelOffset'
+			]);
+		}
+	}
+	
+	class GeometryPassMaterialManager extends BaseGeometryPassMaterialManager
+	{
+		constructor(core: RendererCore)
+		{
+			super(core, 'VS_Geometry', 'FS_Geometry');
+		}
+		
+		createShader(material: Material): Shader // override
+		{
+			return new GeometryPassShader(this, material);
+		}
+	}
+	
+	
 	class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOperator
 	{
 		private fb: GLFramebuffer;
+		
+		private lastJitX: number;
+		private lastJitY: number;
+		private screenVelOffX: number;
+		private screenVelOffY: number;
 		
 		constructor(
 			private parent: GeometryRenderer,
@@ -130,6 +162,15 @@ module Hyper.Renderer
 				]
 			});
 			
+			this.lastJitX = this.lastJitY = 0;
+			this.screenVelOffX = this.screenVelOffY = 0;
+		}
+		
+		setupAdditionalUniforms(mesh: THREE.Mesh, shader: BaseGeometryPassShader): void // override
+		{
+			const shd = <GeometryPassShader>shader;
+			const gl = this.parent.renderer.gl;
+			gl.uniform2f(shd.geoUniforms['u_screenVelOffset'], this.screenVelOffX, this.screenVelOffY);
 		}
 		
 		beforeRender(): void
@@ -141,13 +182,28 @@ module Hyper.Renderer
 			const scene = this.parent.renderer.currentScene;
 			this.fb.bind();
 			
+			// jitter projection matrix for temporal AA
+			const projMat = tmpM;
+			projMat.copy(this.parent.renderer.currentCamera.projectionMatrix);
+			
+			const jitX = (Math.random() - Math.random()) / this.parent.renderer.renderWidth * 2;
+			const jitY = (Math.random() - Math.random()) / this.parent.renderer.renderHeight * 2;
+			for (let i = 0; i < 4; ++i) {
+				projMat.elements[(i << 2)] += projMat.elements[(i << 2) + 3] * jitX;
+				projMat.elements[(i << 2) + 1] += projMat.elements[(i << 2) + 3] * jitY;
+			}
+			this.screenVelOffX = this.lastJitX - jitX;
+			this.screenVelOffY = this.lastJitY - jitY;
+			this.lastJitX = jitX;
+			this.lastJitY = jitY;
+			
 			const gl = this.parent.renderer.gl;
 			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
 			gl.clearColor(0, 0, 0, 0); // TODO: clear with appropriate value!
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
-				this.parent.renderer.currentCamera.projectionMatrix);
+				projMat);
 		}
 		afterRender(): void
 		{
