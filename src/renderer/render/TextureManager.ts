@@ -1,38 +1,37 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="../core/RendererCore.ts" />
+/// <reference path="../utils/Utils.ts" />
 module Hyper.Renderer
 {
 	export class TextureManager
 	{
 		gl: WebGLRenderingContext;
-		private map: TextureMap;
+		private map: Utils.IdWeakMapWithDisposable<THREE.Texture, Texture>;
 		
 		constructor(private core: RendererCore)
 		{
 			this.gl = core.gl;
-			this.map = {};
+			this.map = new Utils.IdWeakMapWithDisposable<THREE.Texture, Texture>();
 		}
 		
 		dispose(): void
 		{
+			this.map.dispose();
 		}
 		
 		get(tex: THREE.Texture): Texture
 		{
-			if (this.map[tex.id] != null) {
-				return this.map[tex.id];
+			let t = this.map.get(tex);
+			if (t == null) {
+				t = new Texture2D(this, tex);
+				this.map.set(tex, t);
 			}
-			
-			return this.map[tex.id] = new Texture2D(this, tex);
+			return t;
 		}
 		
 		flush(tex: THREE.Texture): void
 		{
-			const t = this.map[tex.id];
-			if (t) {
-				this.map[tex.id] = null;
-				t.dispose();
-			}
+			this.map.remove(tex);
 		}
 		
 		internalFormatForTexture(threeTex: THREE.Texture): number
