@@ -149,15 +149,19 @@ module Hyper.Utils
 			return value;
 		}
 		
-		remove(key: K): void
+		remove(key: K): boolean
 		{
 			const item = this.map.get(key.id);
+			if (item == null) {
+				return false;
+			}
 			if (item.key != key) {
 				throw new Error();
 			}
 			this.map.remove(key.id);
 			item.key.removeEventListener('disposed', item.handler);
 			this.disposeValue(item.value);
+			return true;
 		}
 		
 		dispose(): void
