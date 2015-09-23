@@ -6,6 +6,17 @@ declare module Hyper
 		useFullResolutionGBuffer?: boolean;
 	}
 	
+	export class ReflectionProbe extends THREE.Object3D
+	{
+		distance: number;
+		decayDistance: number;
+		priority: number;
+		
+		texture: THREE.CubeTexture;
+		
+		constructor();
+	}
+	
 	export class WebGLHyperRenderer implements THREE.Renderer
 	{
 		constructor(params?: WebGLHyperRendererParameters);

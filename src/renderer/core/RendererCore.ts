@@ -11,6 +11,7 @@
 /// <reference path="../utils/Geometry.ts" />
 /// <reference path="../validator/SRGBValidator.ts" />
 /// <reference path="../render/LightRenderer.ts" />
+/// <reference path="../render/ReflectionRenderer.ts" />
 /// <reference path="../render/HdrDemosaicFilter.ts" />
 /// <reference path="../public/WebGLHyperRenderer.ts" />
 /// <reference path="../postfx/SSAORenderer.ts" />
@@ -50,6 +51,7 @@ module Hyper.Renderer
 		passthroughRenderer: PassThroughRenderer;
 		bufferVisualizer: BufferVisualizer;
 		lightRenderer: LightRenderer;
+		reflectionRenderer: ReflectionRenderer;
 		hdrDemosaic: HdrDemosaicFilterRenderer;
 		toneMapFilter: ToneMappingFilterRenderer;
 		resampler: ResampleFilterRenderer;
@@ -140,6 +142,7 @@ module Hyper.Renderer
 			this.passthroughRenderer = new PassThroughRenderer(this);
 			this.bufferVisualizer = new BufferVisualizer(this);
 			this.lightRenderer = new LightRenderer(this);
+			this.reflectionRenderer = new ReflectionRenderer(this);
 			this.hdrDemosaic = new HdrDemosaicFilterRenderer(this);
 			this.ssaoRenderer = new SSAORenderer(this);
 			this.resampler = new ResampleFilterRenderer(this);
@@ -171,6 +174,7 @@ module Hyper.Renderer
 			this.resampler.dispose();
 			this.ssaoRenderer.dispose();
 			this.hdrDemosaic.dispose();
+			this.reflectionRenderer.dispose();
 			this.lightRenderer.dispose();
 			this.bufferVisualizer.dispose();
 			this.passthroughRenderer.dispose();
@@ -214,7 +218,18 @@ module Hyper.Renderer
 				ssao: ssao.output
 			}, ops);
 			
-			const demosaiced = this.hdrDemosaic.setupFilter(lightBuf.lit, {
+			const reflections = this.reflectionRenderer.setupReflectionPass({
+				g0: gbuffer.g0,
+				g1: gbuffer.g1,
+				g2: gbuffer.g2,
+				g3: gbuffer.g3,	
+				linearDepth: gbuffer.linearDepth,	
+				depth: gbuffer.depth,	
+				ssao: ssao.output,
+				lit: lightBuf.lit
+			}, ops);
+			
+			const demosaiced = this.hdrDemosaic.setupFilter(reflections.lit, {
 				halfSized: false
 			}, ops);
 			

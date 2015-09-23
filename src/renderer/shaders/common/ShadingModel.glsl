@@ -111,7 +111,7 @@ vec3 evaluateUniformLight(
 
 	vec3 diffuse = material.albedo;
 
-	vec3 final = diffuse * diffuseMix + refl;
+	vec3 final = diffuse * diffuseMix;
 	return final * lightColor;
 }
 
