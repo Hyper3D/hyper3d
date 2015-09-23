@@ -30,7 +30,7 @@ float evaluateGGXSpecularDistribution(float nhDot, float roughness)
 	highp float aa = a * a;
 	highp float t = nhDot * nhDot * (aa - 1.) + 1.;
 	return aa /
-		(M_PI * t * t);
+		(t * t);
 }
 
 float evaluateLambertDiffuse(float nlDot)
@@ -44,7 +44,7 @@ float evaluateDisneyPrincipledDiffuse(float nlDot, float nvDot, float hlDot, flo
 	float f1a = 1. - nlDot, f2a = 1. - nvDot;
 	float f1b = f1a * f1a, f2b = f2a * f2a;
 	float f1 = f1a * f1b * f1b, f2 = f2a * f2b * f2b;
-	return (1. / M_PI) * (1. + fd90m1 * f1) * (1. + fd90m1 * f2) * nlDot;
+	return (1. + fd90m1 * f1) * (1. + fd90m1 * f2) * nlDot;
 }
 
 float evaluateSchlickFresnel(float hlDot)
