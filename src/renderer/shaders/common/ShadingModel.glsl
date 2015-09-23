@@ -47,7 +47,7 @@ float evaluateDisneyPrincipledDiffuse(float nlDot, float nvDot, float hlDot, flo
 	return (1. / M_PI) * (1. + fd90m1 * f1) * (1. + fd90m1 * f2) * nlDot;
 }
 
-float evaluateSchlinkFresnel(float hlDot)
+float evaluateSchlickFresnel(float hlDot)
 {
 	float t = 1. - hlDot;
 	float tt = t * t;
@@ -77,7 +77,7 @@ vec3 evaluatePointLight(
 		return vec3(0.);
 	}
 
-	float fresnel = evaluateSchlinkFresnel(params.hlDot);
+	float fresnel = evaluateSchlickFresnel(params.hlDot);
 
 	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
 	vec3 refl = mix(minRefl, vec3(1.), fresnel);
@@ -102,7 +102,7 @@ vec3 evaluateUniformLight(
 	vec3 lightColor)
 {
 	// FIXME: verify this model
-	float fresnel = evaluateSchlinkFresnel(params.nvDot);
+	float fresnel = evaluateSchlickFresnel(params.nvDot);
 
 	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
 	vec3 refl = mix(minRefl, vec3(1.), fresnel);
@@ -120,7 +120,7 @@ vec4 evaluateReflection(
 	MaterialInfo material)
 {
 	// assume h = n now
-	float fresnel = evaluateSchlinkFresnel(nvDot);
+	float fresnel = evaluateSchlickFresnel(nvDot);
 
 	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
 	vec4 refl = vec4(mix(minRefl, vec3(1.), fresnel), 1.);
