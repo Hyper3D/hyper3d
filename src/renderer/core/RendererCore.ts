@@ -46,6 +46,8 @@ module Hyper.Renderer
 		geometryManager: GeometryManager;
 		uniformJitter: JitterTexture;
 		gaussianJitter: JitterTexture;
+		uniformDitherJitter: JitterTexture;
+		gaussianDitherJitter: JitterTexture;
 		quadRenderer: QuadRenderer;
 		shaderManager: ShaderManager;
 		passthroughRenderer: PassThroughRenderer;
@@ -137,6 +139,8 @@ module Hyper.Renderer
 			this.renderBuffers = new RenderBufferManager(this);
 			this.uniformJitter = new UniformJitterTexture(this.gl);
 			this.gaussianJitter = new GaussianJitterTexture(this.gl);
+			this.uniformDitherJitter = new DitherJitterTexture(this.gl);
+			this.gaussianDitherJitter = new GaussianDitherJitterTexture(this.gl);
 			this.geometryRenderer = new GeometryRenderer(this);
 			this.shadowRenderer = new ShadowMapRenderer(this);
 			this.passthroughRenderer = new PassThroughRenderer(this);
@@ -184,6 +188,8 @@ module Hyper.Renderer
 			this.quadRenderer.dispose();
 			this.geometryManager.dispose();
 			this.renderBuffers.dispose();
+			this.uniformDitherJitter.dispose();
+			this.gaussianDitherJitter.dispose();
 			this.uniformJitter.dispose();
 			this.gaussianJitter.dispose();
 			this.shaderManager.dispose();
@@ -279,6 +285,8 @@ module Hyper.Renderer
 			
 			this.uniformJitter.update();
 			this.gaussianJitter.update();
+			this.uniformDitherJitter.update();
+			this.gaussianDitherJitter.update();
 			
 			// compute depth far
 			{

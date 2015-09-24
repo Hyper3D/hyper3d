@@ -275,8 +275,8 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_jitter'], 5);
 				gl.uniform2f(p.uniforms['u_jitterScale'],
-					this.outLit.width / jitter.size / 2,
-					this.outLit.height / jitter.size / 2);
+					this.outLit.width / jitter.size / 4,
+					this.outLit.height / jitter.size / 4);
 				gl.uniform1i(p.uniforms['u_shadowMap'], 6);
 				gl.uniform2f(p.uniforms['u_viewDirOffset'],
 					this.viewVec.offset.x, this.viewVec.offset.y);

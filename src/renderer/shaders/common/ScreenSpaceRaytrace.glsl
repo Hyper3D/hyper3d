@@ -79,7 +79,7 @@ bool rayTraceScreenSpace(
 	const highp float zThickness = .1;
 	highp vec2 p = p0;
 	float stepCount = 0.;
-	const int numMaxSteps = 32;
+	const int numMaxSteps = 8;
 	for (int i = 0; i < numMaxSteps; ++i) {
 		if (((p.x * stepDir) > end) || 
 			((rayZMax > sceneZMax) && (rayZMin < sceneZMax + zThickness)) ||

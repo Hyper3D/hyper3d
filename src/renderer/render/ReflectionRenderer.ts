@@ -451,7 +451,7 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE5);
 			gl.bindTexture(gl.TEXTURE_2D, this.inReflections.texture);
 			gl.activeTexture(gl.TEXTURE6);
-			gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.uniformJitter.texture);
+			gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.uniformDitherJitter.texture);
 			
 			const kernelSize = Math.min(this.out.width, this.out.height) * 0.002;
 			
@@ -470,10 +470,10 @@ module Hyper.Renderer
 				this.viewVec.coefX.x, this.viewVec.coefX.y);
 			gl.uniform2f(p.uniforms['u_viewDirCoefY'],
 				this.viewVec.coefY.x, this.viewVec.coefY.y);
-			gl.uniform1f(p.uniforms['u_stride'], Math.ceil(this.inLinearDepth.height / 80));
+			gl.uniform1f(p.uniforms['u_stride'], Math.ceil(this.inLinearDepth.height / 20));
 			gl.uniform2f(p.uniforms['u_jitterCoordScale'],
-				this.inLinearDepth.width / this.parent.renderer.uniformJitter.size,
-				this.inLinearDepth.height / this.parent.renderer.uniformJitter.size);
+				this.inLinearDepth.width / this.parent.renderer.uniformDitherJitter.size * 0.5,
+				this.inLinearDepth.height / this.parent.renderer.uniformDitherJitter.size * 0.5);
 				
 			tmpM2.makeTranslation(1, 1, 1).multiply(this.parent.renderer.currentCamera.projectionMatrix);
 			tmpM3.makeScale(this.inLinearDepth.width / 2, this.inLinearDepth.height / 2, 0.5).multiply(tmpM2);
