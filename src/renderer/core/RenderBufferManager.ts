@@ -581,17 +581,37 @@ module Hyper.Renderer
 			
 			const parts: string[] = [];
 			parts.push("digraph G {");
-			parts.push(`rankdir="LR";\n`);
+			parts.push(`rankdir="TB";\n`);
 			parts.push("node [shape=none];\n");
 			
+			
+			let nextID = 1;
+			function getID(obj: any)
+			{
+				if (!obj.id) {
+					obj.id = nextID++;
+					
+				}
+				return "n-" + obj.id;
+			}
+			
+			function writeRBI(rb: RenderBufferInfo)
+			{
+				parts.push(`"${getID(rb)}" [ label="${rb.name}", shape=none ];\n`);
+			}
+			
+			// make sure all render buffer info is assigned a ID
 			for (const info of infos) {
-				parts.push(`"${info.name}" [shape=none];\n`);
+				getID(info);
+				writeRBI(info);
 			}
 			
 			for (const op of raw) {
-				parts.push(`"${op.name}" [ label=<<table border="1" cellborder="0" cellpadding="3" bgcolor="white">`);
+				const id = getID(op);
+				parts.push(`"${id}" [ label=<<table border="1" cellborder="0" cellpadding="3" bgcolor="white">`);
 				const inputs: string[] = [];
 				const outputs: string[] = [];
+				
 				for (const key in op.inputs) {
 					inputs.push(key);
 				}
@@ -620,12 +640,12 @@ module Hyper.Renderer
 				for (const key of inputs) {
 					const conn = op.inputs[key];
 					if (!conn) continue;
-					parts.push(`"${conn.name}" -> "${op.name}":"in-${key}";\n`);
+					parts.push(`"${getID(conn)}" -> "${id}":"in-${key}";\n`);
 				}
 				for (const key of outputs) {
 					const conn = op.outputs[key];
 					if (!conn) continue;
-					parts.push(`"${op.name}":"out-${key}" -> "${conn.name}";\n`);
+					parts.push(`"${id}":"out-${key}" -> "${getID(conn)}";\n`);
 				}
 			}
 			parts.push("}");
