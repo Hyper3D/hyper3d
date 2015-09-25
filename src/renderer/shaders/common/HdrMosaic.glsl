@@ -1,5 +1,6 @@
 const float HdrMosaicLevel1 = 1. / 8.;
 const float HdrMosaicLevel2 = 2.;
+const float HdrMosaicMaximumLevel = 1. / HdrMosaicLevel1;
 
 float hdrMosaicMode(highp vec2 fragCoord) {
 	return step(fract(dot(floor(fragCoord.xy), vec2(0.5))), 0.25);
