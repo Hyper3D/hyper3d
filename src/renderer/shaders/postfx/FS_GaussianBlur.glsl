@@ -41,7 +41,7 @@ uniform float u_weight11;
 #endif
 
 vec4 outp = vec4(0.);
-highp vec2 coord = v_texCoord;
+highp vec2 coord;
 
 void addOne(float weight)
 {
@@ -51,6 +51,7 @@ void addOne(float weight)
 
 void main()
 {
+	coord = v_texCoord;
 #if c_kernelSize >= 1
 	addOne(u_weight1);
 #endif
