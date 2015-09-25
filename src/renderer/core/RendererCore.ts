@@ -18,6 +18,7 @@
 /// <reference path="../postfx/ResampleFilter.ts" />
 /// <reference path="../postfx/ToneMappingFilter.ts" />
 /// <reference path="../postfx/TemporalAAFilter.ts" />
+/// <reference path="../postfx/BloomFilter.ts" />
 module Hyper.Renderer
 {
 	
@@ -59,6 +60,7 @@ module Hyper.Renderer
 		resampler: ResampleFilterRenderer;
 		ssaoRenderer: SSAORenderer;
 		temporalAA: TemporalAAFilterRenderer;
+		bloom: BloomFilterRenderer;
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
@@ -152,6 +154,7 @@ module Hyper.Renderer
 			this.resampler = new ResampleFilterRenderer(this);
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
 			this.temporalAA = new TemporalAAFilterRenderer(this);
+			this.bloom = new BloomFilterRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -173,6 +176,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.bloom.dispose();
 			this.temporalAA.dispose();
 			this.toneMapFilter.dispose();
 			this.resampler.dispose();
@@ -235,9 +239,11 @@ module Hyper.Renderer
 				lit: lightBuf.lit
 			}, ops);
 			
-			const demosaiced = this.hdrDemosaic.setupFilter(reflections.lit, {
+			let demosaiced = this.hdrDemosaic.setupFilter(reflections.lit, {
 				halfSized: false
 			}, ops);
+			
+			demosaiced = this.bloom.setupFilter(demosaiced, ops);
 			
 			let toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
 			
@@ -464,20 +470,45 @@ module Hyper.Renderer
 	
 	class PassThroughRenderer
 	{
-		private passthroughProgram: GLProgram;
-		private passthroughUniforms: GLProgramUniforms;
-		private passthroughAttrs: GLProgramAttributes;
+		private normal: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attrs: GLProgramAttributes;
+		};
+		private modulated: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attrs: GLProgramAttributes;
+		};
 		
 		constructor(private core: RendererCore)
 		{
 			const gl = core.gl;
-			this.passthroughProgram = core.shaderManager.get('VS_Passthrough', 'FS_Passthrough', [
-				'a_position'
-			]);
-			this.passthroughUniforms = this.passthroughProgram.getUniforms(['u_uvScale', 'u_texture']);
-			this.passthroughAttrs = this.passthroughProgram.getAttributes([
-				"a_position"
-			]);
+			
+			{
+				const p = core.shaderManager.get('VS_Passthrough', 'FS_Passthrough', [
+					'a_position'
+				]);
+				this.normal = {
+					program: p,
+					uniforms: p.getUniforms(['u_uvScale', 'u_texture']),
+					attrs: p.getAttributes([
+						"a_position"
+					])
+				};
+			}
+			{
+				const p = core.shaderManager.get('VS_Passthrough', 'FS_PassthroughModulated', [
+					'a_position'
+				]);
+				this.modulated = {
+					program: p,
+					uniforms: p.getUniforms(['u_uvScale', 'u_texture', 'u_modulation']),
+					attrs: p.getAttributes([
+						"a_position"
+					])
+				};
+			}
 		}
 		
 		dispose(): void
@@ -486,10 +517,22 @@ module Hyper.Renderer
 		render(): void
 		{
 			const gl = this.core.gl;
-			this.passthroughProgram.use();
-			gl.uniform4f(this.passthroughUniforms['u_uvScale'], 0.5, 0.5, 0.5, 0.5);
-			gl.uniform1i(this.passthroughUniforms['u_texture'], 0);
-			this.core.quadRenderer.render(this.passthroughAttrs['a_position']);
+			const p = this.normal;
+			p.program.use();
+			gl.uniform4f(p.uniforms['u_uvScale'], 0.5, 0.5, 0.5, 0.5);
+			gl.uniform1i(p.uniforms['u_texture'], 0);
+			this.core.quadRenderer.render(p.attrs['a_position']);
+		}
+		
+		renderModulated(r: number, g: number, b: number, a: number): void
+		{
+			const gl = this.core.gl;
+			const p = this.modulated;
+			p.program.use();
+			gl.uniform4f(p.uniforms['u_uvScale'], 0.5, 0.5, 0.5, 0.5);
+			gl.uniform1i(p.uniforms['u_texture'], 0);
+			gl.uniform4f(p.uniforms['u_modulation'], r, g, b, a);
+			this.core.quadRenderer.render(p.attrs['a_position']);
 		}
 	}
 	

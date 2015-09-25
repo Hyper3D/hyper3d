@@ -167,9 +167,14 @@ module Hyper.Renderer
 			throw new Error("not implemented");
 		}
 		
+		// TODO: refactor these and toString
 		get name(): string
 		{
 			return this.name_ + ": " + this.toString();
+		}
+		set name(newName: string)
+		{
+			this.name_ = newName;
 		}
 		
 		// initialize these values in the derived class constructor. 
