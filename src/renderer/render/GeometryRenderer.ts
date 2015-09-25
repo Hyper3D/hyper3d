@@ -199,7 +199,7 @@ module Hyper.Renderer
 			
 			const gl = this.parent.renderer.gl;
 			gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
-			gl.clearColor(0, 0, 0, 0); // TODO: clear with appropriate value!
+			gl.clearColor(0.5, 0.5, 0.5, 0.5); // this should be safe value
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 			this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
