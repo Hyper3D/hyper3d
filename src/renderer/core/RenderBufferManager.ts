@@ -197,8 +197,9 @@ module Hyper.Renderer
 			// fallback
 			switch (this.format) {
 				case TextureRenderBufferFormat.R8:
-					// R8 format is not supported by WebGL for now.
-					// fall back to RGBA8 at cost of additional memory usage.
+				case TextureRenderBufferFormat.R8G8:
+					// these formats are not supported by WebGL for now.
+					// fall back to RGBA8 at cost of additional memory usage & bandwidth.
 					this.format = TextureRenderBufferFormat.RGBA8;
 					break;
 			}
@@ -286,7 +287,8 @@ module Hyper.Renderer
 		RGBA8,
 		SRGBA8,
 		RGBAF16,
-		R8
+		R8,
+		R8G8
 	}
 	
 	// Realized render buffers.

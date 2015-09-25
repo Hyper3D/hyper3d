@@ -19,6 +19,7 @@
 /// <reference path="../postfx/ToneMappingFilter.ts" />
 /// <reference path="../postfx/TemporalAAFilter.ts" />
 /// <reference path="../postfx/BloomFilter.ts" />
+/// <reference path="../postfx/MotionBlurFilter.ts" />
 module Hyper.Renderer
 {
 	
@@ -61,6 +62,7 @@ module Hyper.Renderer
 		ssaoRenderer: SSAORenderer;
 		temporalAA: TemporalAAFilterRenderer;
 		bloom: BloomFilterRenderer;
+		motionBlur: MotionBlurFilterRenderer;
 		
 		currentScene: THREE.Scene;
 		currentCamera: THREE.Camera;
@@ -155,6 +157,7 @@ module Hyper.Renderer
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
 			this.temporalAA = new TemporalAAFilterRenderer(this);
 			this.bloom = new BloomFilterRenderer(this);
+			this.motionBlur = new MotionBlurFilterRenderer(this);
 			
 			this.compilePipeline();
 		}
@@ -176,6 +179,7 @@ module Hyper.Renderer
 		
 		dispose(): void
 		{
+			this.motionBlur.dispose();
 			this.bloom.dispose();
 			this.temporalAA.dispose();
 			this.toneMapFilter.dispose();
@@ -241,6 +245,15 @@ module Hyper.Renderer
 			
 			let demosaiced = this.hdrDemosaic.setupFilter(reflections.lit, {
 				halfSized: false
+			}, ops);
+			
+			demosaiced = this.motionBlur.setupFilter({
+				color: demosaiced,
+				g0: gbuffer.g0,
+				g1: gbuffer.g1,
+				linearDepth: gbuffer.linearDepth
+			}, {
+				maxBlur: Math.max(this.renderWidth, this.renderHeight) / 50
 			}, ops);
 			
 			demosaiced = this.bloom.setupFilter(demosaiced, ops);
