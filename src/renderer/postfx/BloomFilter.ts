@@ -24,7 +24,7 @@ module Hyper.Renderer
 		constructor(public renderer: RendererCore)
 		{
 			this.params = {
-				amount: 0.2,
+				amount: 0.5,
 				saturation: 1
 			};
 			
@@ -58,7 +58,7 @@ module Hyper.Renderer
 				factory: (cfg) => new BloomDownsampleRenderer(this,
 					<TextureRenderBuffer> cfg.inputs['input'],
 					<TextureRenderBuffer> cfg.outputs['output'],
-					1 / 16)
+					1 / 32)
 			});
 			
 			const levels: TextureRenderBufferInfo[] = [];
@@ -79,7 +79,7 @@ module Hyper.Renderer
 					prev = ds;
 					continue;
 				}
-				const lp = this.blurFlt.setupFilter(ds, 2, ops);
+				const lp = this.blurFlt.setupFilter(ds, 1, ops);
 				lp.name = `Bloom 1/${size} LPFed`;
 				levels.push(lp);
 				prev = lp;
