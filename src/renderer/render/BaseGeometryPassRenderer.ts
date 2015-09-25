@@ -104,7 +104,7 @@ module Hyper.Renderer
 				
 			if (lobj) {
 				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
-					lobj.lastViewModelMatrix.elements);
+					lobj.lastModelMatrix.elements);
 			} else {
 				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
 					mesh.matrixWorld.elements);
@@ -142,17 +142,17 @@ module Hyper.Renderer
 	class BaseGeometryPassRendererObject
 	{
 		token: boolean;
-		lastViewModelMatrix: THREE.Matrix4;
+		lastModelMatrix: THREE.Matrix4;
 		
 		constructor(private obj: THREE.Object3D)
 		{
 			this.token = false;
-			this.lastViewModelMatrix = obj.matrixWorld.clone();
+			this.lastModelMatrix = obj.matrixWorld.clone();
 		}
 		
 		save(token: boolean): void
 		{
-			this.lastViewModelMatrix.copy(this.obj.matrixWorld);
+			this.lastModelMatrix.copy(this.obj.matrixWorld);
 			this.token = token;
 		}
 		
