@@ -8,7 +8,6 @@
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
-uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 uniform sampler2D u_ssao;
 
@@ -19,12 +18,19 @@ uniform samplerCube u_reflection;
 
 uniform mat4 u_reflectionMatrix;
 
+uniform sampler2D u_dither;
+varying highp vec2 v_ditherCoord;
+
 // to be provided by derived shader
 float evaluateWeight(vec3 viewPos);
 
 void emitIBLOutput(vec3 lit, float weight)
 {
-	vec4 mosaicked = encodeHdrMosaic(lit);
+
+	// dither
+	vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
+
+	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
 	gl_FragColor = mosaicked;
 
 #if c_isBlendPass
@@ -37,7 +43,7 @@ void main()
 	vec4 g0 = texture2D(u_g0, v_texCoord);
 	vec4 g1 = texture2D(u_g1, v_texCoord);
 	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = texture2D(u_g3, v_texCoord);
+	vec4 g3 = vec4(0.);
 
 	if (isGBufferEmpty(g0, g1, g2, g3)) {
 		discard;

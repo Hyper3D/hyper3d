@@ -5,6 +5,9 @@ uniform vec2 u_viewDirCoefX;
 uniform vec2 u_viewDirCoefY;
 uniform vec2 u_viewDirOffset;
 
+uniform vec2 u_ditherScale;
+varying vec2 v_ditherCoord;
+
 void main()
 {
 	gl_Position = vec4(a_position, 1., 1.);
@@ -13,4 +16,6 @@ void main()
 	v_viewDir = u_viewDirOffset;
 	v_viewDir += u_viewDirCoefX * a_position.x;
 	v_viewDir += u_viewDirCoefY * a_position.y;
+	
+	v_ditherCoord.xy = u_ditherScale * a_position;
 }

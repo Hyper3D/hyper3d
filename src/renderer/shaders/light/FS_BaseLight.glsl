@@ -2,6 +2,9 @@
 
 #pragma require HdrMosaic
 
+uniform sampler2D u_dither;
+varying highp vec2 v_ditherCoord;
+
 void emitLightPassOutput(vec3 lit)
 {
 	float lum = max(max(lit.x, lit.y), lit.z);
@@ -12,6 +15,9 @@ void emitLightPassOutput(vec3 lit)
 		lit *= lumLimit / lum;
 	}
 
-	vec4 mosaicked = encodeHdrMosaic(lit);
+	// dither
+	vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
+
+	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
 	gl_FragColor = mosaicked;
 }

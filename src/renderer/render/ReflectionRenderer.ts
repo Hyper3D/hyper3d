@@ -186,8 +186,9 @@ module Hyper.Renderer
 				this.ambientProgram.push({
 					program,
 					uniforms: program.getUniforms([
-						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth', 'u_ssao', 'u_reflection',
-						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset', 'u_reflectionMatrix'
+						'u_g0', 'u_g1', 'u_g2', 'u_linearDepth', 'u_ssao', 'u_reflection',
+						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset', 'u_reflectionMatrix',
+						'u_dither', 'u_ditherScale'
 					]),
 					attributes: program.getAttributes(['a_position'])
 				});
@@ -224,6 +225,8 @@ module Hyper.Renderer
 			gl.clearColor(0, 0, 0, 0);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			
+			const jitter = this.parent.renderer.uniformJitter;
+			
 			// bind G-Buffer
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.inG0.texture);
@@ -232,7 +235,7 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE2);
 			gl.bindTexture(gl.TEXTURE_2D, this.inG2.texture);
 			gl.activeTexture(gl.TEXTURE3);
-			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture); // FIXME: not needed in dynamic light pass
+			gl.bindTexture(gl.TEXTURE_2D, jitter.texture);
 			gl.activeTexture(gl.TEXTURE4);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
 			gl.activeTexture(gl.TEXTURE5);
@@ -245,7 +248,7 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g0'], 0);
 				gl.uniform1i(p.uniforms['u_g1'], 1);
 				gl.uniform1i(p.uniforms['u_g2'], 2);
-				gl.uniform1i(p.uniforms['u_g3'], 3);
+				gl.uniform1i(p.uniforms['u_dither'], 3);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_ssao'], 5);
 				gl.uniform1i(p.uniforms['u_reflection'], 6);
@@ -255,6 +258,9 @@ module Hyper.Renderer
 					this.viewVec.coefX.x, this.viewVec.coefX.y);
 				gl.uniform2f(p.uniforms['u_viewDirCoefY'],
 					this.viewVec.coefY.x, this.viewVec.coefY.y);
+				gl.uniform2f(p.uniforms['u_ditherScale'],
+					this.outLit.width / jitter.size / 4,
+					this.outLit.height / jitter.size / 4);
 			}
 			
 			// traverse scene

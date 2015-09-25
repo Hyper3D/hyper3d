@@ -158,11 +158,12 @@ module Hyper.Renderer
 				this.directionalLightProgram.push({
 					program,
 					uniforms: program.getUniforms([
-						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth',
+						'u_g0', 'u_g1', 'u_g2', 'u_linearDepth',
 						'u_lightDir', 'u_lightColor', 
 						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
 						'u_shadowMap', 'u_shadowMapMatrix', 
-						'u_jitter', 'u_jitterScale', 'u_jitterAmount'
+						'u_jitter', 'u_jitterScale', 'u_jitterAmount',
+						'u_dither', 'u_ditherScale'
 					]),
 					attributes: program.getAttributes(['a_position'])
 				});
@@ -173,9 +174,11 @@ module Hyper.Renderer
 				this.ambientLightProgram = {
 					program,
 					uniforms: program.getUniforms([
-						'u_g0', 'u_g1', 'u_g2', 'u_g3', 'u_linearDepth', 'u_ssao',
+						'u_g0', 'u_g1', 'u_g2', 'u_linearDepth', 'u_ssao',
 						'u_lightColor', 
-						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset'
+						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
+						
+						'u_dither', 'u_ditherScale'
 					]),
 					attributes: program.getAttributes(['a_position'])
 				};
@@ -256,7 +259,7 @@ module Hyper.Renderer
 			gl.activeTexture(gl.TEXTURE2);
 			gl.bindTexture(gl.TEXTURE_2D, this.inG2.texture);
 			gl.activeTexture(gl.TEXTURE3);
-			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture); // FIXME: not needed in dynamic light pass
+			gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.uniformJitter.texture);
 			gl.activeTexture(gl.TEXTURE4);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
 			// TEXTURE5: (none)
@@ -271,12 +274,13 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g0'], 0);
 				gl.uniform1i(p.uniforms['u_g1'], 1);
 				gl.uniform1i(p.uniforms['u_g2'], 2);
-				gl.uniform1i(p.uniforms['u_g3'], 3);
-				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
-				gl.uniform1i(p.uniforms['u_jitter'], 5);
-				gl.uniform2f(p.uniforms['u_jitterScale'],
+				gl.uniform1i(p.uniforms['u_dither'], 3);
+				gl.uniform2f(p.uniforms['u_ditherScale'],
 					this.outLit.width / jitter.size / 4,
 					this.outLit.height / jitter.size / 4);
+				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
+				gl.uniform1i(p.uniforms['u_jitter'], 5);
+				// u_jitterScale == u_ditherScale
 				gl.uniform1i(p.uniforms['u_shadowMap'], 6);
 				gl.uniform2f(p.uniforms['u_viewDirOffset'],
 					this.viewVec.offset.x, this.viewVec.offset.y);
@@ -291,7 +295,10 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g0'], 0);
 				gl.uniform1i(p.uniforms['u_g1'], 1);
 				gl.uniform1i(p.uniforms['u_g2'], 2);
-				gl.uniform1i(p.uniforms['u_g3'], 3);
+				gl.uniform1i(p.uniforms['u_dither'], 3);
+				gl.uniform2f(p.uniforms['u_ditherScale'],
+					this.outLit.width / jitter.size / 4,
+					this.outLit.height / jitter.size / 4);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_ssao'], 5);
 				gl.uniform2f(p.uniforms['u_viewDirOffset'],

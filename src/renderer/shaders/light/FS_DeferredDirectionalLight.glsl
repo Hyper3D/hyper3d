@@ -8,7 +8,6 @@
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
-uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 
 uniform vec3 u_lightDir;
@@ -20,11 +19,11 @@ varying mediump vec2 v_viewDir;
 #if c_hasShadowMap
 uniform sampler2D u_shadowMap;
 uniform mat4 u_shadowMapMatrix;
+uniform vec2 u_jitterAmount;
+#endif
 
 uniform sampler2D u_jitter;
-uniform vec2 u_jitterAmount;
-varying highp vec4 v_jitterCoord;
-#endif
+varying highp vec2 v_jitterCoord;
 
 #if c_hasShadowMap
 float shadowTexture2D(sampler2D tex, highp vec3 coord)
@@ -45,8 +44,8 @@ void main()
 	shadowCoord.z -= 0.002;
 	
 	float shadowValue = 0.;
-	vec4 jitter1 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
-	vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.zw) - 0.5;
+	vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
+	vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
 
 	jitter1 *= u_jitterAmount.xyxy;
 	jitter2 *= u_jitterAmount.xyxy;
@@ -67,7 +66,7 @@ void main()
 	vec4 g0 = texture2D(u_g0, v_texCoord);
 	vec4 g1 = texture2D(u_g1, v_texCoord);
 	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = texture2D(u_g3, v_texCoord);
+	vec4 g3 = vec4(0.);
 
 	if (isGBufferEmpty(g0, g1, g2, g3)) {
 		discard;
@@ -86,6 +85,6 @@ void main()
 #if c_hasShadowMap
 	lit *= shadowValue;
 #endif
-
+	
 	emitLightPassOutput(lit);
 }

@@ -5,7 +5,6 @@
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
-uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 uniform sampler2D u_ssao;
 
@@ -19,7 +18,7 @@ void main()
 	vec4 g0 = texture2D(u_g0, v_texCoord);
 	vec4 g1 = texture2D(u_g1, v_texCoord);
 	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = texture2D(u_g3, v_texCoord);
+	vec4 g3 = vec4(0.);
 
 	if (isGBufferEmpty(g0, g1, g2, g3)) {
 		discard;
