@@ -436,7 +436,7 @@ module Hyper.Renderer
 		}
 	}
 	
-	const importedMaterialsCache = new Utils.IntegerMap<MaterialInstance>();
+	const importedMaterialsCache = new Utils.IdWeakMapWithDisposable<THREE.Material, MaterialInstance>();
 	
 	function importThreeJsMaterial(mat: THREE.Material): MaterialInstance
 	{
@@ -449,8 +449,10 @@ module Hyper.Renderer
 				color.b * color.b	
 			];
 		}
-		if (importedMaterialsCache.get(mat.id)) {
-			return importedMaterialsCache.get(mat.id);
+		
+		let inst = importedMaterialsCache.get(mat);
+		if (inst) {
+			return inst;
 		}
 		
 		if (mat instanceof THREE.MeshPhongMaterial) {
@@ -461,7 +463,7 @@ module Hyper.Renderer
 				hasSpecularMap: mat.specularMap != null
 			});
 			
-			const inst = new ImportedMaterialInstance(hMat, mat);
+			inst = new ImportedMaterialInstance(hMat, mat);
 			inst.parameters['color'] = importColor(mat.color);
 			inst.parameters['emissive'] = importColor(mat.emissive);
 			inst.parameters['specular'] = Math.max(mat.specular.r, mat.specular.g, mat.specular.b);
@@ -482,11 +484,7 @@ module Hyper.Renderer
 				inst.parameters['specularMap'] = mat.specularMap;
 			}
 			
-			importedMaterialsCache.set(mat.id, inst);
-			
-			inst.addEventListener('disposed', () => {
-				importedMaterialsCache.remove(mat.id);
-			});
+			importedMaterialsCache.set(mat, inst);
 			
 			return inst;
 		} else if (mat instanceof MaterialInstance) {
