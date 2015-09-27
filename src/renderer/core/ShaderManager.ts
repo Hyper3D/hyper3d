@@ -1,6 +1,7 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="RendererCore.ts" />
 /// <reference path="GLProgram.ts" />
+/// <reference path="../utils/Utils.ts" />
 module Hyper.Renderer
 {
 	export interface GlobalUniform
@@ -9,7 +10,109 @@ module Hyper.Renderer
 		value: any;
 	}
 	
-	export class ShaderManager
+	export interface GlobalShaderUniformSubscriber
+	{
+		updateGlobalUniforms(): void;
+	}
+	
+	export interface ShaderManager extends IDisposable
+	{
+		/** Read-only. */
+		globalParameters: any;
+		
+		/** Sets the preprocessor constant value used by all shaders. Its name is prefixed by 'c_'. */
+		setGlobalParameter(name: string, value: any): void;
+		
+		/** Sets the uniform value used by all shaders. Its name is prefixed by 'u_'. */
+		setGlobalUniform(name: string, value: any): void;
+		
+		subscribeGlobalUniforms(program: GLProgram): GlobalShaderUniformSubscriber;
+		
+		/** 
+		 * Gets GLProgram for the specified combination of shaders.
+		 * Do not dispose the returned GLProgram.
+		 */
+		get(vert: string, frag: string, attributes: string[], parameters?: any): GLProgram;
+	}
+	
+	interface GlobalUniformMapping
+	{
+		index: WebGLUniformLocation;
+		unif: GlobalUniform;
+	}
+	
+	class GlobalShaderUniformSubscriberImpl
+	{
+		private lastGlobalUniformVersion: any;
+		private lastGlobalUniformStructureVersion: any;
+		private globalUniforms: GlobalUniformMapping[];
+		
+		constructor(private program: GLProgram, private manager: ShaderManagerImpl)
+		{
+			this.lastGlobalUniformStructureVersion = null;
+			this.lastGlobalUniformVersion = null;
+			this.globalUniforms = null;
+		}
+		
+		updateGlobalUniforms(): void
+		{
+			const sm = this.manager;
+			if (sm.globalUniformVersion === this.lastGlobalUniformVersion) {
+				return;
+			}
+			this.lastGlobalUniformVersion = sm.globalUniformVersion;
+			
+			if (sm.globalUniformStructureVersion != this.lastGlobalUniformStructureVersion) {
+				this.lastGlobalUniformStructureVersion = sm.globalUniformStructureVersion;
+				const locs = this.program.getUniforms(sm.globalUniforms.map((u) => 'u_' + u.name));
+				const mapping: GlobalUniformMapping[] = [];
+				for (const unif of sm.globalUniforms) {
+					let loc = locs['u_' + unif.name];
+					if (loc != null) {
+						mapping.push({
+							index: loc,
+							unif: unif
+						});
+					}
+				}	
+				this.globalUniforms = mapping;
+			}
+			
+			const gl = this.manager.core.gl;
+			for (const mapping of this.globalUniforms) {
+				const value = mapping.unif.value;
+				
+				if (value instanceof Array) {
+					switch (value.length) {
+						case 1:
+							gl.uniform1f(mapping.index, value[0]);
+							break;
+						case 2:
+							gl.uniform2f(mapping.index, value[0], value[1]);
+							break;
+						case 3:
+							gl.uniform3f(mapping.index, value[0], value[1], value[2]);
+							break;
+						case 4:
+							gl.uniform4f(mapping.index, value[0], value[1], value[2], value[3]);
+							break;
+						default:
+							throw new Error();
+					}
+				} else {
+					// FIXME: check number
+					gl.uniform1f(mapping.index, value);
+				}
+			}
+		}
+	}
+	
+	export function createShaderManager(core: RendererCore): ShaderManager
+	{
+		return new ShaderManagerImpl(core);
+	}
+	
+	class ShaderManagerImpl implements ShaderManager
 	{
 		private programs: ProgramTable;
 		private frags: ShaderTable;
@@ -27,7 +130,7 @@ module Hyper.Renderer
 		/** do not modify */
 		globalUniformMap: any;
 		
-		constructor(private core: RendererCore)
+		constructor(public core: RendererCore)
 		{
 			this.programs = {};
 			this.frags = {};
@@ -44,13 +147,16 @@ module Hyper.Renderer
 			
 		}
 		
-		/** Sets the preprocessor constant value used by all shaders. Its name is prefixed by 'c_'. */
+		subscribeGlobalUniforms(program: GLProgram): GlobalShaderUniformSubscriber
+		{
+			return new GlobalShaderUniformSubscriberImpl(program, this);
+		}
+		
 		setGlobalParameter(name: string, value: any): void
 		{
 			this.globalParameters[name] = value;
 		}
 		
-		/** Sets the uniform value used by all shaders. Its name is prefixed by 'u_'. */
 		setGlobalUniform(name: string, value: any): void
 		{
 			if (value == null) {

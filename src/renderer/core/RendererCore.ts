@@ -117,7 +117,7 @@ module Hyper.Renderer
 		
 		setup(): void
 		{
-			this.shaderManager = new ShaderManager(this);
+			this.shaderManager = createShaderManager(this);
 			this.vertexAttribs = new VertexAttribState(this.gl);
 			this.state = new GLState(this.gl);
 			

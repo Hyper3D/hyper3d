@@ -17,26 +17,20 @@ module Hyper.Renderer
 		[name: string]: Function;
 	}
 	
-	interface GlobalUniformMapping
-	{
-		index: WebGLUniformLocation;
-		unif: GlobalUniform;
-	}
-	
 	export class GLProgram implements IDisposable
 	{
 		private gl: WebGLRenderingContext;
 		private linked: boolean;
+		
+		private globalUniformSubscriber: GlobalShaderUniformSubscriber;
 		
 		constructor(private core: RendererCore, public program: WebGLProgram)
 		{
 			this.attrLocs = {};
 			this.nextAttrLoc = 0;
 			this.gl = core.gl;
-			this.lastGlobalUniformStructureVersion = null;
-			this.lastGlobalUniformVersion = null;
-			this.globalUniforms = null;
 			this.linked = false;
+			this.globalUniformSubscriber = core.shaderManager.subscribeGlobalUniforms(this);
 		}
 		
 		dispose(): void
@@ -49,7 +43,7 @@ module Hyper.Renderer
 			if (!this.linked)
 				this.link();
 			this.gl.useProgram(this.program);
-			this.updateGlobalUniforms();
+			this.globalUniformSubscriber.updateGlobalUniforms();
 		}
 		
 		private link(): void
@@ -70,61 +64,6 @@ module Hyper.Renderer
 			}
 			
 			this.linked = true;
-		}
-		
-		private lastGlobalUniformVersion: any;
-		private lastGlobalUniformStructureVersion: any;
-		private globalUniforms: GlobalUniformMapping[];
-		private updateGlobalUniforms(): void
-		{
-			const sm = this.core.shaderManager;
-			if (sm.globalUniformVersion === this.lastGlobalUniformVersion) {
-				return;
-			}
-			this.lastGlobalUniformVersion = sm.globalUniformVersion;
-			
-			if (sm.globalUniformStructureVersion != this.lastGlobalUniformStructureVersion) {
-				this.lastGlobalUniformStructureVersion = sm.globalUniformStructureVersion;
-				const locs = this.getUniforms(sm.globalUniforms.map((u) => 'u_' + u.name));
-				const mapping: GlobalUniformMapping[] = [];
-				for (const unif of sm.globalUniforms) {
-					let loc = locs['u_' + unif.name];
-					if (loc != null) {
-						mapping.push({
-							index: loc,
-							unif: unif
-						});
-					}
-				}	
-				this.globalUniforms = mapping;
-			}
-			
-			const gl = this.gl;
-			for (const mapping of this.globalUniforms) {
-				const value = mapping.unif.value;
-				
-				if (value instanceof Array) {
-					switch (value.length) {
-						case 1:
-							gl.uniform1f(mapping.index, value[0]);
-							break;
-						case 2:
-							gl.uniform2f(mapping.index, value[0], value[1]);
-							break;
-						case 3:
-							gl.uniform3f(mapping.index, value[0], value[1], value[2]);
-							break;
-						case 4:
-							gl.uniform4f(mapping.index, value[0], value[1], value[2], value[3]);
-							break;
-						default:
-							throw new Error();
-					}
-				} else {
-					// FIXME: check number
-					gl.uniform1f(mapping.index, value);
-				}
-			}
 		}
 		
 		// leaving attribute 0 unused has "significant performance penalty", so
