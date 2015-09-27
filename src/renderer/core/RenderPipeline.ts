@@ -1,6 +1,7 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="../utils/Utils.ts" />
 /// <reference path="RendererCore.ts" />
+/// <reference path="../utils/Map.ts" />
 module Hyper.Renderer
 {
 	
@@ -311,98 +312,17 @@ module Hyper.Renderer
 	}
 	
 	/** Map whose equivalence is defined with `RenderBufferInfo#canMergeWith`. */
-	class RenderBufferInfoMap<T>
+	class RenderBufferInfoMap<T> extends Map<RenderBufferInfo, T>
 	{
-		table: RenderBufferInfoMapRootNode<T>[];
-		first: RenderBufferInfoMapRootNode<T>;
-		
-		constructor()
+		computeHash(key: RenderBufferInfo): number
 		{
-			this.table = [];
-			this.first = null;
+			return key.hash;
 		}
 		
-		private find(key: RenderBufferInfo, create: boolean): RenderBufferInfoMapNode<T>
+		equals(key1: RenderBufferInfo, key2: RenderBufferInfo): boolean
 		{
-			let rootNode = this.table[key.hash];
-			let node = rootNode ? rootNode.items : null;
-			const first = node;
-			while (node) {
-				if (node.key.canMergeWith(key)) {
-					return node;
-				}
-				node = node.next;
-			}
-			if (create) {
-				node = {
-					next: first,
-					key: key,
-					value: null
-				};
-				if (rootNode) {
-					rootNode.items = node;
-				} else {
-					rootNode = {
-						prev: null,
-						next: null,
-						items: node	
-					};
-					if (this.first) {
-						rootNode.prev = this.first.prev;
-						rootNode.next = this.first;
-						rootNode.prev.next = rootNode;
-						rootNode.next.prev = rootNode;
-					} else {
-						this.first = rootNode.next = rootNode.prev = rootNode;
-					}
-				}
-				this.table[key.hash] = rootNode;
-				return node;
-			}
-			return null;
+			return key1.canMergeWith(key2);
 		}
-		
-		set(key: RenderBufferInfo, value: T): void
-		{
-			this.find(key, true).value = value;
-		}
-		get(key: RenderBufferInfo): T
-		{
-			const v = this.find(key, false);
-			if (v != null) {
-				return v.value;
-			} else {
-				return null;
-			}
-		}
-		each(cb: (key: RenderBufferInfo, value: T) => void): void {
-			let rootNode = this.first;
-			if (rootNode) {
-				do {
-					let items = rootNode.items;
-					while (items) {
-						cb(items.key, items.value);
-						items = items.next;
-					}
-					rootNode = rootNode.next;
-				} while (rootNode != this.first);
-			}
-		}
-	}
-	interface RenderBufferInfoMapRootNode<T>
-	{
-		// circular doubly linked list
-		prev: RenderBufferInfoMapRootNode<T>;
-		next: RenderBufferInfoMapRootNode<T>;
-		
-		// singly linked list
-		items: RenderBufferInfoMapNode<T>;
-	}
-	interface RenderBufferInfoMapNode<T>
-	{
-		next: RenderBufferInfoMapNode<T>;
-		key: RenderBufferInfo;
-		value: T;
 	}
 	
 	interface RenderBufferAllocation
@@ -1079,7 +999,7 @@ module Hyper.Renderer
 					phase.inputs.map((a)=>`${a.info}[${a.index}]`).join(', ') + ")");
 			}
 			let ttlCost = 0;
-			allocMap.each((info, allocMapEntry) => {
+			allocMap.forEach((info, allocMapEntry) => {
 				console.log(`${allocMapEntry.info.toString()} (cost=${allocMapEntry.info.cost}) x ${allocMapEntry.maxNumAllocated} = ` +
 					`${allocMapEntry.maxNumAllocated * allocMapEntry.info.cost}`);
 				ttlCost += allocMapEntry.maxNumAllocated * allocMapEntry.info.cost;
@@ -1088,7 +1008,7 @@ module Hyper.Renderer
 			
 			// realize buffers.
 			// first, delet unneeded buffers
-			this.renderBuffers.each((info, buffer) => {
+			this.renderBuffers.forEach((info, buffer) => {
 				const allocMapEntry = allocMap.get(info);
 				const requiredCount = allocMapEntry ? allocMapEntry.maxNumAllocated : 0;
 				const buffers = buffer.renderBuffers;
@@ -1099,7 +1019,7 @@ module Hyper.Renderer
 			});
 			
 			const newRenderBuffers = new RenderBufferInfoMap<RealizedRenderBufferGroup>();
-			allocMap.each((info, allocMapEntry) => {
+			allocMap.forEach((info, allocMapEntry) => {
 				const existingRenderBufferEntry = this.renderBuffers.get(info);
 				const existingBuffers = existingRenderBufferEntry ? existingRenderBufferEntry.renderBuffers : [];
 				const requiredCount = allocMapEntry.maxNumAllocated;
@@ -1147,7 +1067,7 @@ module Hyper.Renderer
 		releaseAll(): void
 		{
 			// FIXME: we really don't have to release non-image buffers when window was resized
-			this.renderBuffers.each((info, buffer) => {
+			this.renderBuffers.forEach((info, buffer) => {
 				for (const buf of buffer.renderBuffers) {
 					buf.dispose();
 				}
