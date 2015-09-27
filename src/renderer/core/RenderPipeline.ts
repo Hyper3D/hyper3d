@@ -441,6 +441,118 @@ module Hyper.Renderer
 		renderBuffers: RenderBuffer[];
 	}
 	
+	export function dumpRenderOperationAsDot(raw: RenderOperation[]): string
+	{
+		// alloc variable index
+		let addedInfos: boolean[] = [];
+		let infos: RenderBufferInfo[] = [];
+		{
+			let index = 0;
+		
+			for (const op of raw) {
+				for (const info in op.inputs) {
+					if (!op.inputs[info]) continue;
+					op.inputs[info].num = index++;
+				}
+				for (const info in op.outputs) {
+					if (!op.outputs[info]) continue;
+					op.outputs[info].num = index++;
+				}
+			}
+			for (const op of raw) {
+				for (const info in op.inputs) {
+					if (!op.inputs[info]) continue;
+					const num = op.inputs[info].num;
+					if (!addedInfos[num]) {
+						addedInfos[num] = true;
+						infos.push(op.inputs[info]);
+					}
+				}
+				for (const info in op.outputs) {
+					if (!op.outputs[info]) continue;
+					const num = op.outputs[info].num;
+					if (!addedInfos[num]) {
+						addedInfos[num] = true;
+						infos.push(op.outputs[info]);
+					}
+				}
+			}
+		}
+		
+		const parts: string[] = [];
+		parts.push("digraph G {");
+		parts.push(`rankdir="TB";\n`);
+		parts.push("node [shape=none];\n");
+		
+		
+		let nextID = 1;
+		function getID(obj: any)
+		{
+			if (!obj.id) {
+				obj.id = nextID++;
+				
+			}
+			return "n-" + obj.id;
+		}
+		
+		function writeRBI(rb: RenderBufferInfo)
+		{
+			parts.push(`"${getID(rb)}" [ label="${rb.name}", shape=none ];\n`);
+		}
+		
+		// make sure all render buffer info is assigned a ID
+		for (const info of infos) {
+			getID(info);
+			writeRBI(info);
+		}
+		
+		for (const op of raw) {
+			const id = getID(op);
+			parts.push(`"${id}" [ label=<<table border="1" cellborder="0" cellpadding="3" bgcolor="white">`);
+			const inputs: string[] = [];
+			const outputs: string[] = [];
+			
+			for (const key in op.inputs) {
+				inputs.push(key);
+			}
+			for (const key in op.outputs) {
+				outputs.push(key);
+			}
+			const rows = Math.max(inputs.length, outputs.length);
+			parts.push(`<TR><TD bgcolor="black" align="center" colspan="2"><font color="white">`);
+			parts.push(`${op.name}</font></TD></TR>`);
+			for (let i = 0; i < rows; ++i) {
+				parts.push(`<tr>`);
+				if (i < inputs.length) {
+					parts.push(`<td align="left" port="in-${inputs[i]}">${inputs[i]}</td>`);
+				} else {
+					parts.push(`<td align="left"></td>`);
+				}
+				if (i < outputs.length) {
+					parts.push(`<td align="right" port="out-${outputs[i]}">${outputs[i]}</td>`);
+				} else {
+					parts.push(`<td align="right"></td>`);
+				}
+				parts.push(`</tr>`);
+			}
+			parts.push(`</table>>];\n`);
+			
+			for (const key of inputs) {
+				const conn = op.inputs[key];
+				if (!conn) continue;
+				parts.push(`"${getID(conn)}" -> "${id}":"in-${key}";\n`);
+			}
+			for (const key of outputs) {
+				const conn = op.outputs[key];
+				if (!conn) continue;
+				parts.push(`"${id}":"out-${key}" -> "${getID(conn)}";\n`);
+			}
+		}
+		parts.push("}");
+		
+		return parts.join('');
+	}
+	
 	export class RenderPipeline
 	{
 		private renderBuffers: RenderBufferInfoMap<RealizedRenderBufferGroup>;
@@ -461,118 +573,6 @@ module Hyper.Renderer
 		{
 			this.clearPipeline();
 			this.releaseAll();
-		}
-		
-		dumpRenderOperation(raw: RenderOperation[]): string
-		{
-			// alloc variable index
-			let addedInfos: boolean[] = [];
-			let infos: RenderBufferInfo[] = [];
-			{
-				let index = 0;
-			
-				for (const op of raw) {
-					for (const info in op.inputs) {
-						if (!op.inputs[info]) continue;
-						op.inputs[info].num = index++;
-					}
-					for (const info in op.outputs) {
-						if (!op.outputs[info]) continue;
-						op.outputs[info].num = index++;
-					}
-				}
-				for (const op of raw) {
-					for (const info in op.inputs) {
-						if (!op.inputs[info]) continue;
-						const num = op.inputs[info].num;
-						if (!addedInfos[num]) {
-							addedInfos[num] = true;
-							infos.push(op.inputs[info]);
-						}
-					}
-					for (const info in op.outputs) {
-						if (!op.outputs[info]) continue;
-						const num = op.outputs[info].num;
-						if (!addedInfos[num]) {
-							addedInfos[num] = true;
-							infos.push(op.outputs[info]);
-						}
-					}
-				}
-			}
-			
-			const parts: string[] = [];
-			parts.push("digraph G {");
-			parts.push(`rankdir="TB";\n`);
-			parts.push("node [shape=none];\n");
-			
-			
-			let nextID = 1;
-			function getID(obj: any)
-			{
-				if (!obj.id) {
-					obj.id = nextID++;
-					
-				}
-				return "n-" + obj.id;
-			}
-			
-			function writeRBI(rb: RenderBufferInfo)
-			{
-				parts.push(`"${getID(rb)}" [ label="${rb.name}", shape=none ];\n`);
-			}
-			
-			// make sure all render buffer info is assigned a ID
-			for (const info of infos) {
-				getID(info);
-				writeRBI(info);
-			}
-			
-			for (const op of raw) {
-				const id = getID(op);
-				parts.push(`"${id}" [ label=<<table border="1" cellborder="0" cellpadding="3" bgcolor="white">`);
-				const inputs: string[] = [];
-				const outputs: string[] = [];
-				
-				for (const key in op.inputs) {
-					inputs.push(key);
-				}
-				for (const key in op.outputs) {
-					outputs.push(key);
-				}
-				const rows = Math.max(inputs.length, outputs.length);
-				parts.push(`<TR><TD bgcolor="black" align="center" colspan="2"><font color="white">`);
-				parts.push(`${op.name}</font></TD></TR>`);
-				for (let i = 0; i < rows; ++i) {
-					parts.push(`<tr>`);
-					if (i < inputs.length) {
-						parts.push(`<td align="left" port="in-${inputs[i]}">${inputs[i]}</td>`);
-					} else {
-						parts.push(`<td align="left"></td>`);
-					}
-					if (i < outputs.length) {
-						parts.push(`<td align="right" port="out-${outputs[i]}">${outputs[i]}</td>`);
-					} else {
-						parts.push(`<td align="right"></td>`);
-					}
-					parts.push(`</tr>`);
-				}
-				parts.push(`</table>>];\n`);
-				
-				for (const key of inputs) {
-					const conn = op.inputs[key];
-					if (!conn) continue;
-					parts.push(`"${getID(conn)}" -> "${id}":"in-${key}";\n`);
-				}
-				for (const key of outputs) {
-					const conn = op.outputs[key];
-					if (!conn) continue;
-					parts.push(`"${id}":"out-${key}" -> "${getID(conn)}";\n`);
-				}
-			}
-			parts.push("}");
-			
-			return parts.join('');
 		}
 		
 		setup(preprocOpsRaw: RenderOperation[], output: RenderBufferInfo[]): void
@@ -1093,7 +1093,6 @@ module Hyper.Renderer
 			
 			switch (this.format) {
 				case TextureRenderBufferFormat.SRGBA8:
-				// FIXME: should fail when sRGB is unavailable
 					const ext = manager.core.ext.get('EXT_sRGB');
 					if (!ext) {
 						throw new Error("sRGB not supported");
@@ -1132,7 +1131,6 @@ module Hyper.Renderer
 			}
 			
 			this.renderbuffer = gl.createRenderbuffer();
-			// TODO: make contents
 		}
 		
 		dispose(): void

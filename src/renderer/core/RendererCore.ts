@@ -272,7 +272,7 @@ module Hyper.Renderer
 			
 			// visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Velocity, ops);
 			
-			console.log(this.renderBuffers.dumpRenderOperation(ops));
+			console.log(dumpRenderOperationAsDot(ops));
 			
 			this.renderBuffers.setup(ops, [visualized]);
 			
