@@ -240,16 +240,6 @@ module Hyper.Renderer
 				GLStateFlags.BlendEnabled;
 			gl.blendFunc(gl.ONE, gl.ONE); // additive
 			gl.viewport(0, 0, this.outLit.width, this.outLit.height);
-		}
-		perform(): void
-		{
-			const scene = this.parent.renderer.currentScene;
-			this.setState();
-			this.fb.bind();
-			
-			const gl = this.parent.renderer.gl;
-			gl.clearColor(0, 0, 0, 0);
-			gl.clear(gl.COLOR_BUFFER_BIT);
 			
 			// bind G-Buffer
 			gl.activeTexture(gl.TEXTURE0);
@@ -265,6 +255,16 @@ module Hyper.Renderer
 			// TEXTURE5: (none)
 			// TEXTURE6: shadow maps
 			// TEXTURE7: light texture
+		}
+		perform(): void
+		{
+			const scene = this.parent.renderer.currentScene;
+			this.setState();
+			this.fb.bind();
+			
+			const gl = this.parent.renderer.gl;
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT);
 			
 			const jitter = this.parent.renderer.gaussianJitter;
 			

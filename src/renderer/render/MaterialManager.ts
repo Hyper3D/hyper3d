@@ -10,33 +10,44 @@ module Hyper.Renderer
 	
 	export class MaterialManager
 	{
-		private shaderTable: Utils.IntegerMap<Shader>;
+		private shaderTable: Utils.IntegerMap<ShaderGroup>;
 		
 		constructor(public core: RendererCore)
 		{
-			this.shaderTable = new Utils.IntegerMap<Shader>();
+			this.shaderTable = new Utils.IntegerMap<ShaderGroup>();
 		}
 		
 		
 		/** Overridable. */
-		createShader(material: Material): Shader
+		createShader(material: Material, param: number): Shader
 		{
 			return new Shader(this, material);
 		}
 		
-		get(mat: THREE.Material): ShaderInstance
+		get(mat: THREE.Material, param?: number): ShaderInstance
 		{
+			if (param == null) {
+				param = 0;	
+			}
+			
 			const id = mat.id;
 			let matInst = importThreeJsMaterial(mat);
-			let sh = this.shaderTable.get(matInst.material.id);
-			if (!sh) {
-				sh = this.createShader(matInst.material);
+			let sg = this.shaderTable.get(matInst.material.id);
+			let sh: Shader;
+			if (!sg) {
+				sg = new ShaderGroup(this, matInst.material);
 				
-				sh.addEventListener('disposed', () => {
+				sg.addEventListener('disposed', () => {
 					this.shaderTable.remove(id);
 				});
 				
-				this.shaderTable.set(id, sh);
+				this.shaderTable.set(matInst.material.id, sg);
+			}
+			
+			sh = sg.get(param);
+			
+			if (sh.source != matInst.material) {
+				throw new Error();
 			}
 			
 			return sh.getInstance(matInst);
@@ -51,6 +62,53 @@ module Hyper.Renderer
 		
 	}
 	
+	class ShaderGroup extends THREE.EventDispatcher
+	{
+		private shaders: Utils.IntegerMap<Shader>;
+		
+		constructor(public manager: MaterialManager, public source: Material)
+		{
+			super();
+			
+			this.shaders = new Utils.IntegerMap<Shader>();
+		}
+		
+		dispose(): void
+		{
+			if (!this.shaders.isEmpty) {
+				this.shaders.forEach((id, shInst) => {
+					this.deleteShader(id);
+				});
+				
+				// (dispose will be called internally)
+				return;
+			}
+			this.dispatchEvent({ type: 'disposed', target: undefined });
+		}
+		
+		private deleteShader(id: number): void
+		{
+			this.shaders.remove(id);
+			
+			if (this.shaders.isEmpty) {
+				this.dispose();
+			}
+		}
+		
+		get(param: number): Shader
+		{
+			let sh = this.shaders.get(param);
+			if (sh == null) {
+				sh = this.manager.createShader(this.source, param);
+				sh.addEventListener('disposed', () => {
+					this.deleteShader(param);
+				});
+				this.shaders.set(param, sh);
+			}
+			return sh;
+		}
+	}
+	
 	export class Shader extends THREE.EventDispatcher
 	{
 		// linked list of ShaderInstance.
@@ -58,6 +116,7 @@ module Hyper.Renderer
 		// (however, when Shader is created, the list is empty.)
 		private insts: Utils.IntegerMap<ShaderInstance>;
 		parameterTextureStages: string[];
+		numTextureStages: number;
 		
 		private geometryBindings: Utils.IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>;
 		
@@ -76,6 +135,8 @@ module Hyper.Renderer
 					this.parameterTextureStages.push(name);
 				}
 			}
+			
+			this.numTextureStages = this.parameterTextureStages.length;
 			
 			this.geometryBindings = new Utils.IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>();
 			
@@ -336,7 +397,7 @@ module Hyper.Renderer
 				params['alphaMap'] = {
 					type: MaterialParameterType.Texture2D	
 				};
-				parts.push(`float alphaMap = texture2D(p_alphaMap, v_uv).y;`);
+				parts.push(`float alphaMap = texture2D(p_alphaMap, v_uv.xy).y;`);
 				parts.push(`if (alphaMap < 0.5) discard;`); // FIXME: hoge
 			}
 			
@@ -349,19 +410,19 @@ module Hyper.Renderer
 				params['map'] = {
 					type: MaterialParameterType.Texture2D	
 				};
-				parts.push(`m_albedo *= texture2D(p_map, v_uv);`);
+				parts.push(`m_albedo *= texture2D(p_map, v_uv.xy).xyz;`);
 			}
 			if (attrs.hasNormalMap) {
 				params['normalMap'] = {
 					type: MaterialParameterType.Texture2D	
 				};
-				parts.push(`m_normal = texture2D(p_normalMap, v_uv).xyz;`);
+				parts.push(`m_normal = texture2D(p_normalMap, v_uv.xy).xyz;`);
 			}
 			if (attrs.hasSpecularMap) {
 				params['specularMap'] = {
 					type: MaterialParameterType.Texture2D	
 				};
-				parts.push(`float specularMap = texture2D(p_specularMap, v_uv).y;`);
+				parts.push(`float specularMap = texture2D(p_specularMap, v_uv.xy).y;`);
 				parts.push(`m_roughness = mix(1., m_roughness, specularMap);`);
 			}
 			

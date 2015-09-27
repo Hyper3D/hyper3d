@@ -35,10 +35,8 @@ module Hyper.Renderer
 			} else if (source instanceof THREE.Geometry) {
 				let g = this.table[source.id];
 				if (!g) {
-					// TODO: support THREE.Geometry
-					const bg = new THREE.BufferGeometry();
-					bg.fromGeometry(source);
-					g = this.get(bg); // TODO: super ugly hack (dispose doesn't work)
+					const bg = makeBufferGeometryFromGeometry(source);
+					g = this.get(bg); // TODO: dispose doesn't work
 					this.table[source.id] = g;
 				}
 				return g;
@@ -55,6 +53,70 @@ module Hyper.Renderer
 				g.dispose();
 			}
 		}
+	}
+	
+	function makeBufferGeometryFromGeometry(geo: THREE.Geometry): THREE.BufferGeometry
+	{
+		const bg = new THREE.BufferGeometry();
+		geo.addEventListener('disposed', () =>{
+			bg.dispose();
+		});
+		bg.fromGeometry(geo);
+		
+		// some attributes are not added with fromGeometry
+		const faces = geo.faces;
+		if (geo.skinWeights && !bg.getAttribute('skinWeights') &&
+			geo.skinWeights.length > 0) {
+			const buf: THREE.Vector4[] = <any> geo.skinWeights;
+			const arr = new Float32Array(faces.length * 12);
+			for (let i = 0; i < faces.length; ++i) {
+				const face = faces[i];
+				let idx = face.a;
+				arr[i * 12] =     buf[idx].x;
+				arr[i * 12 + 1] = buf[idx].y;
+				arr[i * 12 + 2] = buf[idx].z;
+				arr[i * 12 + 3] = buf[idx].w;
+				idx = face.b;
+				arr[i * 12 + 4] = buf[idx].x;
+				arr[i * 12 + 5] = buf[idx].y;
+				arr[i * 12 + 6] = buf[idx].z;
+				arr[i * 12 + 7] = buf[idx].w;
+				idx = face.c;
+				arr[i * 12 + 8] = buf[idx].x;
+				arr[i * 12 + 9] = buf[idx].y;
+				arr[i * 12 + 10] = buf[idx].z;
+				arr[i * 12 + 11] = buf[idx].w;
+			}
+			const attr = new THREE.BufferAttribute(arr, 4);
+			bg.addAttribute('skinWeights', attr);
+		}
+		if (geo.skinIndices && !bg.getAttribute('skinIndices') &&
+			geo.skinIndices.length > 0) {
+			const buf: THREE.Vector4[] = <any> geo.skinIndices;
+			const arr = new Float32Array(faces.length * 12);
+			for (let i = 0; i < faces.length; ++i) {
+				const face = faces[i];
+				let idx = face.a;
+				arr[i * 12] =     buf[idx].x;
+				arr[i * 12 + 1] = buf[idx].y;
+				arr[i * 12 + 2] = buf[idx].z;
+				arr[i * 12 + 3] = buf[idx].w;
+				idx = face.b;
+				arr[i * 12 + 4] = buf[idx].x;
+				arr[i * 12 + 5] = buf[idx].y;
+				arr[i * 12 + 6] = buf[idx].z;
+				arr[i * 12 + 7] = buf[idx].w;
+				idx = face.c;
+				arr[i * 12 + 8] = buf[idx].x;
+				arr[i * 12 + 9] = buf[idx].y;
+				arr[i * 12 + 10] = buf[idx].z;
+				arr[i * 12 + 11] = buf[idx].w;
+			}
+			const attr = new THREE.BufferAttribute(arr, 4);
+			bg.addAttribute('skinIndices', attr);
+		}
+		
+		return bg;
 	}
 	
 	export class Geometry extends THREE.EventDispatcher

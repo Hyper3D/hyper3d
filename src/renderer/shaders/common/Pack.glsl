@@ -21,3 +21,45 @@ vec3 pack24(highp float value) {
 highp float unpack24(vec3 packedValue) {
 	return dot(packedValue, vec3(1., 1. / 255., 1. / 255. / 255.));
 }
+
+vec4 pack32f(highp float value) 
+{
+	highp float absValue = abs(value);
+	if (absValue <= 1.e-16) {
+		// underflow
+		return vec4(0., 0., 0., 0.);
+	} else {
+		highp float exponent = ceil(log2(absValue));
+		absValue *= exp2(-exponent);
+
+		exponent += 63.; // bias
+		if (value < 0.) {
+			exponent += 128.; // sign
+		}
+		exponent *= 1. / 255.;
+
+		return vec4(pack24(absValue), exponent);
+	}
+}
+
+highp float unpack32f(vec4 p) 
+{
+	if (p.w == 0.) {
+		return 0.;
+	} else {
+		bool negative = false;
+		highp float exponent = floor(p.w * 255. + 0.5 - 63.);
+		if (exponent >= 128. - 63.) {
+			// negative
+			negative = true;
+			exponent -= 128.;
+		}
+
+		highp float mantissa = unpack24(p.xyz);
+		if (negative) {
+			mantissa = -mantissa;
+		}
+
+		return mantissa * exp2(exponent);
+	}
+}

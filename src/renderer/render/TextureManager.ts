@@ -155,6 +155,10 @@ module Hyper.Renderer
 				image = resizeImage(image, maxSize, maxSize);
 			}
 			
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.source.flipY ? 1 : 0 );
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.source.premultiplyAlpha ? 1 : 0 );
+			gl.pixelStorei(gl.UNPACK_ALIGNMENT, this.source.unpackAlignment);
+			
 			gl.texImage2D(this.textureTarget, 0, 
 				this.manager.internalFormatForTexture(this.source),
 				this.manager.formatForTexture(this.source),
@@ -164,6 +168,11 @@ module Hyper.Renderer
 			if (this.source.generateMipmaps) {
 				gl.generateMipmap(this.textureTarget);
 			}
+			
+			// restore default
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0 );
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
+			gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 			
 			return true;
 		}

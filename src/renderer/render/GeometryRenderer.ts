@@ -114,9 +114,9 @@ module Hyper.Renderer
 	{
 		geoUniforms: GLProgramUniforms;
 		
-		constructor(public manager: BaseGeometryPassMaterialManager, public source: Material)
+		constructor(public manager: BaseGeometryPassMaterialManager, public source: Material, flags: number)
 		{
-			super(manager, source);
+			super(manager, source, flags);
 			
 			this.geoUniforms = this.glProgram.getUniforms([
 				'u_screenVelOffset'
@@ -131,9 +131,9 @@ module Hyper.Renderer
 			super(core, 'VS_Geometry', 'FS_Geometry');
 		}
 		
-		createShader(material: Material): Shader // override
+		createShader(material: Material, flags: number): Shader // override
 		{
-			return new GeometryPassShader(this, material);
+			return new GeometryPassShader(this, material, flags | BaseGeometryPassShaderFlags.NeedsLastPosition);
 		}
 	}
 	
