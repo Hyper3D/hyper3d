@@ -12,7 +12,7 @@ module Hyper.Renderer
 		source?: string;
 	}
 	
-	export class GLShader implements Utils.IDisposable
+	export class GLShader implements IDisposable
 	{
 		constructor(private gl: WebGLRenderingContext, public shader: WebGLShader)
 		{

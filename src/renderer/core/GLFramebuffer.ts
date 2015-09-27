@@ -10,7 +10,7 @@ module Hyper.Renderer
 		colors: WebGLTexture[];
 	}
 	
-	export class GLFramebuffer implements Utils.IDisposable
+	export class GLFramebuffer implements IDisposable
 	{
 		constructor(private gl: WebGLRenderingContext, public handle: WebGLFramebuffer)
 		{

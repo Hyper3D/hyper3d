@@ -165,7 +165,7 @@ module Hyper.Renderer
 				this.texRows = 1;
 			} else {
 				// smallest POT texture
-				const bits = Utils.ulog2(numBones - 1);
+				const bits = ulog2(numBones - 1);
 				const sep = bits >> 1;
 				this.texCols = 1 << sep;
 				this.texRows = 1 << (bits - sep);

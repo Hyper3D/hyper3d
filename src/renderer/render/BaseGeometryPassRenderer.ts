@@ -6,6 +6,7 @@
 /// <reference path="SkinningShader.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Utils.ts" />
+/// <reference path="../utils/IntegerMap.ts" />
 module Hyper.Renderer
 {
 	export const enum BaseGeometryPassShaderFlags
@@ -19,7 +20,7 @@ module Hyper.Renderer
 	{
 		private state: GeometryRenderState;
 		private tmpMat: THREE.Matrix4;
-		private objs: Utils.IntegerMap<BaseGeometryPassRendererObject>;
+		private objs: IntegerMap<BaseGeometryPassRendererObject>;
 		
 		constructor(
 			public core: RendererCore,
@@ -36,7 +37,7 @@ module Hyper.Renderer
 				nextToken: false
 			};
 			
-			this.objs = new Utils.IntegerMap<BaseGeometryPassRendererObject>();
+			this.objs = new IntegerMap<BaseGeometryPassRendererObject>();
 		}
 		
 		renderGeometry(viewMatrix: THREE.Matrix4, projectionMatrix: THREE.Matrix4): void

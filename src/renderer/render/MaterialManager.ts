@@ -5,16 +5,19 @@
 /// <reference path="../utils/Utils.ts" />
 /// <reference path="GeometryManager.ts" />
 /// <reference path="../public/Materials.ts" />
+/// <reference path="../utils/IntegerMap.ts" />
+/// <reference path="../utils/IdWeakMap.ts" />
+/// <reference path="../utils/BitArray.ts" />
 module Hyper.Renderer
 {
 	
 	export class MaterialManager
 	{
-		private shaderTable: Utils.IntegerMap<ShaderGroup>;
+		private shaderTable: IntegerMap<ShaderGroup>;
 		
 		constructor(public core: RendererCore)
 		{
-			this.shaderTable = new Utils.IntegerMap<ShaderGroup>();
+			this.shaderTable = new IntegerMap<ShaderGroup>();
 		}
 		
 		
@@ -64,13 +67,13 @@ module Hyper.Renderer
 	
 	class ShaderGroup extends THREE.EventDispatcher
 	{
-		private shaders: Utils.IntegerMap<Shader>;
+		private shaders: IntegerMap<Shader>;
 		
 		constructor(public manager: MaterialManager, public source: Material)
 		{
 			super();
 			
-			this.shaders = new Utils.IntegerMap<Shader>();
+			this.shaders = new IntegerMap<Shader>();
 		}
 		
 		dispose(): void
@@ -114,17 +117,17 @@ module Hyper.Renderer
 		// linked list of ShaderInstance.
 		// when this becomes empty, Shader is disposed.
 		// (however, when Shader is created, the list is empty.)
-		private insts: Utils.IntegerMap<ShaderInstance>;
+		private insts: IntegerMap<ShaderInstance>;
 		parameterTextureStages: string[];
 		numTextureStages: number;
 		
-		private geometryBindings: Utils.IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>;
+		private geometryBindings: IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>;
 		
 		constructor(public manager: MaterialManager, public source: Material)
 		{
 			super();
 			
-			this.insts = new Utils.IntegerMap<ShaderInstance>();
+			this.insts = new IntegerMap<ShaderInstance>();
 			this.parameterUniformSetter_ = null;
 			this.parameterTextureStages = [];
 			
@@ -138,7 +141,7 @@ module Hyper.Renderer
 			
 			this.numTextureStages = this.parameterTextureStages.length;
 			
-			this.geometryBindings = new Utils.IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>();
+			this.geometryBindings = new IdWeakMapWithDisposable<Geometry, ShaderGeometryBindings>();
 			
 		}
 		dispose(): void
@@ -297,14 +300,14 @@ module Hyper.Renderer
 	export class ShaderGeometryBindings
 	{
 		private bindings: ShaderGeometryBinding[];
-		private vertexAttribMap: Utils.BitArray;
+		private vertexAttribMap: BitArray;
 		
 		constructor(private shader: Shader, geo: Geometry)
 		{
 			const geoAttrs = geo.attributes;
 			const attrMap = shader.glProgram.getAttributes(geoAttrs.map((attr) => 'a_' + attr.name));
 			this.bindings = [];
-			this.vertexAttribMap = new Utils.BitArray();
+			this.vertexAttribMap = new BitArray();
 			for (let i = 0; i < geoAttrs.length; ++i) {
 				const geoAttr = geoAttrs[i];
 				if (attrMap['a_' + geoAttr.name] != null) {
@@ -497,7 +500,7 @@ module Hyper.Renderer
 		}
 	}
 	
-	const importedMaterialsCache = new Utils.IdWeakMapWithDisposable<THREE.Material, MaterialInstance>();
+	const importedMaterialsCache = new IdWeakMapWithDisposable<THREE.Material, MaterialInstance>();
 	
 	function importThreeJsMaterial(mat: THREE.Material): MaterialInstance
 	{

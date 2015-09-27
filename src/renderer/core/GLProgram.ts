@@ -23,7 +23,7 @@ module Hyper.Renderer
 		unif: GlobalUniform;
 	}
 	
-	export class GLProgram implements Utils.IDisposable
+	export class GLProgram implements IDisposable
 	{
 		private gl: WebGLRenderingContext;
 		private linked: boolean;

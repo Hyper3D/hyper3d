@@ -9,6 +9,7 @@
 /// <reference path="Visualizer.ts" />
 /// <reference path="../utils/Utils.ts" />
 /// <reference path="../utils/Geometry.ts" />
+/// <reference path="../utils/BitArray.ts" />
 /// <reference path="../validator/SRGBValidator.ts" />
 /// <reference path="../render/LightRenderer.ts" />
 /// <reference path="../render/ReflectionRenderer.ts" />
@@ -357,7 +358,7 @@ module Hyper.Renderer
 		}
 	}	
 	
-	class VertexAttribState extends Utils.BitArray
+	class VertexAttribState extends BitArray
 	{
 		constructor(private gl: WebGLRenderingContext)
 		{

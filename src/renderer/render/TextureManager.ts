@@ -1,17 +1,18 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../utils/Utils.ts" />
+/// <reference path="../utils/IdWeakMap.ts" />
 module Hyper.Renderer
 {
 	export class TextureManager
 	{
 		gl: WebGLRenderingContext;
-		private map: Utils.IdWeakMapWithDisposable<THREE.Texture, Texture>;
+		private map: IdWeakMapWithDisposable<THREE.Texture, Texture>;
 		
 		constructor(private core: RendererCore)
 		{
 			this.gl = core.gl;
-			this.map = new Utils.IdWeakMapWithDisposable<THREE.Texture, Texture>();
+			this.map = new IdWeakMapWithDisposable<THREE.Texture, Texture>();
 		}
 		
 		dispose(): void

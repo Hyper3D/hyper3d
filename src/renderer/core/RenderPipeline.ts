@@ -133,7 +133,7 @@ module Hyper.Renderer
 		outputs: RenderBuffer[];
 	}
 	
-	export interface RenderOperator extends Utils.IDisposable
+	export interface RenderOperator extends IDisposable
 	{
 		beforeRender(): void;
 		perform(): void;
@@ -292,7 +292,7 @@ module Hyper.Renderer
 	}
 	
 	// Realized render buffers.
-	export interface RenderBuffer extends Utils.IDisposable
+	export interface RenderBuffer extends IDisposable
 	{
 	}
 	
