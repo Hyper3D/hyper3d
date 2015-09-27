@@ -18,12 +18,18 @@ varying mediump vec2 v_viewDir;
 uniform sampler2D u_dither;
 varying highp vec2 v_ditherCoord;
 
-highp vec3 computeViewPos()
+highp float perspectiveScaling = 1.;
+highp vec3 viewDir;
+highp vec3 viewDirNormalized;
+highp vec3 viewPos;
+
+void setupLight()
 {
-	highp vec3 viewDir = vec3(v_viewDir, 1.);
-	highp vec3 viewPos = viewDir * fetchDepth(u_linearDepth, v_texCoord);
+	viewDir = vec3(v_viewDir * perspectiveScaling, 1.);
+	viewPos = viewDir * fetchDepth(u_linearDepth, v_texCoord * perspectiveScaling);
 	viewPos = -viewPos; // FIXME: ??
-	return viewPos;
+
+	viewDirNormalized = normalize(viewDir);
 }
 
 void emitLightPassOutput(vec3 lit)
@@ -37,7 +43,7 @@ void emitLightPassOutput(vec3 lit)
 	}
 
 	// dither
-	vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
+	vec3 dither = texture2D(u_dither, v_ditherCoord * perspectiveScaling).xyz;
 
 	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
 	gl_FragColor = mosaicked;

@@ -18,11 +18,12 @@ varying vec2 v_jitterCoord;
 
 void main()
 {
-	highp vec3 viewDir = vec3(v_viewDir, 1.);
+	setupLight();
+	setupPointLight();
 
 #if c_hasShadowMap
 
-	highp vec3 viewPos = computeViewPos();
+	highp vec3 viewPos = viewPos;
 	highp vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz; // w is always 1 for orthographic camera
 	shadowCoord.z -= 0.002;
 	

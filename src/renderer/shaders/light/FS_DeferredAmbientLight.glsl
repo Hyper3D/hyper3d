@@ -6,6 +6,8 @@ uniform sampler2D u_ssao;
 
 void main()
 {
+	setupLight();
+	
 	vec4 g0 = texture2D(u_g0, v_texCoord);
 	vec4 g1 = texture2D(u_g1, v_texCoord);
 	vec4 g2 = texture2D(u_g2, v_texCoord);
