@@ -91,6 +91,13 @@ module Hyper.Renderer
 		HasShadowMaps = 1 << 0	
 	}
 	
+	const enum PointLightProgramFlags
+	{
+		Default = 0,
+		HasShadowMaps = 1 << 0,
+		IsFullScreen = 1 << 1
+	}
+	
 	class LightPassRenderer implements RenderOperator
 	{
 		private fb: GLFramebuffer;
@@ -104,6 +111,11 @@ module Hyper.Renderer
 			b: number;	
 		};
 		
+		private pointLightProgram: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attributes: GLProgramAttributes;		
+		}[];
 		private directionalLightProgram: {
 			program: GLProgram;
 			uniforms: GLProgramUniforms;
@@ -144,12 +156,39 @@ module Hyper.Renderer
 			this.viewVec = null;
 			this.totalAmbient = {r: 0, g: 0, b: 0};
 			this.directionalLightProgram = [];
+			this.pointLightProgram = [];
 			
 			this.frustumCorners = [];
 			for (let i = 0; i < 5; ++i) {
 				this.frustumCorners.push(new THREE.Vector3());
 			}
 			
+			for (let i = 0; i < 4; ++i) {
+				const program = parent.renderer.shaderManager.get('VS_DeferredPointLight', 'FS_DeferredPointLight',
+					['a_position'], {
+						hasShadowMap: (i & PointLightProgramFlags.HasShadowMaps) != 0,
+						isFullScreen: (i & PointLightProgramFlags.IsFullScreen) != 0
+					});
+				this.pointLightProgram.push({
+					program,
+					uniforms: program.getUniforms([
+						'u_g0', 'u_g1', 'u_g2', 'u_linearDepth',
+						'u_lightColor', 
+						'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
+						'u_shadowMap', 'u_shadowMapMatrix', 
+						'u_jitter', 'u_jitterScale', 'u_jitterAmount',
+						'u_dither', 'u_ditherScale',
+						
+						'u_lightPos',
+						'u_lightInfluenceRadius', 'u_lightInvInfluenceRadiusSquared',
+						'u_minimumDistance',
+						'u_lightRadius',
+						'u_lightLength',
+						'u_lightDir'
+					]),
+					attributes: program.getAttributes(['a_position'])
+				});
+			}
 			for (let i = 0; i < 2; ++i) {
 				const program = parent.renderer.shaderManager.get('VS_DeferredDirectionalLight', 'FS_DeferredDirectionalLight',
 					['a_position'], {
@@ -267,8 +306,31 @@ module Hyper.Renderer
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			
 			const jitter = this.parent.renderer.gaussianJitter;
+			const vpMat = this.projectionViewMat;
 			
 			// setup common uniforms
+			for (const p of this.pointLightProgram) {
+				p.program.use();
+				gl.uniform1i(p.uniforms['u_g0'], 0);
+				gl.uniform1i(p.uniforms['u_g1'], 1);
+				gl.uniform1i(p.uniforms['u_g2'], 2);
+				gl.uniform1i(p.uniforms['u_dither'], 3);
+				gl.uniform2f(p.uniforms['u_ditherScale'],
+					this.outLit.width / jitter.size / 4,
+					this.outLit.height / jitter.size / 4);
+				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
+				gl.uniform1i(p.uniforms['u_jitter'], 5);
+				// u_jitterScale == u_ditherScale
+				gl.uniform1i(p.uniforms['u_shadowMap'], 6);
+				gl.uniform2f(p.uniforms['u_viewDirOffset'],
+					this.viewVec.offset.x, this.viewVec.offset.y);
+				gl.uniform2f(p.uniforms['u_viewDirCoefX'],
+					this.viewVec.coefX.x, this.viewVec.coefX.y);
+				gl.uniform2f(p.uniforms['u_viewDirCoefY'],
+					this.viewVec.coefY.x, this.viewVec.coefY.y);
+				gl.uniformMatrix4fv(p.uniforms['u_viewProjectionMatrix'], false,
+					vpMat.elements);
+			}
 			for (const p of this.directionalLightProgram) {
 				p.program.use();
 				gl.uniform1i(p.uniforms['u_g0'], 0);
@@ -394,26 +456,14 @@ module Hyper.Renderer
 					camera.matrixWorld.getInverse(camMat);
 					camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, maxY - midY, minY - midY, minZ, maxZ);
 					
-					/*
-					const m = camMat;
-					const parts: string[] = [];
-					for (let i = 0; i < 16; ++i) {
-						parts.push(`${m.elements[(i>>2)|((i&3)<<2)]}, `);
-						if ((i & 3) == 3) {
-							parts.push('\n');
-						}
-					}
-					parts.push(`x: ${minX} - ${maxX}\n`);
-					parts.push(`y: ${minY} - ${maxY}\n`);
-					parts.push(`z: ${minZ} - ${maxZ}\n`);
-					for (let i = 0; i < 5; ++i) {
-						const p = this.frustumCorners[i];
-						parts.push(`incl ${p.x}, ${p.y}, ${p.z}\n`);
-					}
-					document.getElementById('debug-view').textContent = parts.join(''); */
-					
 					const gen = this.inShadowMaps;
 					gen.prepareShadowMap(light.shadowCamera, ShadowMapType.Normal);
+				}
+			}
+			
+			if (light instanceof THREE.PointLight) {
+				if (light.castShadow) {
+					// TODO: point light shadow
 				}
 			}
 		}
@@ -486,6 +536,55 @@ module Hyper.Renderer
 				gl.depthFunc(gl.GREATER);
 				quad.render(p.attributes['a_position']);
 				gl.depthFunc(gl.LESS);
+			}
+			
+			if (light instanceof THREE.PointLight) {
+				let radius = light.distance;
+				const pos = light.getWorldPosition(tmpV3a);
+				pos.applyMatrix4(this.viewMat);
+				
+				if (radius == 0) {
+					radius = Infinity;
+				}
+				
+				const isFullScreen = true; // TODO
+				
+				let flags = PointLightProgramFlags.Default;
+				if (isFullScreen) {
+					flags |= PointLightProgramFlags.IsFullScreen;
+				}
+				
+				const p = this.pointLightProgram[flags];
+				p.program.use();
+				
+				colorR *= light.intensity;
+				colorG *= light.intensity;
+				colorB *= light.intensity;
+				
+				gl.uniform3f(p.uniforms['u_lightPos'], pos.x, pos.y, pos.z);
+				gl.uniform1f(p.uniforms['u_lightInfluenceRadius'], radius);
+				gl.uniform1f(p.uniforms['u_lightInvInfluenceRadiusSquared'], 1 / (radius * radius));
+				gl.uniform1f(p.uniforms['u_minimumDistance'], 0.1 * light.intensity); // FIXME
+				
+				// light shape
+				gl.uniform1f(p.uniforms['u_lightRadius'], 0);
+				gl.uniform1f(p.uniforms['u_lightLength'], 0);
+				gl.uniform3f(p.uniforms['u_lightDir'], 0, 0, 0);
+				
+				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
+				
+				gl.depthFunc(gl.GREATER);
+				if (isFullScreen) {
+					const quad = this.parent.renderer.quadRenderer;
+					quad.render(p.attributes['a_position']);
+				} else {
+					// TODO: light geometry cull
+				}
+				gl.depthFunc(gl.LESS);
+			}
+			
+			if (light instanceof THREE.SpotLight) {
+				// TODO: spot light
 			}
 			
 			if (light instanceof THREE.AmbientLight) {
