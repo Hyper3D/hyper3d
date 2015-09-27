@@ -2,16 +2,7 @@
 #pragma require ShadingModel
 #pragma require FS_BaseLight
 
-uniform sampler2D u_g0;
-uniform sampler2D u_g1;
-uniform sampler2D u_g2;
-uniform sampler2D u_linearDepth;
 uniform sampler2D u_ssao;
-
-uniform vec3 u_lightColor;
-
-varying highp vec2 v_texCoord;
-varying mediump vec2 v_viewDir;
 
 void main()
 {

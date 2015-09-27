@@ -3,34 +3,17 @@
 #pragma require GBuffer
 #pragma require ShadingModel
 #pragma require DepthFetch
-#pragma require FS_BaseLight
-
-uniform sampler2D u_g0;
-uniform sampler2D u_g1;
-uniform sampler2D u_g2;
-uniform sampler2D u_linearDepth;
+#pragma require FS_BasePointLight
+#pragma require ShadowTexture
 
 uniform vec3 u_lightDir;
-uniform vec3 u_lightColor;
-
-varying highp vec2 v_texCoord;
-varying mediump vec2 v_viewDir;
 
 #if c_hasShadowMap
 uniform sampler2D u_shadowMap;
+uniform sampler2D u_jitter;
 uniform mat4 u_shadowMapMatrix;
 uniform vec2 u_jitterAmount;
-#endif
-
-uniform sampler2D u_jitter;
-varying highp vec2 v_jitterCoord;
-
-#if c_hasShadowMap
-float shadowTexture2D(sampler2D tex, highp vec3 coord)
-{
-	highp float value = texture2D(tex, coord.xy).r;
-	return step(coord.z, value);
-}
+varying vec2 v_jitterCoord;
 #endif
 
 void main()
@@ -38,8 +21,8 @@ void main()
 	highp vec3 viewDir = vec3(v_viewDir, 1.);
 
 #if c_hasShadowMap
-	highp vec3 viewPos = viewDir * fetchDepth(u_linearDepth, v_texCoord);
-	viewPos = -viewPos; // FIXME: ??
+
+	highp vec3 viewPos = computeViewPos();
 	highp vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz; // w is always 1 for orthographic camera
 	shadowCoord.z -= 0.002;
 	
@@ -61,30 +44,12 @@ void main()
 
 	shadowValue *= 1. / 4.;
 
-#endif
+#else // c_hasShadowMap
 
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
-	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = vec4(0.);
+	float shadowValue = 1.;
 
-	if (isGBufferEmpty(g0, g1, g2, g3)) {
-		discard;
-	}
+#endif // c_hasShadowMap
 
-	GBufferContents g;
-	decodeGBuffer(g, g0, g1, g2, g3);
+	doPointLight(u_lightDir, shadowValue);
 
-	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
-
-	PointLightBRDFParameters params = computePointLightBRDFParameters(
-		g.normal, u_lightDir, normalize(viewDir));
-
-	vec3 lit = evaluatePointLight(params, mat, u_lightColor);
-
-#if c_hasShadowMap
-	lit *= shadowValue;
-#endif
-	
-	emitLightPassOutput(lit);
 }
