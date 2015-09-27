@@ -158,7 +158,7 @@ module Hyper.Renderer
 		{
 			return this == o;
 		}
-		create(manager: RenderBufferManager): RenderBuffer
+		create(manager: RenderPipeline): RenderBuffer
 		{
 			throw new Error("not implemented");
 		}
@@ -228,7 +228,7 @@ module Hyper.Renderer
 				return false;
 			}
 		}
-		create(manager: RenderBufferManager): TextureRenderBuffer
+		create(manager: RenderPipeline): TextureRenderBuffer
 		{
 			return new TextureRenderBufferImpl(manager, this.width, this.height, this.format);
 		}
@@ -270,7 +270,7 @@ module Hyper.Renderer
 			
 			this.cost = 0;
 		}
-		create(manager: RenderBufferManager): DummyRenderBuffer
+		create(manager: RenderPipeline): DummyRenderBuffer
 		{
 			return new DummyRenderBufferImpl();
 		}
@@ -521,7 +521,7 @@ module Hyper.Renderer
 		renderBuffers: RenderBuffer[];
 	}
 	
-	export class RenderBufferManager
+	export class RenderPipeline
 	{
 		private renderBuffers: RenderBufferInfoMap<RealizedRenderBufferGroup>;
 		private phases: RenderPhase[];
@@ -1163,7 +1163,7 @@ module Hyper.Renderer
 		texture: WebGLTexture;
 		renderbuffer: WebGLRenderbuffer; // actually unused:)
 		
-		constructor(private manager: RenderBufferManager, 
+		constructor(private manager: RenderPipeline, 
 			public width: number, public height: number, public format: TextureRenderBufferFormat)
 		{
 			

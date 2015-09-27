@@ -1,6 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="../render/TextureManager.ts" />
-/// <reference path="RenderBufferManager.ts" />
+/// <reference path="RenderPipeline.ts" />
 /// <reference path="../render/GeometryRenderer.ts" />
 /// <reference path="../render/ShadowMapRenderer.ts" />
 /// <reference path="QuadRenderer.ts" />
@@ -39,7 +39,7 @@ module Hyper.Renderer
 		hdrMode: HdrMode;
 		
 		textures: TextureManager;
-		renderBuffers: RenderBufferManager;
+		renderBuffers: RenderPipeline;
 		vertexAttribs: VertexAttribState;
 		state: GLState;
 		
@@ -140,7 +140,7 @@ module Hyper.Renderer
 			
 			this.textures = new TextureManager(this);
 			this.geometryManager = new GeometryManager(this);
-			this.renderBuffers = new RenderBufferManager(this);
+			this.renderBuffers = new RenderPipeline(this);
 			this.uniformJitter = new UniformJitterTexture(this.gl);
 			this.gaussianJitter = new GaussianJitterTexture(this.gl);
 			this.uniformDitherJitter = new DitherJitterTexture(this.gl);

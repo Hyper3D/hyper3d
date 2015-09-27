@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../core/RenderBufferManager.ts" />
+/// <reference path="../core/RenderPipeline.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Geometry.ts" />
