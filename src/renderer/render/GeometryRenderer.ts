@@ -5,6 +5,7 @@
 /// <reference path="MaterialManager.ts" />
 /// <reference path="BaseGeometryPassRenderer.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
+/// <reference path="../utils/Geometry.ts" />
 module Hyper.Renderer
 {
 	

@@ -6,6 +6,8 @@
 /// <reference path="SkinningShader.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Utils.ts" />
+/// <reference path="../utils/Geometry.ts" />
+/// <reference path="../core/Shaders.ts" />
 /// <reference path="../utils/IntegerMap.ts" />
 module Hyper.Renderer
 {

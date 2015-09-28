@@ -25,6 +25,7 @@ var sources = {
     js: ['./src/**/*.js'],
     tsd: ['./src/*.d.ts'],
     ts: ['./src/**/*.ts', '!./src/*.d.ts'],
+    tsMain: ['./src/renderer/public/*.ts'],
     shaders: ['./src/renderer/shaders/**/*.glsl']
   }
 };
@@ -46,10 +47,11 @@ function addSource(inp) {
 
 gulp.task('js:lib', function() {
   var tsProject = ts.createProject('tsconfig.json', {
-    sortOutput: true
+    sortOutput: true,
+    out: 'hyper3d.js'
   });
   
-  var tsFiles = gulp.src(sources.lib.ts);
+  var tsFiles = gulp.src(sources.lib.tsMain);
     
   var shaderChunks = gulp.src(sources.lib.shaders)
     .pipe(hyperShaders(shaderTemplateSource ));
@@ -61,7 +63,6 @@ gulp.task('js:lib', function() {
   return es.merge(
     tsStream.dts.pipe(gulp.dest(destinations.pub_js)),
     tsStream.js
-    .pipe(concat('hyper3d.js'))
     .pipe(concatUtil.header('(function(Hyper){\n"use strict";\n'))
     .pipe(concatUtil.footer('})(this.Hyper = this.Hyper || {});'))
     .pipe(gulp.dest(destinations.pub_js)),
