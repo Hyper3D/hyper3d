@@ -1,4 +1,3 @@
-#pragma parameter hasShadowMap
 #pragma parameter isFullScreen
 
 #if c_isFullScreen

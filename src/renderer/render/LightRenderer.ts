@@ -6,6 +6,7 @@
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="GeometryRenderer.ts" />
 /// <reference path="../utils/Geometry.ts" />
+/// <reference path="../public/Lights.ts" />
 module Hyper.Renderer
 {
 	export interface LightPassInput
@@ -182,6 +183,7 @@ module Hyper.Renderer
 						'u_lightPos',
 						'u_lightInfluenceRadius', 'u_lightInvInfluenceRadiusSquared',
 						'u_minimumDistance',
+						'u_invDistanceToJitter',
 						'u_lightRadius',
 						'u_lightLength',
 						'u_lightDir'
@@ -407,7 +409,8 @@ module Hyper.Renderer
 		{
 			if (light instanceof THREE.DirectionalLight) {
 				if (light.castShadow) {
-					const camera = light.shadowCamera = <THREE.OrthographicCamera>light.shadowCamera 
+					const camera: THREE.OrthographicCamera = light.shadowCamera = 
+						<THREE.OrthographicCamera>light.shadowCamera 
 						|| new THREE.OrthographicCamera(-1, 1, 1, -1);
 					
 					// decide shadow map axis direction
@@ -463,7 +466,21 @@ module Hyper.Renderer
 			
 			if (light instanceof THREE.PointLight) {
 				if (light.castShadow) {
-					// TODO: point light shadow
+					let near = 0.1;
+					
+					if (light instanceof PointLight){
+						near = light.shadowCameraNear;
+					}
+					
+					const camera: THREE.CubeCamera = (<any>light).shadowCamera = 
+						<THREE.CubeCamera>(<any>light).shadowCamera 
+						|| new THREE.CubeCamera(near, light.distance, 1024); // FIXME: what about infinite distance point light?
+					
+					camera.position.copy(light.getWorldPosition(tmpV3a));
+					camera.updateMatrixWorld(true);
+					
+					const gen = this.inShadowMaps;
+					gen.prepareShadowMap((<any>light).shadowCamera, ShadowMapType.Normal);
 				}
 			}
 		}
@@ -540,18 +557,36 @@ module Hyper.Renderer
 			
 			if (light instanceof THREE.PointLight) {
 				let radius = light.distance;
-				const pos = light.getWorldPosition(tmpV3a);
-				pos.applyMatrix4(this.viewMat);
 				
 				if (radius == 0) {
 					radius = Infinity;
 				}
 				
 				const isFullScreen = true; // TODO
+				let hasShadowMap = light.castShadow;
+				const shadowCamera: THREE.CubeCamera =
+					(<any>light).shadowCamera;
+				
+				if (hasShadowMap && shadowCamera) {
+					const gen = this.inShadowMaps;
+					gen.renderShadowMap(shadowCamera, ShadowMapType.Normal);
+					
+					this.setState(); // ShadowMapRenderService might change the state
+					gl.activeTexture(gl.TEXTURE6);
+					gl.bindTexture(gl.TEXTURE_CUBE_MAP, gen.currentCubeShadowDistanceMap);
+				} else {
+					hasShadowMap = false;
+				}
+				
+				const pos = light.getWorldPosition(tmpV3b);
+				pos.applyMatrix4(this.viewMat);
 				
 				let flags = PointLightProgramFlags.Default;
 				if (isFullScreen) {
 					flags |= PointLightProgramFlags.IsFullScreen;
+				}
+				if (hasShadowMap) {
+					flags |= PointLightProgramFlags.HasShadowMaps;
 				}
 				
 				const p = this.pointLightProgram[flags];
@@ -561,17 +596,49 @@ module Hyper.Renderer
 				colorG *= light.intensity;
 				colorB *= light.intensity;
 				
+				// light shape
+				if (light instanceof PointLight) {
+					gl.uniform1f(p.uniforms['u_lightRadius'], light.radius);
+					gl.uniform1f(p.uniforms['u_lightLength'], light.length * 0.5);
+					gl.uniform1f(p.uniforms['u_invDistanceToJitter'], 1 / light.radius); // FIXME: maybe not correct
+					if (light.length > 0) {
+						// Z-axis oriented
+						tmpV3a.set(0, 0, 1).transformDirection(light.matrixWorld).normalize();
+						gl.uniform3f(p.uniforms['u_lightDir'], tmpV3a.x, tmpV3a.y, tmpV3a.z);
+						tmpV3a.multiplyScalar(light.length * 0.5);
+						pos.sub(tmpV3a);
+					} else {
+						gl.uniform3f(p.uniforms['u_lightDir'], 0, 0, 0);
+					}
+				} else {
+					gl.uniform1f(p.uniforms['u_lightRadius'], 0);
+					gl.uniform1f(p.uniforms['u_lightLength'], 0);
+					gl.uniform3f(p.uniforms['u_lightDir'], 0, 0, 0);
+					gl.uniform1f(p.uniforms['u_invDistanceToJitter'], 0);
+				}
+				
 				gl.uniform3f(p.uniforms['u_lightPos'], pos.x, pos.y, pos.z);
 				gl.uniform1f(p.uniforms['u_lightInfluenceRadius'], radius);
 				gl.uniform1f(p.uniforms['u_lightInvInfluenceRadiusSquared'], 1 / (radius * radius));
 				gl.uniform1f(p.uniforms['u_minimumDistance'], 0.1 * light.intensity); // FIXME
 				
-				// light shape
-				gl.uniform1f(p.uniforms['u_lightRadius'], 0);
-				gl.uniform1f(p.uniforms['u_lightLength'], 0);
-				gl.uniform3f(p.uniforms['u_lightDir'], 0, 0, 0);
-				
 				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
+				
+				if (hasShadowMap) {
+					const gen = this.inShadowMaps;
+					const scl = 1 / light.distance;
+					
+					tmpM2.getInverse(shadowCamera.matrixWorld);
+					tmpM.multiplyMatrices(tmpM2, this.parent.renderer.currentCamera.matrixWorld);
+					tmpM3.makeScale(scl, scl, scl).multiply(tmpM);
+					gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, tmpM3.elements);
+					
+					gl.activeTexture(gl.TEXTURE5);
+					gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
+					
+					gl.uniform2f(p.uniforms['u_jitterAmount'], 
+						16 / gen.cubeShadowDistanceMapSize, 16 / gen.cubeShadowDistanceMapSize);
+				}
 				
 				gl.depthFunc(gl.GREATER);
 				if (isFullScreen) {

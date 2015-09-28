@@ -16,20 +16,30 @@ module Hyper.Renderer
 		{
 		}
 		
-		static createFramebuffer(gl: WebGLRenderingContext, attachments: GLFramebufferAttachments): GLFramebuffer
+		static createFramebuffer(gl: WebGLRenderingContext, attachments: GLFramebufferAttachments,
+			texTarget?: number): GLFramebuffer
 		{
+			if (texTarget == null) {
+				texTarget = gl.TEXTURE_2D;
+			}
+			
 			const handle = gl.createFramebuffer();
 			gl.bindFramebuffer(gl.FRAMEBUFFER, handle);
 			
 			if (attachments.depth != null) {
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
-					gl.TEXTURE_2D, attachments.depth, 0);
+				if (attachments.depth instanceof WebGLTexture) {
+					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
+						gl.TEXTURE_2D, attachments.depth, 0);
+				} else if (attachments.depth instanceof WebGLRenderbuffer) {
+					gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
+						gl.RENDERBUFFER, attachments.depth);
+				}
 			}
 			
 			const colors = attachments.colors;
 			for (let i = 0; i < colors.length; ++i) {
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i,
-					gl.TEXTURE_2D, colors[i], 0);
+					texTarget, colors[i], 0);
 			}
 			
 			const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
