@@ -309,6 +309,10 @@ module Hyper.Renderer
 			super(parent.renderer, parent.gpMaterials, false);
 		}
 		
+		skipsMesh(mesh: THREE.Mesh): boolean
+		{
+			return !mesh.castShadow;
+		}
 		
 		render(camera: THREE.Camera): void
 		{
@@ -344,6 +348,10 @@ module Hyper.Renderer
 			this.invFar = 0;
 		}
 		
+		skipsMesh(mesh: THREE.Mesh): boolean
+		{
+			return !mesh.castShadow;
+		}
 		
 		render(camera: THREE.CubeCamera): void
 		{

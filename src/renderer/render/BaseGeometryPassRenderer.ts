@@ -76,7 +76,8 @@ module Hyper.Renderer
 			const geometry = (<any>obj).geometry;
 			
 			if (geometry != null && !this.cullObject(obj)) {
-				if (obj instanceof THREE.Mesh) {
+				if (obj instanceof THREE.Mesh &&
+					!this.skipsMesh(obj)) {
 					this.renderMesh(obj, geometry);
 				}
 			}
@@ -95,6 +96,11 @@ module Hyper.Renderer
 			}
 			
 			lobj.render(this.state);
+		}
+		skipsMesh(mesh: THREE.Mesh): boolean
+		{
+			// to be overrided
+			return false;
 		}
 		setupAdditionalUniforms(mesh: THREE.Mesh, shader: BaseGeometryPassShader): void
 		{
