@@ -404,7 +404,7 @@ module Hyper.Renderer
 			private inLinearDepth: TextureRenderBuffer,
 			private inLit: TextureRenderBuffer,
 			private out: TextureRenderBuffer,
-			useHdrMosaic: boolean,
+			private useHdrMosaic: boolean,
 			colorIsLogRGB: boolean
 		)
 		{
@@ -504,8 +504,8 @@ module Hyper.Renderer
 				this.viewVec.coefY.x, this.viewVec.coefY.y);
 			gl.uniform1f(p.uniforms['u_stride'], Math.ceil(this.inLinearDepth.height / 20));
 			gl.uniform2f(p.uniforms['u_jitterCoordScale'],
-				this.inLinearDepth.width / this.parent.renderer.uniformDitherJitter.size * 0.5,
-				this.inLinearDepth.height / this.parent.renderer.uniformDitherJitter.size * 0.5);
+				this.inLinearDepth.width / this.parent.renderer.uniformDitherJitter.size * (this.useHdrMosaic ? 0.5 : 1),
+				this.inLinearDepth.height / this.parent.renderer.uniformDitherJitter.size * (this.useHdrMosaic ? 0.5 : 1));
 				
 			tmpM2.makeTranslation(1, 1, 1).multiply(this.parent.renderer.currentCamera.projectionMatrix);
 			tmpM3.makeScale(this.inLinearDepth.width / 2, this.inLinearDepth.height / 2, 0.5).multiply(tmpM2);
