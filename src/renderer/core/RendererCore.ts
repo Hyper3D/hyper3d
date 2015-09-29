@@ -26,7 +26,7 @@ module Hyper.Renderer
 	
 	export enum HdrMode
 	{
-		FullHdr,
+		NativeHdr,
 		MobileHdr
 	}
 	
@@ -76,6 +76,7 @@ module Hyper.Renderer
 		deferGC: boolean;
 		
 		useFullResolutionGBuffer: boolean;
+		useFPBuffer: boolean;
 		
 		width: number;
 		height: number;
@@ -102,9 +103,9 @@ module Hyper.Renderer
 			this.supportsSRGB = !!(this.ext.get('EXT_sRGB'));
 			this.supportsHdrTexture = !!(this.ext.get('OES_texture_half_float') && 
 				this.ext.get('OES_texture_half_float_linear'));
-			this.supportsHdrRenderingBuffer = !!(this.ext.get('WEBGL_color_buffer_float') &&
+			this.supportsHdrRenderingBuffer = !!(this.ext.get('EXT_color_buffer_half_float') &&
 				this.ext.get('OES_texture_half_float'));
-			this.hdrMode = this.supportsHdrRenderingBuffer ? HdrMode.FullHdr : HdrMode.MobileHdr;
+			this.hdrMode = this.supportsHdrRenderingBuffer && params.useFPBuffer ? HdrMode.NativeHdr : HdrMode.MobileHdr;
 			
 			this.renderWidth = this.width = gl.drawingBufferWidth;
 			this.renderHeight = this.height = gl.drawingBufferHeight;
@@ -208,10 +209,9 @@ module Hyper.Renderer
 		{
 			const ops: RenderOperation[] = [];
 			const gbuffer = this.geometryRenderer.setupGeometryPass(this.width, this.height, ops);
-			const linearDepthHalf = this.resampler.setupFilter(gbuffer.linearDepth, {
+			const linearDepthHalf = this.resampler.setupNearestResampler(gbuffer.linearDepth, {
 				outWidth: (gbuffer.linearDepth.width + 1) >> 1,
-				outHeight: (gbuffer.linearDepth.height + 1) >> 1,
-				type: ResampleFilterType.Nearest
+				outHeight: (gbuffer.linearDepth.height + 1) >> 1
 			}, ops);
 			
 			const shadowMaps = this.shadowRenderer.setupShadowPass(ops);
@@ -222,16 +222,27 @@ module Hyper.Renderer
 				linearDepthHalf: linearDepthHalf
 			}, ops);
 			
-			const lightBuf = this.lightRenderer.setupLightPass({
-				g0: gbuffer.g0,
-				g1: gbuffer.g1,
-				g2: gbuffer.g2,
-				g3: gbuffer.g3,	
-				linearDepth: gbuffer.linearDepth,	
-				depth: gbuffer.depth,	
-				shadowMaps: shadowMaps.shadowMaps,
-				ssao: ssao.output
-			}, ops);
+			const lightBuf = this.hdrMode == HdrMode.MobileHdr ?
+				this.lightRenderer.setupMobileHdrLightPass({
+					g0: gbuffer.g0,
+					g1: gbuffer.g1,
+					g2: gbuffer.g2,
+					g3: gbuffer.g3,	
+					linearDepth: gbuffer.linearDepth,	
+					depth: gbuffer.depth,	
+					shadowMaps: shadowMaps.shadowMaps,
+					ssao: ssao.output
+				}, ops) :
+				this.lightRenderer.setupNativeHdrLightPass({
+					g0: gbuffer.g0,
+					g1: gbuffer.g1,
+					g2: gbuffer.g2,
+					g3: gbuffer.g3,	
+					linearDepth: gbuffer.linearDepth,	
+					depth: gbuffer.depth,	
+					shadowMaps: shadowMaps.shadowMaps,
+					ssao: ssao.output
+				}, ops);
 			
 			const reflections = this.reflectionRenderer.setupReflectionPass({
 				g0: gbuffer.g0,
@@ -241,12 +252,14 @@ module Hyper.Renderer
 				linearDepth: gbuffer.linearDepth,	
 				depth: gbuffer.depth,	
 				ssao: ssao.output,
-				lit: lightBuf.lit
+				lit: lightBuf
 			}, ops);
 			
-			let demosaiced = this.hdrDemosaic.setupFilter(reflections.lit, {
-				halfSized: false
-			}, ops);
+			let demosaiced = reflections instanceof HdrMosaicTextureRenderBufferInfo ?
+				<LogRGBTextureRenderBufferInfo> this.hdrDemosaic.setupFilter(reflections, {
+					halfSized: false
+				}, ops) :
+				<LinearRGBTextureRenderBufferInfo> reflections;
 			
 			demosaiced = this.motionBlur.setupFilter({
 				color: demosaiced,

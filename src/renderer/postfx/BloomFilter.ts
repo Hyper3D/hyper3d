@@ -37,29 +37,41 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: LogRGBTextureRenderBufferInfo, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
+		setupFilter<T extends LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
+		(input: T, ops: RenderOperation[]): T
 		{
 			
 			// convert input to linear RGB.
 			// hope that GPU supports sRGB buffer... (or we'll lose much precision)
-			const ds0 = new LinearRGBTextureRenderBufferInfo("Bloom 1/2", 
-					(input.width + 1) >> 1, (input.height + 1) >> 1,
-					input.format);
-			ops.push({
-				inputs: {
-					input: input
-				},
-				outputs: {
-					output: ds0
-				},
-				bindings: [],
-				optionalOutputs: [],
-				name: `Resample and Convert To Linear RGB`,
-				factory: (cfg) => new BloomDownsampleRenderer(this,
-					<TextureRenderBuffer> cfg.inputs['input'],
-					<TextureRenderBuffer> cfg.outputs['output'],
-					1 / 32)
-			});
+			let ds0: LinearRGBTextureRenderBufferInfo;
+			
+			if (input instanceof LogRGBTextureRenderBufferInfo) {
+				ds0 = new LinearRGBTextureRenderBufferInfo("Bloom 1/2", 
+						(input.width + 1) >> 1, (input.height + 1) >> 1,
+						input.format);
+				ops.push({
+					inputs: {
+						input: input
+					},
+					outputs: {
+						output: ds0
+					},
+					bindings: [],
+					optionalOutputs: [],
+					name: `Resample and Convert To Linear RGB`,
+					factory: (cfg) => new BloomDownsampleRenderer(this,
+						<TextureRenderBuffer> cfg.inputs['input'],
+						<TextureRenderBuffer> cfg.outputs['output'],
+						1 / 32)
+				});
+			} else {
+				// already linear
+				ds0 = this.resampler.setupLinearResampler(input, {
+					outWidth: (input.width + 1) >> 1,
+					outHeight: (input.height + 1) >> 1
+				}, ops);
+				ds0.name = "Bloom 1/2";
+			}
 			
 			const levels: LinearRGBTextureRenderBufferInfo[] = [];
 			let prev = ds0;
@@ -68,10 +80,9 @@ module Hyper.Renderer
 				if (input.width < size * 4 || input.height < size * 4) {
 					break;
 				}
-				const ds = this.resampler.setupFilter(prev, {
+				const ds = this.resampler.setupLinearResampler(prev, {
 					outWidth: (input.width + size - 1) >> (i + 2),
-					outHeight: (input.height + size - 1) >> (i + 2),
-					type: ResampleFilterType.Linear
+					outHeight: (input.height + size - 1) >> (i + 2)
 				}, ops);
 				ds.name = `Bloom 1/${size}`;
 				
@@ -94,7 +105,10 @@ module Hyper.Renderer
 			}
 			
 			// combine
-			const outp = new LogRGBTextureRenderBufferInfo("Bloom Added", input.width, input.height,
+			const outp = input instanceof LinearRGBTextureRenderBufferInfo ?
+				new LinearRGBTextureRenderBufferInfo("Bloom Added", input.width, input.height,
+					input.format) : 
+				new LogRGBTextureRenderBufferInfo("Bloom Added", input.width, input.height,
 					input.format);
 			
 			ops.push({
@@ -111,11 +125,13 @@ module Hyper.Renderer
 				factory: (cfg) => new BloomFinalPassRenderer(this,
 					<TextureRenderBuffer> cfg.inputs['input'],
 					<TextureRenderBuffer> cfg.inputs['bloom'],
-					<TextureRenderBuffer> cfg.outputs['output'])
+					<TextureRenderBuffer> cfg.outputs['output'],
+					input instanceof LogRGBTextureRenderBufferInfo,
+					input instanceof LogRGBTextureRenderBufferInfo ? 1 : 1 / 32)
 			});
 			
 			
-			return outp;
+			return <T> outp;
 		}
 	}
 	class BloomDownsampleRenderer implements RenderOperator
@@ -210,7 +226,9 @@ module Hyper.Renderer
 			private parent: BloomFilterRenderer,
 			private input: TextureRenderBuffer,
 			private bloom: TextureRenderBuffer,
-			private out: TextureRenderBuffer
+			private out: TextureRenderBuffer,
+			useLogRGB: boolean,
+			private gain: number
 		)
 		{
 			
@@ -223,7 +241,9 @@ module Hyper.Renderer
 			
 			{
 				const program = parent.renderer.shaderManager.get('VS_Bloom', 'FS_Bloom',
-					['a_position']);
+					['a_position'], {
+						useLogRGB
+					});
 				this.program = {
 					program,
 					uniforms: program.getUniforms([
@@ -262,7 +282,7 @@ module Hyper.Renderer
 			gl.uniform1i(p.uniforms['u_bloom'], 1);
 			
 			const params = this.parent.params;
-			gl.uniform1f(p.uniforms['u_strength'], params.amount);
+			gl.uniform1f(p.uniforms['u_strength'], params.amount * this.gain);
 			gl.uniform1f(p.uniforms['u_saturation'], params.saturation);
 			
 			gl.uniform2f(p.uniforms['u_texCoordOffset'],

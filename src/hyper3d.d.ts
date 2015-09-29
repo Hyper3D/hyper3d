@@ -4,6 +4,7 @@ declare module Hyper
 	{
 		canvas?: HTMLCanvasElement;
 		useFullResolutionGBuffer?: boolean;
+		useFPBuffer?: boolean;
 	}
 	
 	export class ReflectionProbe extends THREE.Object3D

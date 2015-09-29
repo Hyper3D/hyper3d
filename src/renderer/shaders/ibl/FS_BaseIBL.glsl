@@ -4,6 +4,7 @@
 #pragma require HdrMosaic
 #pragma require DepthFetch
 #pragma parameter isBlendPass
+#pragma parameter useHdrMosaic
 
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
@@ -26,16 +27,20 @@ float evaluateWeight(vec3 viewPos);
 
 void emitIBLOutput(vec3 lit, float weight)
 {
-
 	// dither
 	vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
 
+#if c_useHdrMosaic
 	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
 	gl_FragColor = mosaicked;
 
 #if c_isBlendPass
 	gl_FragColor.w = weight;
-#endif
+#endif // c_isBlendPass
+#else // c_useHdrMosaic
+	if (lit != lit) lit *= 0.; // reject denormals
+	gl_FragColor = vec4(lit, weight);
+#endif // c_useHdrMosaic
 }
 
 void main()
@@ -77,7 +82,7 @@ void main()
 	refl *= ssao;
 
 	// lighting model
-	refl *= evaluateReflection(clamp(0., 1., dot(g.normal, normalize(viewDir))), mat);
+	refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
 
 	emitIBLOutput(refl.xyz, weight);
 }

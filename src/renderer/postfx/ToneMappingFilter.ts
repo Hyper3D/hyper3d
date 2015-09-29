@@ -44,12 +44,14 @@ module Hyper.Renderer
 		}
 		
 		/** input must be LogRGB. */
-		setupFilter(input: LogRGBTextureRenderBufferInfo, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
+		setupFilter(input: LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
 		{
 			let width = input.width;
 			let height = input.height;
 			
-			const outp = new LinearRGBTextureRenderBufferInfo("Tone Mapped", width, height, input.format);
+			// FIXME: we don't need SRGB if we use gammaed output
+			const outp = new LinearRGBTextureRenderBufferInfo("Tone Mapped", width, height,
+				this.renderer.supportsSRGB ? TextureRenderBufferFormat.SRGBA8 : TextureRenderBufferFormat.RGBA8);
 			
 			ops.push({
 				inputs: {
@@ -63,7 +65,8 @@ module Hyper.Renderer
 				name: `Tone Mapping`,
 				factory: (cfg) => new ToneMappingFilterRendererInstance(this,
 					<TextureRenderBuffer> cfg.inputs['input'],
-					<TextureRenderBuffer> cfg.outputs['output'])
+					<TextureRenderBuffer> cfg.outputs['output'],
+					input instanceof LogRGBTextureRenderBufferInfo)
 			});
 			return outp;
 		}
@@ -84,7 +87,8 @@ module Hyper.Renderer
 		constructor(
 			private parent: ToneMappingFilterRenderer,
 			private input: TextureRenderBuffer,
-			private out: TextureRenderBuffer
+			private out: TextureRenderBuffer,
+			inputIsLogRGB: boolean
 		)
 		{
 			
@@ -99,7 +103,9 @@ module Hyper.Renderer
 			
 			{
 				const program = parent.renderer.shaderManager.get('VS_ToneMapping', 'FS_ToneMapping',
-					['a_position']);
+					['a_position'], {
+						inputIsLogRGB
+					});
 				this.program = {
 					program,
 					uniforms: program.getUniforms([

@@ -5,6 +5,8 @@
 #pragma require ShadingModel
 #pragma require DepthFetch
 
+#pragma parameter useHdrMosaic
+
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
@@ -45,6 +47,10 @@ void emitLightPassOutput(vec3 lit)
 	// dither
 	vec3 dither = texture2D(u_dither, v_ditherCoord * perspectiveScaling).xyz;
 
-	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
-	gl_FragColor = mosaicked;
+#if c_useHdrMosaic
+	gl_FragColor = encodeHdrMosaicDithered(lit, dither);
+#else
+	if (lit != lit) lit *= 0.; // reject denormals
+	gl_FragColor = vec4(lit, 0.);
+#endif
 }

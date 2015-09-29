@@ -1,6 +1,7 @@
 #pragma require Globals
 #pragma require LogRGB
 #pragma parameter globalSupportsSRGB
+#pragma parameter inputIsLogRGB
 
 uniform sampler2D u_input;
 varying highp vec2 v_texCoord;
@@ -17,7 +18,11 @@ uniform float u_contrast;
 
 void main()
 {
+#if c_inputIsLogRGB
 	vec3 color = decodeLogRGB(texture2D(u_input, v_texCoord));
+#else
+	vec3 color = texture2D(u_input, v_texCoord).xyz;
+#endif
 
 	// vignette
 	float vigTan2 = dot(v_vignetteCoord, v_vignetteCoord);

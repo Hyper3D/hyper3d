@@ -6,6 +6,9 @@
 #pragma require HdrMosaic
 #pragma require ShadingModel
 
+#pragma parameter useHdrMosaic
+#pragma parameter colorIsLogRGB
+
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
@@ -29,6 +32,15 @@ uniform mediump float u_stride;
 // see http://casual-effects.blogspot.jp/2014/08/screen-space-ray-tracing.html
 
 GBufferContents g;
+
+vec3 decodeInputColor(vec4 color)
+{
+#if c_colorIsLogRGB
+	return decodeLogRGB(color);
+#else
+	return color.xyz;
+#endif
+}
 
 vec3 doSSR(out float confidence)
 {
@@ -62,7 +74,7 @@ vec3 doSSR(out float confidence)
 
 		hitPixel.xy *= u_globalInvRenderSize;
 
-		vec3 color = decodeLogRGB(texture2D(u_color, hitPixel.xy));
+		vec3 color = decodeInputColor(texture2D(u_color, hitPixel.xy));
 		
 		// distance fade
 		hitSteps = clamp(0., 1., 2. - hitSteps * 2.); hitSteps *= hitSteps;
@@ -116,9 +128,14 @@ void main()
 
 			ssrConfidence *= ssrAmount;
 
+#if c_useHdrMosaic
 			vec4 encoded = encodeHdrMosaic(ssr);
 			gl_FragColor.xyz = mix(gl_FragColor.xyz, encoded.xyz, ssrConfidence);
 			gl_FragColor.w = max(gl_FragColor.w, encoded.w);
+#else
+			gl_FragColor.xyz = mix(gl_FragColor.xyz, ssr, ssrConfidence);
+			gl_FragColor.w = 1.;
+#endif
 		}
 	}
 

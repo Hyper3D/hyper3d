@@ -12,7 +12,6 @@ module Hyper.Renderer
 	}
 	export interface ResampleFilterParameters
 	{
-		type: ResampleFilterType;
 		outWidth: number;
 		outHeight: number;
 	}
@@ -26,25 +25,13 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter<T>
+		setupNearestResampler<T extends TextureRenderBufferInfo>
 		(input: INearestResampleableRenderBufferInfo<T>, params: ResampleFilterParameters, ops: RenderOperation[]): T
 		{
 			const width = params.outWidth;
 			const height = params.outHeight;
 			const outp: T = 
-				input instanceof LinearRGBTextureRenderBufferInfo ?
-					new LinearRGBTextureRenderBufferInfo(input.name + " Resampled", width, height, input.format) :
 				input.cloneWithDimension(input.name + " Resampled", width, height);
-					
-			if (outp == null) {
-				throw new Error("cannot resample the input logical format");
-			}
-			
-			let name: string;
-			switch (params.type) {
-				case ResampleFilterType.Linear: name = "Linear"; break;
-				case ResampleFilterType.Nearest: name = "Nearest"; break;
-			}
 			
 			ops.push({
 				inputs: {
@@ -55,11 +42,36 @@ module Hyper.Renderer
 				},
 				bindings: [],
 				optionalOutputs: [],
-				name: `Resample (${name})`,
+				name: `Resample (Nearest)`,
 				factory: (cfg) => new ResampleFilterRendererInstance(this,
 					<TextureRenderBuffer> cfg.inputs['input'],
 					<TextureRenderBuffer> cfg.outputs['output'],
-					params)
+					ResampleFilterType.Nearest)
+			});
+			return outp;
+		}
+		
+		setupLinearResampler(input: LinearRGBTextureRenderBufferInfo, 
+			params: ResampleFilterParameters, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
+		{
+			const width = params.outWidth;
+			const height = params.outHeight;
+			const outp = new LinearRGBTextureRenderBufferInfo(input.name + " Resampled", width, height, input.format);
+			
+			ops.push({
+				inputs: {
+					input: input,
+				},
+				outputs: {
+					output: outp
+				},
+				bindings: [],
+				optionalOutputs: [],
+				name: `Resample (Linear)`,
+				factory: (cfg) => new ResampleFilterRendererInstance(this,
+					<TextureRenderBuffer> cfg.inputs['input'],
+					<TextureRenderBuffer> cfg.outputs['output'],
+					ResampleFilterType.Linear)
 			});
 			return outp;
 		}
@@ -79,7 +91,7 @@ module Hyper.Renderer
 			private parent: ResampleFilterRenderer,
 			private input: TextureRenderBuffer,
 			private out: TextureRenderBuffer,
-			private params: ResampleFilterParameters
+			private type: ResampleFilterType
 		)
 		{
 			
@@ -119,7 +131,7 @@ module Hyper.Renderer
 			
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
-			if (this.params.type == ResampleFilterType.Linear) {
+			if (this.type == ResampleFilterType.Linear) {
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 			}

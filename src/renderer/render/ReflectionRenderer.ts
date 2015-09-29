@@ -10,7 +10,7 @@
 /// <reference path="../public/ReflectionProbe.ts" />
 module Hyper.Renderer
 {
-	export interface ReflectionPassInput
+	export interface ReflectionPassInput<T extends HdrMosaicTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
 	{
 		g0: GBuffer0TextureRenderBufferInfo;
 		g1: GBuffer1TextureRenderBufferInfo;
@@ -20,12 +20,7 @@ module Hyper.Renderer
 		linearDepth: LinearDepthTextureRenderBufferInfo;
 		ssao: TextureRenderBufferInfo;
 		
-		lit: HdrMosaicTextureRenderBufferInfo;
-	}
-	
-	export interface ReflectionPassOutput
-	{
-		lit: HdrMosaicTextureRenderBufferInfo;
+		lit: T;
 	}
 	
 	export class ReflectionRenderer
@@ -38,26 +33,34 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupReflectionPass(input: ReflectionPassInput, ops: RenderOperation[]): ReflectionPassOutput
+		setupReflectionPass<T extends HdrMosaicTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
+		(input: ReflectionPassInput<T>, ops: RenderOperation[]): T
 		{
 			const width = input.g0.width;
 			const height = input.g0.height;
 			
-			const outp: ReflectionPassOutput = {
-				lit: new HdrMosaicTextureRenderBufferInfo("Reflection Added Mosaicked", width, height,
-					this.renderer.supportsSRGB ?
-						TextureRenderBufferFormat.SRGBA8 :
-						TextureRenderBufferFormat.RGBA8)
-			};
+			const outp: T = <any>(
+				input.lit instanceof LinearRGBTextureRenderBufferInfo ?
+					new LinearRGBTextureRenderBufferInfo("Reflection Added", width, height,
+						TextureRenderBufferFormat.RGBAF16):
+					new HdrMosaicTextureRenderBufferInfo("Reflection Added Mosaicked", width, height,
+						this.renderer.supportsSRGB ?
+							TextureRenderBufferFormat.SRGBA8 :
+							TextureRenderBufferFormat.RGBA8));
 			
-			const iblDone = new HdrMosaicTextureRenderBufferInfo("IBL Lit", width, height,
-					this.renderer.supportsSRGB ?
-						TextureRenderBufferFormat.SRGBA8 :
-						TextureRenderBufferFormat.RGBA8);
+			const iblDone: T = <any>(
+				input.lit instanceof LinearRGBTextureRenderBufferInfo ?
+					new LinearRGBTextureRenderBufferInfo("IBL Lit", width, height,
+						TextureRenderBufferFormat.RGBAF16):
+					new HdrMosaicTextureRenderBufferInfo("IBL Lit Mosaicked", width, height,
+						this.renderer.supportsSRGB ?
+							TextureRenderBufferFormat.SRGBA8 :
+							TextureRenderBufferFormat.RGBA8));
 						
-			const demosaiced = this.renderer.hdrDemosaic.setupFilter(input.lit, {
-				halfSized: false	
-			}, ops);
+			const demosaiced = input.lit instanceof LinearRGBTextureRenderBufferInfo ? input.lit :
+				this.renderer.hdrDemosaic.setupFilter(input.lit, {
+					halfSized: false	
+				}, ops);
 						
 			const depthCullEnabled =
 				input.depth.width == width &&
@@ -90,7 +93,8 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.inputs['depth'],
 					<TextureRenderBuffer> cfg.inputs['ssao'],
-					<TextureRenderBuffer> cfg.outputs['lit'])
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					input.lit instanceof HdrMosaicTextureRenderBufferInfo)
 			});
 			
 			ops.push({
@@ -104,7 +108,7 @@ module Hyper.Renderer
 					lit: input.lit
 				},
 				outputs: {
-					lit: outp.lit
+					lit: outp
 				},
 				bindings: [
 					'lit', 'lit'
@@ -119,7 +123,9 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['color'],
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.inputs['lit'],
-					<TextureRenderBuffer> cfg.outputs['lit'])
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					input.lit instanceof HdrMosaicTextureRenderBufferInfo,
+					demosaiced instanceof LogRGBTextureRenderBufferInfo)
 			});
 			
 			
@@ -160,7 +166,8 @@ module Hyper.Renderer
 			private inLinearDepth: TextureRenderBuffer,
 			private inDepth: TextureRenderBuffer,
 			private inSSAO: TextureRenderBuffer,
-			private outLit: TextureRenderBuffer
+			private outLit: TextureRenderBuffer,
+			private useHdrMosaic: boolean
 		)
 		{
 			
@@ -179,9 +186,16 @@ module Hyper.Renderer
 			
 			this.ambientProgram = [];
 			for (let i = 0; i < 2; ++i) {
+				// for native HDR mode, no non-blending pass is required
+				if (!useHdrMosaic && (i & IBLShaderFlags.IsBlendPass) == 0) {
+					this.ambientProgram.push(null);
+					continue;
+				}
+				
 				const program = parent.renderer.shaderManager.get('VS_DeferredAmbientIBL', 'FS_DeferredAmbientIBL',
 					['a_position'], {
-						isBlendPass: (i & IBLShaderFlags.IsBlendPass) != 0
+						isBlendPass: (i & IBLShaderFlags.IsBlendPass) != 0,
+						useHdrMosaic
 					});
 				this.ambientProgram.push({
 					program,
@@ -244,6 +258,9 @@ module Hyper.Renderer
 			
 			// setup common uniforms
 			for (const p of this.ambientProgram) {
+				if (!p) {
+					continue;
+				}
 				p.program.use();
 				gl.uniform1i(p.uniforms['u_g0'], 0);
 				gl.uniform1i(p.uniforms['u_g1'], 1);
@@ -281,22 +298,27 @@ module Hyper.Renderer
 				this.renderProbe(p, true);
 			}
 			
-			// compute maximum possible luminance value
-			// FIXME: hard edge might be visible
-			this.parent.renderer.state.flags = 
-				GLStateFlags.DepthTestEnabled |
-				GLStateFlags.DepthWriteDisabled |
-				GLStateFlags.BlendEnabled |
-				GLStateFlags.ColorRGBWriteDisabled;
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-			const ext = this.parent.renderer.ext.get('EXT_blend_minmax');
-			if (ext)
-				gl.blendEquation(ext.MAX_EXT);
-			for (const p of this.probes) {
-				this.renderProbe(p, true);
+			if (this.useHdrMosaic) {
+				// non-blending pass is only required for mobile HDR.
+				// real HDR doesn't require the following procedure.
+				
+				// compute maximum possible luminance value
+				// FIXME: hard edge might be visible
+				this.parent.renderer.state.flags = 
+					GLStateFlags.DepthTestEnabled |
+					GLStateFlags.DepthWriteDisabled |
+					GLStateFlags.BlendEnabled |
+					GLStateFlags.ColorRGBWriteDisabled;
+				gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+				const ext = this.parent.renderer.ext.get('EXT_blend_minmax');
+				if (ext)
+					gl.blendEquation(ext.MAX_EXT);
+				for (const p of this.probes) {
+					this.renderProbe(p, false);
+				}
+				if (ext)
+					gl.blendEquation(gl.FUNC_ADD);
 			}
-			if (ext)
-				gl.blendEquation(gl.FUNC_ADD);
 			
 		}
 		private renderTree(obj: THREE.Object3D): void
@@ -381,7 +403,9 @@ module Hyper.Renderer
 			private inColor: TextureRenderBuffer,
 			private inLinearDepth: TextureRenderBuffer,
 			private inLit: TextureRenderBuffer,
-			private out: TextureRenderBuffer
+			private out: TextureRenderBuffer,
+			useHdrMosaic: boolean,
+			colorIsLogRGB: boolean
 		)
 		{
 			
@@ -398,7 +422,9 @@ module Hyper.Renderer
 			
 			{
 				const program = parent.renderer.shaderManager.get('VS_SSR', 'FS_SSR',
-					['a_position']);
+					['a_position'], {
+						useHdrMosaic, colorIsLogRGB
+					});
 				this.program = {
 					program,
 					uniforms: program.getUniforms([

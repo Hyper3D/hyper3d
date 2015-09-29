@@ -5,11 +5,11 @@
 /// <reference path="../utils/Geometry.ts" />
 module Hyper.Renderer
 {
-	export interface TemporalAAInput
+	export interface TemporalAAInput<T extends LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
 	{
 		g0: GBuffer0TextureRenderBufferInfo;
 		g1: GBuffer1TextureRenderBufferInfo;
-		color: LogRGBTextureRenderBufferInfo;
+		color: T;
 		linearDepth: LinearDepthTextureRenderBufferInfo;
 	}
 	
@@ -33,12 +33,15 @@ module Hyper.Renderer
 		}
 		
 		/** input must be LogRGB. */
-		setupFilter(input: TemporalAAInput, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
+		setupFilter<T extends LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
+		(input: TemporalAAInput<T>, ops: RenderOperation[]): T
 		{
 			let width = input.color.width;
 			let height = input.color.height;
 			
-			const outp = new LogRGBTextureRenderBufferInfo("Antialiased", width, height, input.color.format);
+			const outp = input.color instanceof LinearRGBTextureRenderBufferInfo ?
+				new LinearRGBTextureRenderBufferInfo("Antialiased", width, height, input.color.format) : 
+			 	new LogRGBTextureRenderBufferInfo("Antialiased", width, height, input.color.format);
 			
 			ops.push({
 				inputs: {
@@ -57,9 +60,10 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['g0'],
 					<TextureRenderBuffer> cfg.inputs['g1'],
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
-					<TextureRenderBuffer> cfg.outputs['output'])
+					<TextureRenderBuffer> cfg.outputs['output'],
+					input.color instanceof LogRGBTextureRenderBufferInfo)
 			});
-			return outp;
+			return <T> outp;
 		}
 	}
 	
@@ -92,7 +96,8 @@ module Hyper.Renderer
 			private inG0: TextureRenderBuffer,
 			private inG1: TextureRenderBuffer,
 			private inLinearDepth: TextureRenderBuffer,
-			private out: TextureRenderBuffer
+			private out: TextureRenderBuffer,
+			useLogRGB: boolean
 		)
 		{
 			
@@ -112,7 +117,9 @@ module Hyper.Renderer
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			const fmt = input.format == TextureRenderBufferFormat.SRGBA8 ?
-				parent.renderer.ext.get('EXT_sRGB').SRGB_ALPHA_EXT : gl.RGBA;
+					parent.renderer.ext.get('EXT_sRGB').SRGB_ALPHA_EXT : gl.RGBA;
+			const typ = input.format == TextureRenderBufferFormat.RGBAF16 ?
+					parent.renderer.ext.get('OES_texture_half_float').HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
 			gl.texImage2D(gl.TEXTURE_2D, 0, fmt, input.width, input.height, 0,
 				fmt, gl.UNSIGNED_BYTE, null);
 			
@@ -123,7 +130,7 @@ module Hyper.Renderer
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, input.width, input.height, 0,
-				gl.RGBA, gl.UNSIGNED_BYTE, null);
+				gl.RGBA, typ, null);
 			
 			this.accumFb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
 				depth: null,

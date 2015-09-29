@@ -4,6 +4,8 @@
 
 #pragma parameter numSamples
 
+#pragma parameter useLogRGB
+
 varying highp vec2 v_texCoord;
 varying highp vec2 v_jitterCoord;
 
@@ -65,7 +67,11 @@ void main()
 	float localVelLn = length(localVel);
 
 	vec4 sum = vec4(
+#if c_useLogRGB
 		decodeLogRGB(texture2D(u_color, v_texCoord)),
+#else
+		texture2D(u_color, v_texCoord).xyz,
+#endif
 		1.);
 	sum *= 0.5 / (localVelLn + 0.1); // ??
 
@@ -83,7 +89,11 @@ void main()
 		coord += vn;
 
 		highp float depth = fetchDepth(u_linearDepth, coord);
+#if c_useLogRGB
 		vec3 color = decodeLogRGB(texture2D(u_color, coord));
+#else
+		vec3 color = texture2D(u_color, coord).xyz;
+#endif
 		vec2 vel = velocityAt(coord);
 
 		float b = softDepthCompare(localDepth, depth);
@@ -103,5 +113,10 @@ void main()
 	}
 
 	vec3 result = sum.xyz / sum.w;
+#if c_useLogRGB
 	gl_FragColor = encodeLogRGB(result);
+#else
+	gl_FragColor.xyz = result;
+	gl_FragColor.w = 1.;
+#endif
 }

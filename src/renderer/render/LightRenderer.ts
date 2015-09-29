@@ -21,11 +21,6 @@ module Hyper.Renderer
 		shadowMaps: ShadowMapRenderBufferInfo;
 	}
 	
-	export interface LightPassOutput
-	{
-		lit: HdrMosaicTextureRenderBufferInfo;
-	}
-	
 	export class LightRenderer
 	{
 		constructor(public renderer: RendererCore)
@@ -36,17 +31,13 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupLightPass(input: LightPassInput, ops: RenderOperation[]): LightPassOutput
+		setupNativeHdrLightPass(input: LightPassInput, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
 		{
 			const width = input.g0.width;
 			const height = input.g0.height;
 			
-			const outp: LightPassOutput = {
-				lit: new HdrMosaicTextureRenderBufferInfo("Lit Color Mosaicked", width, height,
-					this.renderer.supportsSRGB ?
-						TextureRenderBufferFormat.SRGBA8 :
-						TextureRenderBufferFormat.RGBA8)
-			};
+			const outp = new LinearRGBTextureRenderBufferInfo("Lit Color", width, height,
+					TextureRenderBufferFormat.RGBAF16);
 			
 			const depthCullEnabled =
 				input.depth.width == width &&
@@ -65,7 +56,7 @@ module Hyper.Renderer
 					ssao: input.ssao
 				},
 				outputs: {
-					lit: outp.lit
+					lit: outp
 				},
 				bindings: [],
 				optionalOutputs: [],
@@ -79,7 +70,55 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['depth'],
 					<TextureRenderBuffer> cfg.inputs['ssao'],
 					(<ShadowMapRenderBuffer> cfg.inputs['shadowMaps']).service,
-					<TextureRenderBuffer> cfg.outputs['lit'])
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					HdrMode.NativeHdr)
+			});
+			return outp;
+		}
+		
+		setupMobileHdrLightPass(input: LightPassInput, ops: RenderOperation[]): HdrMosaicTextureRenderBufferInfo
+		{
+			const width = input.g0.width;
+			const height = input.g0.height;
+			
+			const outp = new HdrMosaicTextureRenderBufferInfo("Lit Color Mosaicked", width, height,
+					this.renderer.supportsSRGB ?
+						TextureRenderBufferFormat.SRGBA8 :
+						TextureRenderBufferFormat.RGBA8);
+			
+			const depthCullEnabled =
+				input.depth.width == width &&
+				input.depth.height == height &&
+				input.depth.isDepthBuffer;
+			
+			ops.push({
+				inputs: {
+					g0: input.g0,
+					g1: input.g1,
+					g2: input.g2,
+					g3: input.g3,
+					linearDepth: input.linearDepth,
+					depth: depthCullEnabled ? input.depth : null,
+					shadowMaps: input.shadowMaps,
+					ssao: input.ssao
+				},
+				outputs: {
+					lit: outp
+				},
+				bindings: [],
+				optionalOutputs: [],
+				name: "Light Pass",
+				factory: (cfg) => new LightPassRenderer(this,
+					<TextureRenderBuffer> cfg.inputs['g0'],
+					<TextureRenderBuffer> cfg.inputs['g1'],
+					<TextureRenderBuffer> cfg.inputs['g2'],
+					<TextureRenderBuffer> cfg.inputs['g3'],
+					<TextureRenderBuffer> cfg.inputs['linearDepth'],
+					<TextureRenderBuffer> cfg.inputs['depth'],
+					<TextureRenderBuffer> cfg.inputs['ssao'],
+					(<ShadowMapRenderBuffer> cfg.inputs['shadowMaps']).service,
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					HdrMode.MobileHdr)
 			});
 			return outp;
 		}
@@ -140,7 +179,8 @@ module Hyper.Renderer
 			private inDepth: TextureRenderBuffer,
 			private inSSAO: TextureRenderBuffer,
 			private inShadowMaps: ShadowMapRenderService,
-			private outLit: TextureRenderBuffer
+			private outLit: TextureRenderBuffer,
+			private hdrMode: HdrMode
 		)
 		{
 			
@@ -168,7 +208,8 @@ module Hyper.Renderer
 				const program = parent.renderer.shaderManager.get('VS_DeferredPointLight', 'FS_DeferredPointLight',
 					['a_position'], {
 						hasShadowMap: (i & PointLightProgramFlags.HasShadowMaps) != 0,
-						isFullScreen: (i & PointLightProgramFlags.IsFullScreen) != 0
+						isFullScreen: (i & PointLightProgramFlags.IsFullScreen) != 0,
+						useHdrMosaic: hdrMode == HdrMode.MobileHdr
 					});
 				this.pointLightProgram.push({
 					program,
@@ -194,7 +235,8 @@ module Hyper.Renderer
 			for (let i = 0; i < 2; ++i) {
 				const program = parent.renderer.shaderManager.get('VS_DeferredDirectionalLight', 'FS_DeferredDirectionalLight',
 					['a_position'], {
-						hasShadowMap: (i & DirectionalLightProgramFlags.HasShadowMaps) != 0
+						hasShadowMap: (i & DirectionalLightProgramFlags.HasShadowMaps) != 0,
+						useHdrMosaic: hdrMode == HdrMode.MobileHdr
 					});
 				this.directionalLightProgram.push({
 					program,
@@ -211,7 +253,9 @@ module Hyper.Renderer
 			}
 			{
 				const program = parent.renderer.shaderManager.get('VS_DeferredAmbientLight', 'FS_DeferredAmbientLight',
-					['a_position']);
+					['a_position'], {
+						useHdrMosaic: hdrMode == HdrMode.MobileHdr
+					});
 				this.ambientLightProgram = {
 					program,
 					uniforms: program.getUniforms([

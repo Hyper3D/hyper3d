@@ -7,7 +7,7 @@ module Hyper.Renderer
 {
 	export interface MotionBlurInput
 	{
-		color: LogRGBTextureRenderBufferInfo;
+		color: LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo;
 		linearDepth: LinearDepthTextureRenderBufferInfo;
 		g0: GBuffer0TextureRenderBufferInfo;
 		g1: GBuffer1TextureRenderBufferInfo;
@@ -33,7 +33,10 @@ module Hyper.Renderer
 			const width = input.color.width;
 			const height = input.color.height;
 			
-			const outp = new LogRGBTextureRenderBufferInfo("Motion Blur Result", width, height,
+			const outp = input.color instanceof LinearRGBTextureRenderBufferInfo ?
+				new LinearRGBTextureRenderBufferInfo("Motion Blur Result", width, height,
+					input.color.format) :
+				new LogRGBTextureRenderBufferInfo("Motion Blur Result", width, height,
 					input.color.format);
 					
 			const tilesW = Math.ceil(input.color.width / params.maxBlur);
@@ -118,7 +121,8 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['neighborVel'],
 					<TextureRenderBuffer> cfg.inputs['linearDepth'],
 					<TextureRenderBuffer> cfg.outputs['output'],
-					params.maxBlur)
+					params.maxBlur,
+					input.color instanceof LogRGBTextureRenderBufferInfo)
 			});
 			
 			return outp;
@@ -311,7 +315,8 @@ module Hyper.Renderer
 			private inVelTile: TextureRenderBuffer,
 			private inLinearDepth: TextureRenderBuffer,
 			private out: TextureRenderBuffer,
-			private maxVelocity: number
+			private maxVelocity: number,
+			useLogRGB: boolean
 		)
 		{
 			
@@ -329,7 +334,8 @@ module Hyper.Renderer
 			{
 				const program = parent.renderer.shaderManager.get('VS_MotionBlur', 'FS_MotionBlur',
 					['a_position'], {
-						numSamples: 8
+						numSamples: 8,
+						useLogRGB
 					});
 				const p = this.program = {
 					program,
