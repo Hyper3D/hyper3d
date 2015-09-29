@@ -192,12 +192,45 @@ module Hyper.Renderer
 		isIndex: boolean;
 		isDynamic: boolean;
 		
+		typedArray: Float32Array;
+		typedArrayValid: boolean;
+		
 		constructor(private renderer: RendererCore, private source: THREE.BufferAttribute, public name: string)
 		{
 			this.buffer = null;
 			
 			this.isIndex = name == 'index';
 			this.isDynamic = source instanceof THREE.DynamicBufferAttribute;
+			
+			this.typedArray = null;
+			
+			if (source.array instanceof Array) {
+				this.typedArray = new Float32Array(source.array.length);
+				this.typedArrayValid = false;
+			} else {
+				// source.array is already a typed array
+				this.typedArray = <any> source.array;
+				this.typedArrayValid = true;
+			}
+		}
+		
+		private updateTypedArray(): void
+		{
+			const srcarr: number[] | Float32Array = this.source.array;
+			const ta = this.typedArray;
+			
+			if (!this.source.needsUpdate && this.typedArrayValid) {
+				return;
+			}
+			
+			if (srcarr != ta) {
+				// TODO: sub-range update
+				for (let i = 0; i < srcarr.length; ++i) {
+					ta[i] = srcarr[i];
+				}
+			}
+			
+			this.typedArrayValid = true;
 		}
 		
 		update(): void
@@ -205,16 +238,18 @@ module Hyper.Renderer
 			const gl = this.renderer.gl;
 			const type = this.isIndex ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
 			
+			this.updateTypedArray();
+				
 			if (!this.buffer) {
 				this.buffer = gl.createBuffer();
 				gl.bindBuffer(type, this.buffer);
-				gl.bufferData(type, this.source.array,
+				gl.bufferData(type, this.typedArray,
 					this.isDynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
 			} else if (this.source.needsUpdate) {
 				gl.bindBuffer(type, this.buffer);
 				
 				// TODO: sub-range update
-				gl.bufferSubData(type, 0, this.source.array);
+				gl.bufferSubData(type, 0, this.typedArray);
 				
 				this.source.needsUpdate = false;
 			}
