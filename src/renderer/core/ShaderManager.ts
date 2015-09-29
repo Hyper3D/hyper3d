@@ -4,11 +4,6 @@
 /// <reference path="../utils/Utils.ts" />
 module Hyper.Renderer
 {
-	export interface GlobalUniform
-	{
-		name: string;
-		value: any;
-	}
 	
 	export interface GlobalShaderUniformSubscriber
 	{
@@ -24,7 +19,7 @@ module Hyper.Renderer
 		setGlobalParameter(name: string, value: any): void;
 		
 		/** Sets the uniform value used by all shaders. Its name is prefixed by 'u_'. */
-		setGlobalUniform(name: string, value: any): void;
+		setGlobalUniform(name: string, isFP: boolean, c1: number, c2?: number, c3?: number, c4?: number): void;
 		
 		subscribeGlobalUniforms(program: GLProgram): GlobalShaderUniformSubscriber;
 		
@@ -33,6 +28,13 @@ module Hyper.Renderer
 		 * Do not dispose the returned GLProgram.
 		 */
 		get(vert: string, frag: string, attributes: string[], parameters?: any): GLProgram;
+	}
+	
+	interface GlobalUniform
+	{
+		name: string;
+		value: number[];
+		isIntegral: boolean;
 	}
 	
 	interface GlobalUniformMapping
@@ -82,7 +84,24 @@ module Hyper.Renderer
 			for (const mapping of this.globalUniforms) {
 				const value = mapping.unif.value;
 				
-				if (value instanceof Array) {
+				if (mapping.unif.isIntegral) {
+					switch (value.length) {
+						case 1:
+							gl.uniform1i(mapping.index, value[0]);
+							break;
+						case 2:
+							gl.uniform2i(mapping.index, value[0], value[1]);
+							break;
+						case 3:
+							gl.uniform3i(mapping.index, value[0], value[1], value[2]);
+							break;
+						case 4:
+							gl.uniform4i(mapping.index, value[0], value[1], value[2], value[3]);
+							break;
+						default:
+							throw new Error();
+					}
+				} else {
 					switch (value.length) {
 						case 1:
 							gl.uniform1f(mapping.index, value[0]);
@@ -99,9 +118,6 @@ module Hyper.Renderer
 						default:
 							throw new Error();
 					}
-				} else {
-					// FIXME: check number
-					gl.uniform1f(mapping.index, value);
 				}
 			}
 		}
@@ -157,11 +173,8 @@ module Hyper.Renderer
 			this.globalParameters[name] = value;
 		}
 		
-		setGlobalUniform(name: string, value: any): void
+		setGlobalUniform(name: string, isFP: boolean, c1: number, c2?: number, c3?: number, c4?: number): void
 		{
-			if (value == null) {
-				return;
-			}
 			let index = this.globalUniformMap[name];
 			let unif: GlobalUniform;
 			if (index == null) {
@@ -169,12 +182,30 @@ module Hyper.Renderer
 				this.globalUniformMap[name] = index;
 				this.globalUniforms.push(unif = {
 					name: name,
-					value: value
+					value: [0],
+					isIntegral: !isFP
 				});
 				this.globalUniformStructureVersion = {};
-			} else {
-				this.globalUniforms[index].value = value;
 			}
+			
+			const arr = this.globalUniforms[index].value;
+			arr[0] = c1;
+			if (c2 != null) {
+				arr[1] = c2;
+				if (c3 != null) {
+					arr[2] = c3;
+					if (c4 != null) {
+						arr[3] = c4;
+					} else if (arr.length > 3) {
+						arr.length = 3;
+					}
+				} else if (arr.length > 2) {
+					arr.length = 2;
+				}
+			} else if (arr.length > 1) {
+				arr.length = 1;
+			}
+			
 			this.globalUniformVersion = {};
 		}
 		

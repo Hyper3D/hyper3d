@@ -165,17 +165,17 @@ module Hyper.Renderer
 		
 		private updateGlobalUniforms(): void
 		{
-			this.shaderManager.setGlobalUniform('globalRenderSize', [this.renderWidth, this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalQuadRenderSize', [4 * this.renderWidth, 4 * this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalDoubleRenderSize', [2 * this.renderWidth, 2 * this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalHalfRenderSize', [0.5 * this.renderWidth, 0.5 * this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalQuadInvRenderSize', [4 / this.renderWidth, 4 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalDoubleInvRenderSize', [2 / this.renderWidth, 2 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalInvRenderSize', [1 / this.renderWidth, 1 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalHalfInvRenderSize', [0.5 / this.renderWidth, 0.5 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalQuarterInvRenderSize', [0.25 / this.renderWidth, 0.25 / this.renderHeight]);
-			this.shaderManager.setGlobalUniform('globalDepthFar', this.depthFar);
-			this.shaderManager.setGlobalUniform('globalInvDepthFar', 1 / this.depthFar);
+			this.shaderManager.setGlobalUniform('globalRenderSize', true, this.renderWidth, this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalQuadRenderSize', true, 4 * this.renderWidth, 4 * this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalDoubleRenderSize', true, 2 * this.renderWidth, 2 * this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalHalfRenderSize', true, 0.5 * this.renderWidth, 0.5 * this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalQuadInvRenderSize', true, 4 / this.renderWidth, 4 / this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalDoubleInvRenderSize', true, 2 / this.renderWidth, 2 / this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalInvRenderSize', true, 1 / this.renderWidth, 1 / this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalHalfInvRenderSize', true, 0.5 / this.renderWidth, 0.5 / this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalQuarterInvRenderSize', true, 0.25 / this.renderWidth, 0.25 / this.renderHeight);
+			this.shaderManager.setGlobalUniform('globalDepthFar', true, this.depthFar);
+			this.shaderManager.setGlobalUniform('globalInvDepthFar', true, 1 / this.depthFar);
 		}
 		
 		dispose(): void
