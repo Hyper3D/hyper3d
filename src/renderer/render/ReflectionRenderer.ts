@@ -12,20 +12,20 @@ module Hyper.Renderer
 {
 	export interface ReflectionPassInput
 	{
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
-		g2: TextureRenderBufferInfo;
-		g3: TextureRenderBufferInfo;
-		depth: TextureRenderBufferInfo;
-		linearDepth: TextureRenderBufferInfo;
+		g0: GBuffer0TextureRenderBufferInfo;
+		g1: GBuffer1TextureRenderBufferInfo;
+		g2: GBuffer2TextureRenderBufferInfo;
+		g3: GBuffer3TextureRenderBufferInfo;
+		depth: DepthTextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
 		ssao: TextureRenderBufferInfo;
 		
-		lit: TextureRenderBufferInfo;
+		lit: HdrMosaicTextureRenderBufferInfo;
 	}
 	
 	export interface ReflectionPassOutput
 	{
-		lit: TextureRenderBufferInfo;
+		lit: HdrMosaicTextureRenderBufferInfo;
 	}
 	
 	export class ReflectionRenderer
@@ -44,13 +44,13 @@ module Hyper.Renderer
 			const height = input.g0.height;
 			
 			const outp: ReflectionPassOutput = {
-				lit: new TextureRenderBufferInfo("Reflection Added Mosaicked", width, height,
+				lit: new HdrMosaicTextureRenderBufferInfo("Reflection Added Mosaicked", width, height,
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8)
 			};
 			
-			const iblDone = new TextureRenderBufferInfo("IBL Lit", width, height,
+			const iblDone = new HdrMosaicTextureRenderBufferInfo("IBL Lit", width, height,
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8);

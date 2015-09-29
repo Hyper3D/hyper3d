@@ -15,12 +15,12 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: TextureRenderBufferInfo, sigma: number, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: LinearRGBTextureRenderBufferInfo, sigma: number, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
 		{
-			const outp = new TextureRenderBufferInfo("H & V Blurred", input.width, input.height,
+			const outp = new LinearRGBTextureRenderBufferInfo("H & V Blurred", input.width, input.height,
 					input.format);
 			
-			const tmp = new TextureRenderBufferInfo("H Blurred", input.width, input.height,
+			const tmp = new LinearRGBTextureRenderBufferInfo("H Blurred", input.width, input.height,
 					input.format);
 					
 			ops.push({

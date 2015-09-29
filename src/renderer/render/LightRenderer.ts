@@ -1,6 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="../core/RenderBuffers.ts" />
+/// <reference path="../core/TypedRenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="MaterialManager.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
@@ -11,19 +11,19 @@ module Hyper.Renderer
 {
 	export interface LightPassInput
 	{
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
-		g2: TextureRenderBufferInfo;
-		g3: TextureRenderBufferInfo;
-		depth: TextureRenderBufferInfo;
-		linearDepth: TextureRenderBufferInfo;
+		g0: GBuffer0TextureRenderBufferInfo;
+		g1: GBuffer1TextureRenderBufferInfo;
+		g2: GBuffer2TextureRenderBufferInfo;
+		g3: GBuffer3TextureRenderBufferInfo;
+		depth: DepthTextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
 		ssao: TextureRenderBufferInfo;
 		shadowMaps: ShadowMapRenderBufferInfo;
 	}
 	
 	export interface LightPassOutput
 	{
-		lit: TextureRenderBufferInfo;
+		lit: HdrMosaicTextureRenderBufferInfo;
 	}
 	
 	export class LightRenderer
@@ -42,7 +42,7 @@ module Hyper.Renderer
 			const height = input.g0.height;
 			
 			const outp: LightPassOutput = {
-				lit: new TextureRenderBufferInfo("Lit Color Mosaicked", width, height,
+				lit: new HdrMosaicTextureRenderBufferInfo("Lit Color Mosaicked", width, height,
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8)

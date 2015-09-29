@@ -19,7 +19,7 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: TextureRenderBufferInfo, params: HdrDemosaicFilterParameters, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: HdrMosaicTextureRenderBufferInfo, params: HdrDemosaicFilterParameters, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
 		{
 			let width = input.width;
 			let height = input.height;
@@ -28,7 +28,7 @@ module Hyper.Renderer
 				width >>= 1; height >>= 1;
 			}
 			
-			const outp = new TextureRenderBufferInfo("LogRGB", width, height, input.format);
+			const outp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
 			
 			ops.push({
 				inputs: {

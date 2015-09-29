@@ -1,6 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="../core/RenderBuffers.ts" />
+/// <reference path="../core/TypedRenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="MaterialManager.ts" />
 /// <reference path="BaseGeometryPassRenderer.ts" />
@@ -11,12 +11,12 @@ module Hyper.Renderer
 	
 	export interface GeometryPassOutput
 	{
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
-		g2: TextureRenderBufferInfo;
-		g3: TextureRenderBufferInfo;
-		linearDepth: TextureRenderBufferInfo;
-		depth: TextureRenderBufferInfo;
+		g0: GBuffer0TextureRenderBufferInfo;
+		g1: GBuffer1TextureRenderBufferInfo;
+		g2: GBuffer2TextureRenderBufferInfo;
+		g3: GBuffer3TextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
+		depth: DepthTextureRenderBufferInfo;
 	}
 	export class GeometryRenderer
 	{
@@ -40,26 +40,26 @@ module Hyper.Renderer
 		setupGeometryPass(width: number, height: number, ops: RenderOperation[]): GeometryPassOutput
 		{
 			const fullRes = this.renderer.useFullResolutionGBuffer;
-			const mosaicked = new TextureRenderBufferInfo("Mosaicked G-Buffer", 
+			const mosaicked = new GBufferMosaicTextureRenderBufferInfo("Mosaicked G-Buffer", 
 				fullRes ? width * 2 : width, fullRes ? height * 2 : height,
 				TextureRenderBufferFormat.RGBA8);
-			const rawDepth = new TextureRenderBufferInfo("Raw Depth", 
+			const rawDepth = new DepthTextureRenderBufferInfo("Raw Depth", 
 				fullRes ? width * 2 : width, fullRes ? height * 2 : height,
 				TextureRenderBufferFormat.Depth);
 			const outp: GeometryPassOutput = {
-				g0: new TextureRenderBufferInfo("G0", width, height,
+				g0: new GBuffer0TextureRenderBufferInfo("G0", width, height,
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8),
-				g1: new TextureRenderBufferInfo("G1", width, height,
+				g1: new GBuffer1TextureRenderBufferInfo("G1", width, height,
 					TextureRenderBufferFormat.RGBA8),
-				g2: new TextureRenderBufferInfo("G2", width, height,
+				g2: new GBuffer2TextureRenderBufferInfo("G2", width, height,
 					TextureRenderBufferFormat.RGBA8),
-				g3: new TextureRenderBufferInfo("G3", width, height,
+				g3: new GBuffer3TextureRenderBufferInfo("G3", width, height,
 					this.renderer.supportsSRGB ?
 						TextureRenderBufferFormat.SRGBA8 :
 						TextureRenderBufferFormat.RGBA8),
-				linearDepth: new TextureRenderBufferInfo("Depth", width, height,
+				linearDepth: new LinearDepthTextureRenderBufferInfo("Depth", width, height,
 					TextureRenderBufferFormat.RGBA8),
 				depth: rawDepth
 			};

@@ -15,11 +15,11 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: TextureRenderBufferInfo, added: TextureRenderBufferInfo, modulation: THREE.Vector4, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: LinearRGBTextureRenderBufferInfo, added: LinearRGBTextureRenderBufferInfo, modulation: THREE.Vector4, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
 		{
 			const width = input.width;
 			const height = input.height;
-			const outp = new TextureRenderBufferInfo("Sum", width, height, input.format);
+			const outp = new LinearRGBTextureRenderBufferInfo("Sum", width, height, input.format);
 			
 			ops.push({
 				inputs: {

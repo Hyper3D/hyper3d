@@ -59,7 +59,7 @@ module Hyper.Renderer
 					return false;
 			}
 		}
-		toString(): string
+		get physicalFormatDescription(): string
 		{
 			let fmtStr: string = `${this.format}`;
 			switch (this.format) {
@@ -92,9 +92,13 @@ module Hyper.Renderer
 		{
 			return new DummyRenderBufferImpl();
 		}
-		toString(): string
+		get physicalFormatDescription(): string
 		{
-			return "Dummy";
+			return "None";
+		}
+		get logicalFormatDescription(): string
+		{
+			return "Untyped";
 		}
 	}
 	
@@ -137,9 +141,11 @@ module Hyper.Renderer
 			this.texture = null;
 			this.renderbuffer = null;
 			
+			let ext: any;
+			
 			switch (this.format) {
 				case TextureRenderBufferFormat.SRGBA8:
-					const ext = manager.core.ext.get('EXT_sRGB');
+					ext = manager.core.ext.get('EXT_sRGB');
 					if (!ext) {
 						throw new Error("sRGB not supported");
 					}
@@ -163,7 +169,19 @@ module Hyper.Renderer
 						gl.RGBA, gl.UNSIGNED_BYTE, null);
 					break;
 				case TextureRenderBufferFormat.RGBAF16:
-					throw new Error("fp buffer is not supported yet...");
+					ext = manager.core.ext.get('OES_texture_half_float');
+					if (!ext) {
+						throw new Error("RGBAF16 buffer not supported");
+					}
+					this.texture = gl.createTexture();
+					gl.bindTexture(gl.TEXTURE_2D, this.texture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0,
+						gl.RGBA, ext.HALF_FLOAT_OES, null);
+					break;
 				case TextureRenderBufferFormat.Depth:
 					this.texture = gl.createTexture();
 					gl.bindTexture(gl.TEXTURE_2D, this.texture);

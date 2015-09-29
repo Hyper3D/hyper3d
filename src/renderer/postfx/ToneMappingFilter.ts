@@ -44,12 +44,12 @@ module Hyper.Renderer
 		}
 		
 		/** input must be LogRGB. */
-		setupFilter(input: TextureRenderBufferInfo, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: LogRGBTextureRenderBufferInfo, ops: RenderOperation[]): LinearRGBTextureRenderBufferInfo
 		{
 			let width = input.width;
 			let height = input.height;
 			
-			const outp = new TextureRenderBufferInfo("Tone Mapped", width, height, input.format);
+			const outp = new LinearRGBTextureRenderBufferInfo("Tone Mapped", width, height, input.format);
 			
 			ops.push({
 				inputs: {

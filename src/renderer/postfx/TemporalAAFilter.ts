@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../core/RenderBuffers.ts" />
+/// <reference path="../core/TypedRenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Geometry.ts" />
@@ -7,10 +7,10 @@ module Hyper.Renderer
 {
 	export interface TemporalAAInput
 	{
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
-		color: TextureRenderBufferInfo;
-		linearDepth: TextureRenderBufferInfo;
+		g0: GBuffer0TextureRenderBufferInfo;
+		g1: GBuffer1TextureRenderBufferInfo;
+		color: LogRGBTextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
 	}
 	
 	export interface TemporalAAFilterParameters
@@ -33,12 +33,12 @@ module Hyper.Renderer
 		}
 		
 		/** input must be LogRGB. */
-		setupFilter(input: TemporalAAInput, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: TemporalAAInput, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
 		{
 			let width = input.color.width;
 			let height = input.color.height;
 			
-			const outp = new TextureRenderBufferInfo("Antialiased", width, height, input.color.format);
+			const outp = new LogRGBTextureRenderBufferInfo("Antialiased", width, height, input.color.format);
 			
 			ops.push({
 				inputs: {

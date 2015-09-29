@@ -153,7 +153,11 @@ module Hyper.Renderer
 		{
 			return new ShadowMapRenderBufferImpl();
 		}
-		toString(): string
+		get physicalFormatDescription(): string
+		{
+			return "Service";
+		}
+		get logicalFormatDescription(): string
 		{
 			return "Shadow Maps Provider";
 		}

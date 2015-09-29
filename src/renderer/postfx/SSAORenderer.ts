@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../core/RenderBuffers.ts" />
+/// <reference path="../core/TypedRenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Geometry.ts" />
@@ -8,9 +8,9 @@ module Hyper.Renderer
 {
 	export interface SSAOInput
 	{
-		g2: TextureRenderBufferInfo;
-		linearDepth: TextureRenderBufferInfo;
-		linearDepthHalf: TextureRenderBufferInfo;
+		g2: GBuffer2TextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
+		linearDepthHalf: LinearDepthTextureRenderBufferInfo;
 	}
 	export interface SSAOOutput
 	{

@@ -148,7 +148,7 @@ module Hyper.Renderer
 	 */
 	export class RenderBufferInfo
 	{
-		constructor(private name_: string)
+		constructor(public name: string)
 		{
 			this.num = 0;
 			this.hash = 0;
@@ -165,17 +165,17 @@ module Hyper.Renderer
 		}
 		toString(): string
 		{
+			return this.name + " : " + this.logicalFormatDescription + " : " + this.physicalFormatDescription;
+		}
+		
+		get physicalFormatDescription(): string
+		{
 			throw new Error("not implemented");
 		}
 		
-		// TODO: refactor these and toString
-		get name(): string
+		get logicalFormatDescription(): string
 		{
-			return this.name_ + ": " + this.toString();
-		}
-		set name(newName: string)
-		{
-			this.name_ = newName;
+			return "Untyped";
 		}
 		
 		// initialize these values in the derived class constructor. 
@@ -379,7 +379,7 @@ module Hyper.Renderer
 		
 		function writeRBI(rb: RenderBufferInfo)
 		{
-			parts.push(`"${getID(rb)}" [ label="${rb.name}", shape=none ];\n`);
+			parts.push(`"${getID(rb)}" [ label="${rb.toString()}", shape=none ];\n`);
 		}
 		
 		// make sure all render buffer info is assigned a ID
@@ -876,13 +876,13 @@ module Hyper.Renderer
 			
 			console.log("--- Pipeline Compilation Done ----");
 			for (const phase of phases) {
-				console.log(phase.outputs.map((a)=> a ? `${a.info}[${a.index}]` : '_').join(', ') +
+				console.log(phase.outputs.map((a)=> a ? `${a.info.physicalFormatDescription}[${a.index}]` : '_').join(', ') +
 					" := " + phase.operation.name + "(" +
-					phase.inputs.map((a)=>`${a.info}[${a.index}]`).join(', ') + ")");
+					phase.inputs.map((a)=>`${a.info.physicalFormatDescription}[${a.index}]`).join(', ') + ")");
 			}
 			let ttlCost = 0;
 			allocMap.forEach((info, allocMapEntry) => {
-				console.log(`${allocMapEntry.info.toString()} (cost=${allocMapEntry.info.cost}) x ${allocMapEntry.maxNumAllocated} = ` +
+				console.log(`${allocMapEntry.info.physicalFormatDescription} (cost=${allocMapEntry.info.cost}) x ${allocMapEntry.maxNumAllocated} = ` +
 					`${allocMapEntry.maxNumAllocated * allocMapEntry.info.cost}`);
 				ttlCost += allocMapEntry.maxNumAllocated * allocMapEntry.info.cost;
 			});

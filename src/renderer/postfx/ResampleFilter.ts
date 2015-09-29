@@ -26,11 +26,19 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: TextureRenderBufferInfo, params: ResampleFilterParameters, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter<T>
+		(input: INearestResampleableRenderBufferInfo<T>, params: ResampleFilterParameters, ops: RenderOperation[]): T
 		{
 			const width = params.outWidth;
 			const height = params.outHeight;
-			const outp = new TextureRenderBufferInfo(input.name + " Resampled", width, height, input.format);
+			const outp: T = 
+				input instanceof LinearRGBTextureRenderBufferInfo ?
+					new LinearRGBTextureRenderBufferInfo(input.name + " Resampled", width, height, input.format) :
+				input.cloneWithDimension(input.name + " Resampled", width, height);
+					
+			if (outp == null) {
+				throw new Error("cannot resample the input logical format");
+			}
 			
 			let name: string;
 			switch (params.type) {

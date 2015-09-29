@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../core/RenderBuffers.ts" />
+/// <reference path="../core/TypedRenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="../core/GLFramebuffer.ts" />
 /// <reference path="../utils/Geometry.ts" />
@@ -7,10 +7,10 @@ module Hyper.Renderer
 {
 	export interface MotionBlurInput
 	{
-		color: TextureRenderBufferInfo; // LogRGB
-		linearDepth: TextureRenderBufferInfo;
-		g0: TextureRenderBufferInfo;
-		g1: TextureRenderBufferInfo;
+		color: LogRGBTextureRenderBufferInfo;
+		linearDepth: LinearDepthTextureRenderBufferInfo;
+		g0: GBuffer0TextureRenderBufferInfo;
+		g1: GBuffer1TextureRenderBufferInfo;
 	}
 	
 	export interface MotionBlurFilterParameters
@@ -28,12 +28,12 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: MotionBlurInput, params: MotionBlurFilterParameters, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: MotionBlurInput, params: MotionBlurFilterParameters, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
 		{
 			const width = input.color.width;
 			const height = input.color.height;
 			
-			const outp = new TextureRenderBufferInfo("Motion Blur Result", width, height,
+			const outp = new LogRGBTextureRenderBufferInfo("Motion Blur Result", width, height,
 					input.color.format);
 					
 			const tilesW = Math.ceil(input.color.width / params.maxBlur);

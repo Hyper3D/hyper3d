@@ -37,12 +37,12 @@ module Hyper.Renderer
 		{
 		}
 		
-		setupFilter(input: TextureRenderBufferInfo, ops: RenderOperation[]): TextureRenderBufferInfo
+		setupFilter(input: LogRGBTextureRenderBufferInfo, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
 		{
 			
 			// convert input to linear RGB.
 			// hope that GPU supports sRGB buffer... (or we'll lose much precision)
-			const ds0 = new TextureRenderBufferInfo("Bloom 1/2", 
+			const ds0 = new LinearRGBTextureRenderBufferInfo("Bloom 1/2", 
 					(input.width + 1) >> 1, (input.height + 1) >> 1,
 					input.format);
 			ops.push({
@@ -61,7 +61,7 @@ module Hyper.Renderer
 					1 / 32)
 			});
 			
-			const levels: TextureRenderBufferInfo[] = [];
+			const levels: LinearRGBTextureRenderBufferInfo[] = [];
 			let prev = ds0;
 			for (let i = 0; i < 6; ++i) { 
 				let size = 4 << i;
@@ -94,7 +94,7 @@ module Hyper.Renderer
 			}
 			
 			// combine
-			const outp = new TextureRenderBufferInfo("Bloom Added", input.width, input.height,
+			const outp = new LogRGBTextureRenderBufferInfo("Bloom Added", input.width, input.height,
 					input.format);
 			
 			ops.push({
