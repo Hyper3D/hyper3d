@@ -7,6 +7,7 @@ module Hyper
 	{
 		canvas?: HTMLCanvasElement;
 		useFullResolutionGBuffer?: boolean;
+		useFPBuffer?: boolean;
 	}
 	
 	export class WebGLHyperRenderer implements THREE.Renderer

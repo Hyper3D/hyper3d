@@ -1,6 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="TextureManager.ts" />
-/// <reference path="../core/RenderPipeline.ts" />
+/// <reference path="../core/RenderBuffers.ts" />
 /// <reference path="../core/RendererCore.ts" />
 /// <reference path="MaterialManager.ts" />
 /// <reference path="BaseGeometryPassRenderer.ts" />
