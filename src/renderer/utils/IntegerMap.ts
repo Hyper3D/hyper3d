@@ -82,7 +82,7 @@ module Hyper.Renderer
 					const next = node.next;
 					cb(node.key, node.value);
 					node = next;
-				} while (node != this.first);
+				} while (node != this.first && this.first);
 			}
 		}
 	}
