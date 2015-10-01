@@ -16,7 +16,6 @@
     "gulp-filter": "^3.0.0",
     "gulp-git": "^1.2.4",
     "gulp-inject": "^1.5.0",
-    "gulp-less": "^3.0.3",
     "gulp-tag-version": "^1.3.0",
     "gulp-typescript": "^2.8.0",
     "gulp-util": "^3.0.6",
