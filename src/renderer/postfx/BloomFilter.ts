@@ -45,6 +45,14 @@ module Hyper.Renderer
 			// hope that GPU supports sRGB buffer... (or we'll lose much precision)
 			let ds0: LinearRGBTextureRenderBufferInfo;
 			
+			let prescaling: number = 1 / 32;
+			if (!this.renderer.supportsSRGB) {
+				prescaling = 1 / 8;
+			}
+			if (input instanceof LinearRGBTextureRenderBufferInfo) {
+				prescaling = 1;
+			}
+			
 			if (input instanceof LogRGBTextureRenderBufferInfo) {
 				ds0 = new LinearRGBTextureRenderBufferInfo("Bloom 1/2", 
 						(input.width + 1) >> 1, (input.height + 1) >> 1,
@@ -62,7 +70,7 @@ module Hyper.Renderer
 					factory: (cfg) => new BloomDownsampleRenderer(this,
 						<TextureRenderBuffer> cfg.inputs['input'],
 						<TextureRenderBuffer> cfg.outputs['output'],
-						1 / 32)
+						prescaling)
 				});
 			} else {
 				// already linear
@@ -127,7 +135,7 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['bloom'],
 					<TextureRenderBuffer> cfg.outputs['output'],
 					input instanceof LogRGBTextureRenderBufferInfo,
-					input instanceof LogRGBTextureRenderBufferInfo ? 1 : 1 / 32)
+					(1 / 32) / prescaling)
 			});
 			
 			

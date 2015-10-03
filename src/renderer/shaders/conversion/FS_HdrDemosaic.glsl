@@ -23,7 +23,7 @@ void main()
 		float t3 = max(t1, mosaic5.w);
 		overflowLevel = max(t2, t3);
 	}
-	overflowLevel = max(overflowLevel * 20. - 19., 0.);
+	overflowLevel = max(overflowLevel * 10. - 9., 0.);
 
 	float currentPixelMode = hdrMosaicMode(gl_FragCoord.xy);
 	float mixamt = mix(1. - overflowLevel, overflowLevel, currentPixelMode);
