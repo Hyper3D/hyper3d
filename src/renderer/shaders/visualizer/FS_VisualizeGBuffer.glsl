@@ -32,6 +32,14 @@ void main()
 	gl_FragColor.xyz = sqrt(g.preshaded);
 #elif c_visualizedAttribute == 7 // AORatio
 	gl_FragColor.xyz = vec3(g.aoRatio);
+#elif c_visualizedAttribute == 8 // MaterialId
+	float id = g.materialId;
+	gl_FragColor.x = frac(id * (1. / 2.));
+	gl_FragColor.y = frac(id * (1. / 4.)) > 0.25 ? .5 : 0.;
+	gl_FragColor.z = frac(id * (1. / 8.)) > 0.25 ? .5 : 0.;
+	if (id > 7.5) {
+		gl_FragColor.xyz += .5;
+	}
 #endif
 
 	gl_FragColor.w = 1.;

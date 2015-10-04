@@ -14,7 +14,8 @@ module Hyper.Renderer
 		Metallic = 4,
 		Specular = 5,
 		Preshaded = 6,
-		AORatio = 7
+		AORatio = 7,
+		MaterialId = 8
 	}
 	
 	export interface VisualizeGBufferInput
@@ -93,6 +94,7 @@ module Hyper.Renderer
 				case GBufferAttributeType.Specular: name = "Specular"; break;
 				case GBufferAttributeType.Preshaded: name = "Preshaded"; break;
 				case GBufferAttributeType.AORatio: name = "AORatio"; break;
+				case GBufferAttributeType.MaterialId: name = "MaterialId"; break;
 			}
 			
 			ops.push({
