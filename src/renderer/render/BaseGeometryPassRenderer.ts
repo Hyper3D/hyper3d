@@ -267,6 +267,7 @@ module Hyper.Renderer
 			};
 			
 			fsParts.push(`void evaluateShader() {`);
+			fsParts.push(`m_materialId = 0.;`); // TODO: appropriate material ID
 			fsParts.push(this.source.shader);
 			fsParts.push(`}`);
 			

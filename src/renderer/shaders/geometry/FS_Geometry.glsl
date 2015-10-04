@@ -40,6 +40,7 @@ void main()
 	g.specular = m_specular;
 	g.preshaded = preshaded;
 	g.aoRatio = aoRatio;
+	g.materialId = m_materialId;
 
 	vec4 g0, g1, g2, g3;
 
