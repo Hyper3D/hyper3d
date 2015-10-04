@@ -41,6 +41,7 @@ void main()
 	g.preshaded = preshaded;
 	g.aoRatio = aoRatio;
 	g.materialId = m_materialId;
+	g.materialParam = m_materialParam;
 
 	vec4 g0, g1, g2, g3;
 

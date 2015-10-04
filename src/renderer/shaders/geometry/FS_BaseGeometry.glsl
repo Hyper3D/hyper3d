@@ -8,6 +8,7 @@ vec3 m_normal;
 vec3 m_emissive;
 vec3 m_radiosity;
 float m_materialId;
+float m_materialParam;
 
 void evaluateShader();
 
@@ -21,6 +22,7 @@ void evaluateMaterial()
 	m_radiosity = vec3(0.);
 	m_emissive = vec3(0.);
 	m_materialId = 0.;
+	m_materialParam = 0.;
 
 	evaluateShader();
 }

@@ -63,3 +63,18 @@ highp float unpack32f(vec4 p)
 		return mantissa * exp2(exponent);
 	}
 }
+
+vec3 pack12x2(highp vec2 value)
+{
+	value *= 255.;
+	highp vec2 flr = floor(value);
+	highp vec2 frc = floor((value - flr) * 16.);
+	return vec3(flr * (1. / 255.), dot(frc, vec2(1., 16.) / 255.));
+}
+highp vec2 unpack12x2(vec3 p)
+{
+	float yy = p.z * (255. / 16.);
+	float yi = floor(yy);
+	float yf = fract(yy);
+	return p.xy + vec2(yf, yi) * vec2(1. / 255., 1. / 16. / 255.);
+}
