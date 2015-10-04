@@ -98,7 +98,7 @@ module Hyper.Renderer
 					prev = ds;
 					continue;
 				}
-				const lp = this.blurFlt.setupFilter(ds, 1, ops);
+				const lp = this.blurFlt.setupFilter(ds, 2, ops);
 				lp.name = `Bloom 1/${size} LPFed`;
 				levels.push(lp);
 				prev = lp;
