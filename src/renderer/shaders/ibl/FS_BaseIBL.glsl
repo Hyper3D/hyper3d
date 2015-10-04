@@ -69,20 +69,32 @@ void main()
 	vec3 reflVector = reflect(-(viewDir), g.normal);
 	reflVector = (u_reflectionMatrix * vec4(reflVector, 0.)).xyz;
 
-	// sampling from image
-	// TODO: lod bias dependent of texture resolution
-	// TODO: correct lod bias
-	vec4 refl = textureCube(u_reflection, reflVector, mat.roughness * 14.);
-	refl.xyz *= refl.xyz; // linearize
-
-	// apply SSAO
 	float ssao = texture2D(u_ssao, v_texCoord).r;
 	ssao *= ssao;
 	ssao = mix(1., ssao, min(mat.roughness * 4., 1.));
+
+	// sampling from image
+	// TODO: lod bias dependent of texture resolution
+	// TODO: correct lod bias
+	vec3 refl = textureCube(u_reflection, reflVector, mat.roughness * 14.).xyz;
+	refl.xyz *= refl.xyz; // linearize
+
+	refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
+
+	if (isMaterialClearCoat(mat)) {
+		// second specular lobe
+		vec3 reflcc = textureCube(u_reflection, reflVector, mat.clearCoatRoughness * 14.).xyz;
+		reflcc.xyz *= reflcc.xyz; // linearize
+
+		reflcc *= evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
+
+		refl += reflcc;
+	}
+
+	// apply SSAO
 	refl *= ssao;
 
 	// lighting model
-	refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
 
 	emitIBLOutput(refl.xyz, weight);
 }

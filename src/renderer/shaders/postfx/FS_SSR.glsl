@@ -114,11 +114,16 @@ void main()
 	// TODO: adjust SSR confidence value
 	float nvDot = clamp(0., 1., dot(g.normal, normalize(vec3(v_viewDir, 1.))));
 	float fresnel = 1. - nvDot;
-	float roughness = g.roughness * g.roughness;
-	float ssrAmount = min(1., 1. - roughness * 8.);
+	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
+	float roughness = mat.roughness;
+	if (isMaterialClearCoat(mat)) {
+		roughness = min(roughness, mat.clearCoatRoughness);
+	}
+	roughness *= roughness;
+	float ssrAmount = min(1., 1.5 - roughness * 8.);
 	if (ssrAmount > 0.) {
-		MaterialInfo mat = getMaterialInfoFromGBuffer(g);
 		vec4 reflAmt = evaluateReflection(nvDot, mat);
+		reflAmt += evaluateReflectionForClearCoat(nvDot, mat);
 		if (reflAmt.w > 0.00001) { 
 			ssrAmount = 1.;
 

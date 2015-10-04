@@ -7,20 +7,21 @@ module Hyper
 	export enum MaterialShadingModel
 	{
 		// deferred shaded models
-		Opaque,
-		ClearCoat,
+		Unlit = 0,
+		Opaque = 1,
+		ClearCoat = 2,
 		
 		// forward pass only
-		Transparent
+		Transparent = 3
 	}
 	
 	export enum MaterialParameterType
 	{
-		Float,
-		Float2,
-		Float3,
-		Float4,
-		Texture2D
+		Float = 0,
+		Float2 = 1,
+		Float3 = 2,
+		Float4 = 3,
+		Texture2D = 4
 	}
 	
 	export interface MaterialParameter

@@ -18,6 +18,12 @@ module Hyper.Renderer
 		NeedsLastPosition = 1 << 1 // this one must be added in derived BaseGeometryPassMaterialManager
 	}
 	
+	export function isMaterialShadingModelDeferred(model: MaterialShadingModel): boolean
+	{
+		return model == MaterialShadingModel.Opaque || model == MaterialShadingModel.ClearCoat ||
+			model == MaterialShadingModel.Unlit;
+	}
+	
 	export class BaseGeometryPassRenderer
 	{
 		private state: GeometryRenderState;
@@ -102,6 +108,10 @@ module Hyper.Renderer
 			// to be overrided
 			return false;
 		}
+		skipsMaterial(mat: MaterialInstance): boolean
+		{
+			return !isMaterialShadingModelDeferred(mat.material.shadingModel);
+		}
 		setupAdditionalUniforms(mesh: THREE.Mesh, shader: BaseGeometryPassShader): void
 		{
 			// to be overrided
@@ -134,6 +144,12 @@ module Hyper.Renderer
 		constructor(private obj: THREE.Mesh, private renderer: BaseGeometryPassRenderer)
 		{
 			this.token = false;
+			
+			this.lastModelMatrix = null;
+			this.shaderInst = null;
+			this.shader = null;
+			this.skinning = null;
+			
 			this.lastModelMatrix = obj.matrixWorld.clone();
 			
 			const useSkinning = obj instanceof THREE.SkinnedMesh;
@@ -144,7 +160,14 @@ module Hyper.Renderer
 				flags |= BaseGeometryPassShaderFlags.UseSkinning;
 			}
 				
-			this.shaderInst = renderer.materialManager.get(obj.material, flags);
+			const matInst = importThreeJsMaterial(obj.material);
+			
+			if (renderer.skipsMaterial(matInst)) {
+				// not handled in this renderer.
+				return;
+			}
+			
+			this.shaderInst = renderer.materialManager.get(matInst, flags);
 			this.shader = <BaseGeometryPassShader> this.shaderInst.shader;
 			
 			if (this.shader.skinningShader) {
@@ -154,49 +177,51 @@ module Hyper.Renderer
 		
 		render(state: GeometryRenderState): void
 		{
-			const gl = this.renderer.core.gl;
-			const obj = this.obj;
-			const geo = this.obj.geometry;
-			const renderer = this.renderer;
-			const geo2 = renderer.core.geometryManager.get(geo);
-			const shaderInst = this.shaderInst;
-			const shader = this.shader;
-			const attrBinding = shader.getGeometryBinding(geo2);
-			
-			shader.glProgram.use();
-			shaderInst.updateParameterUniforms();
-			attrBinding.setupVertexAttribs();
-			
-			gl.uniformMatrix4fv(shader.uniforms['u_viewProjectionMatrix'], false,
-				state.projectionViewMat.elements);
-			gl.uniformMatrix4fv(shader.uniforms['u_lastViewProjectionMatrix'], false,
-				state.lastViewProjMat.elements);
-			
-			tmpM.multiplyMatrices(state.viewMat, obj.matrixWorld);
-			gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
-				tmpM.elements);
+			if (this.shader) {
+				const gl = this.renderer.core.gl;
+				const obj = this.obj;
+				const geo = this.obj.geometry;
+				const renderer = this.renderer;
+				const geo2 = renderer.core.geometryManager.get(geo);
+				const shaderInst = this.shaderInst;
+				const shader = this.shader;
+				const attrBinding = shader.getGeometryBinding(geo2);
 				
-			gl.uniformMatrix4fv(shader.uniforms['u_viewMatrix'], false,
-				state.viewMat.elements);
-			gl.uniformMatrix4fv(shader.uniforms['u_modelMatrix'], false,
-				obj.matrixWorld.elements);
+				shader.glProgram.use();
+				shaderInst.updateParameterUniforms();
+				attrBinding.setupVertexAttribs();
 				
-			gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
-				this.lastModelMatrix.elements);
+				gl.uniformMatrix4fv(shader.uniforms['u_viewProjectionMatrix'], false,
+					state.projectionViewMat.elements);
+				gl.uniformMatrix4fv(shader.uniforms['u_lastViewProjectionMatrix'], false,
+					state.lastViewProjMat.elements);
 				
-			if (this.skinning) {
-				this.skinning.update();
-			}
-			
-			renderer.setupAdditionalUniforms(obj, shader);
+				tmpM.multiplyMatrices(state.viewMat, obj.matrixWorld);
+				gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
+					tmpM.elements);
+					
+				gl.uniformMatrix4fv(shader.uniforms['u_viewMatrix'], false,
+					state.viewMat.elements);
+				gl.uniformMatrix4fv(shader.uniforms['u_modelMatrix'], false,
+					obj.matrixWorld.elements);
+					
+				gl.uniformMatrix4fv(shader.uniforms['u_lastModelMatrix'], false,
+					this.lastModelMatrix.elements);
+					
+				if (this.skinning) {
+					this.skinning.update();
+				}
 				
-			const index = geo2.indexAttribute;
-			if (index != null) {
-				index.drawElements();
-				
-				// TODO: use THREE.GeometryBuffer.offsets
-			} else {
-				gl.drawArrays(gl.TRIANGLES, 0, geo2.numFaces * 3);
+				renderer.setupAdditionalUniforms(obj, shader);
+					
+				const index = geo2.indexAttribute;
+				if (index != null) {
+					index.drawElements();
+					
+					// TODO: use THREE.GeometryBuffer.offsets
+				} else {
+					gl.drawArrays(gl.TRIANGLES, 0, geo2.numFaces * 3);
+				}
 			}
 			
 			this.save(state.nextToken);
@@ -204,7 +229,11 @@ module Hyper.Renderer
 		
 		private save(token: boolean): void
 		{
-			this.lastModelMatrix.copy(this.obj.matrixWorld);
+			// some materials are skipped by some renderer.
+			// saving the model matrix is not needed if a material is skipped
+			if (this.shader) {
+				this.lastModelMatrix.copy(this.obj.matrixWorld);
+			}
 			this.token = token;
 		}
 		
@@ -267,12 +296,24 @@ module Hyper.Renderer
 			};
 			
 			fsParts.push(`void evaluateShader() {`);
-			fsParts.push(`m_materialId = 0.;`); // TODO: appropriate material ID
+			switch (source.shadingModel) {
+				case MaterialShadingModel.Unlit:
+					fsParts.push(`m_materialId = MaterialIdUnlit;`);
+					break;
+				case MaterialShadingModel.Opaque:
+					fsParts.push(`m_materialId = MaterialIdDefault;`);
+					break;
+				case MaterialShadingModel.ClearCoat:
+					fsParts.push(`m_materialId = MaterialIdClearCoat;`);
+					break;
+				default:
+					// not deferred-shaded; cannot determine material id. 
+			}
 			fsParts.push(this.source.shader);
 			fsParts.push(`}`);
 			
 			const fsChunk: ShaderChunk = {
-				requires: [manager.fsName],
+				requires: [manager.fsName, 'Materials'],
 				source: fsParts.join('\n')
 			};
 			

@@ -27,21 +27,19 @@ module Hyper.Renderer
 			return new Shader(this, material);
 		}
 		
-		get(mat: THREE.Material, param?: number): ShaderInstance
+		get(matInst: MaterialInstance, param?: number): ShaderInstance
 		{
 			if (param == null) {
 				param = 0;	
 			}
 			
-			const id = mat.id;
-			let matInst = importThreeJsMaterial(mat);
 			let sg = this.shaderTable.get(matInst.material.id);
 			let sh: Shader;
 			if (!sg) {
 				sg = new ShaderGroup(this, matInst.material);
 				
 				sg.addEventListener('disposed', () => {
-					this.shaderTable.remove(id);
+					this.shaderTable.remove(matInst.material.id);
 				});
 				
 				this.shaderTable.set(matInst.material.id, sg);
@@ -502,7 +500,7 @@ module Hyper.Renderer
 	
 	const importedMaterialsCache = new IdWeakMapWithDisposable<THREE.Material, MaterialInstance>();
 	
-	function importThreeJsMaterial(mat: THREE.Material): MaterialInstance
+	export function importThreeJsMaterial(mat: THREE.Material): MaterialInstance
 	{
 		function importColor(color: THREE.Color): number[]
 		{

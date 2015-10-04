@@ -1,5 +1,6 @@
 #pragma require Constants
 #pragma require GBuffer
+#pragma require Materials
 
 struct PointLightBRDFParameters
 {
@@ -20,6 +21,10 @@ struct MaterialInfo
 	float roughness;
 	float metallic;
 	float specular;
+
+	float clearCoatRoughness;
+
+	float materialId;
 };
 
 float evaluateGGXSpecularDistribution(float nhDot, float roughness)
@@ -68,11 +73,19 @@ float evaluateBeckmannGeometryShadowing(float nlDot, float nvDot, float roughnes
 	return a / b;
 }
 
+bool isMaterialClearCoat(MaterialInfo material)
+{
+	return material.materialId == MaterialIdClearCoat;
+}
+
 vec3 evaluatePointLight(
 	PointLightBRDFParameters params,
 	MaterialInfo material,
 	vec3 lightColor)
 {
+	if (material.materialId == MaterialIdUnlit) {
+		return vec3(0.);
+	}
 	if (params.nlDot <= 0.) {
 		return vec3(0.);
 	}
@@ -93,6 +106,16 @@ vec3 evaluatePointLight(
 	vec3 diffuse = material.albedo;
 
 	vec3 final = diffuse * diffuseMix + refl * specular;
+
+	// clear coat
+	if (isMaterialClearCoat(material)) {
+		float ccspecular = evaluateGGXSpecularDistribution(params.nhDot, material.clearCoatRoughness);
+		ccspecular *= evaluateBeckmannGeometryShadowing(params.nlDot, params.nvDot, material.clearCoatRoughness);
+		ccspecular *= params.nlDot;
+		float refl = mix(0.03, 1., fresnel);
+		final += ccspecular * refl;
+	}
+
 	return final * lightColor;
 }
 
@@ -101,6 +124,10 @@ vec3 evaluateUniformLight(
 	MaterialInfo material,
 	vec3 lightColor)
 {
+	if (material.materialId == MaterialIdUnlit) {
+		return vec3(0.);
+	}
+
 	// FIXME: verify this model
 	float fresnel = evaluateSchlickFresnel(params.nvDot);
 
@@ -119,6 +146,10 @@ vec4 evaluateReflection(
 	float nvDot,
 	MaterialInfo material)
 {
+	if (material.materialId == MaterialIdUnlit) {
+		return vec4(0.);
+	}
+
 	// assume h = n now
 	float fresnel = evaluateSchlickFresnel(nvDot);
 
@@ -126,6 +157,24 @@ vec4 evaluateReflection(
 	vec4 refl = vec4(mix(minRefl, vec3(1.), fresnel), 1.);
 
 	refl *= evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.roughness); // FIXME: optimize?
+
+	return refl;
+}
+
+float evaluateReflectionForClearCoat(
+	float nvDot,
+	MaterialInfo material)
+{
+	if (!isMaterialClearCoat(material)) {
+		return 0.;
+	}
+
+	// assume h = n now
+	float fresnel = evaluateSchlickFresnel(nvDot);
+
+	float refl = mix(0.03, 1., fresnel);
+
+	refl *= evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.clearCoatRoughness); // FIXME: optimize?
 
 	return refl;
 }
@@ -151,6 +200,14 @@ UniformLightBRDFParameters computeUniformLightBRDFParameters(
 
 MaterialInfo getMaterialInfoFromGBuffer(GBufferContents g)
 {
-	return MaterialInfo(g.albedo, mix(0.001, 1., g.roughness), g.metallic, g.specular);
+	return MaterialInfo(
+		g.albedo, 
+		mix(0.001, 1., g.roughness), 
+		g.metallic, 
+		g.specular, 
+
+		mix(0.001, 1., g.materialParam), // clearCoatRoughness
+
+		g.materialId);
 }
 
