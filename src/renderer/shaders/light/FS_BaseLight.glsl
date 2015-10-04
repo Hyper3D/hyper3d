@@ -36,6 +36,7 @@ void setupLight()
 
 void emitLightPassOutput(vec3 lit)
 {
+#if c_useHdrMosaic
 	float lum = max(max(lit.x, lit.y), lit.z);
 
 	// overflow protection
@@ -47,7 +48,6 @@ void emitLightPassOutput(vec3 lit)
 	// dither
 	vec3 dither = texture2D(u_dither, v_ditherCoord * perspectiveScaling).xyz;
 
-#if c_useHdrMosaic
 	gl_FragColor = encodeHdrMosaicDithered(lit, dither);
 #else
 	if (lit != lit) lit *= 0.; // reject denormals
