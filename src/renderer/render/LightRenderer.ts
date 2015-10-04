@@ -664,7 +664,7 @@ module Hyper.Renderer
 				gl.uniform3f(p.uniforms['u_lightPos'], pos.x, pos.y, pos.z);
 				gl.uniform1f(p.uniforms['u_lightInfluenceRadius'], radius);
 				gl.uniform1f(p.uniforms['u_lightInvInfluenceRadiusSquared'], 1 / (radius * radius));
-				gl.uniform1f(p.uniforms['u_minimumDistance'], 0.1 * light.intensity); // FIXME
+				gl.uniform1f(p.uniforms['u_minimumDistance'], 0.01 * light.intensity); // FIXME
 				
 				gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
 				
