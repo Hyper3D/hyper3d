@@ -6,7 +6,6 @@ float m_metallic;
 float m_specular;
 vec3 m_normal;
 vec3 m_emissive;
-vec3 m_radiosity;
 float m_materialId;
 float m_materialParam;
 
@@ -19,7 +18,6 @@ void evaluateMaterial()
 	m_metallic = 0.2;
 	m_specular = 0.;
 	m_normal = vec3(0., 0., 1.);
-	m_radiosity = vec3(0.);
 	m_emissive = vec3(0.);
 	m_materialId = 0.;
 	m_materialParam = 0.;

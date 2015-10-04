@@ -15,7 +15,6 @@ struct GBufferContents
 	float materialParam;
 
 	vec3 preshaded;
-	float aoRatio;
 };
 
 vec3 decodeGBufferNormal(vec4 g2)
@@ -44,8 +43,7 @@ void decodeGBuffer(out GBufferContents g, vec4 g0, vec4 g1, vec4 g2, vec4 g3)
 
 	g.materialParam = g2.w;
 
-	g.preshaded = g3.xyz;
-	g.aoRatio = g3.w;
+	g.preshaded = g3.xyz * exp2(g3.w * 255. - 128.);
 }
 
 void encodeGBuffer(out vec4 g0, out vec4 g1, out vec4 g2, out vec4 g3, GBufferContents g)
@@ -53,13 +51,18 @@ void encodeGBuffer(out vec4 g0, out vec4 g1, out vec4 g2, out vec4 g3, GBufferCo
 	vec2 sphereMap = encodeSpheremap(g.normal);
 	vec2 vel = encodeVelocityMap(g.velocity);
 
+	vec3 preshaded = g.preshaded;
+	float lum = max(max(max(preshaded.x, preshaded.y), preshaded.z), 0.0001);
+	float lumLog = ceil(log2(lum));
+	preshaded *= exp2(-lumLog);
+
 	g0 = vec4(g.albedo, vel.x);
 	g1 = vec4(sqrt(g.roughness), 
 		floor(g.metallic * 15.5) * (1. / 255.) + g.materialId * (16. / 255.), 
 		g.specular, 
 		vel.y);
 	g2 = vec4(pack12x2(sphereMap), g.materialParam);
-	g3 = vec4(g.preshaded, g.aoRatio);
+	g3 = vec4(preshaded, (lumLog + 128.) * (1. / 255.));
 }
 
 bool isGBufferEmpty(vec4 g0, vec4 g1, vec4 g2, vec4 g3)

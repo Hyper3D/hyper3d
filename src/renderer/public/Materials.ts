@@ -46,7 +46,6 @@ module Hyper
 		 * misc
 		    * m_normal
 	  	    * m_emissive
-		    * m_radiosity
 		 
 	 */
 	

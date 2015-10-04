@@ -36,6 +36,9 @@ module Hyper.Renderer
 			const width = input.g0.width;
 			const height = input.g0.height;
 			
+			const em = new HdrMosaicTextureRenderBufferInfo("Emissive Color Mosaicked", width, height,
+					TextureRenderBufferFormat.RGBAF16);
+			
 			const outp = new LinearRGBTextureRenderBufferInfo("Lit Color", width, height,
 					TextureRenderBufferFormat.RGBAF16);
 			
@@ -46,6 +49,22 @@ module Hyper.Renderer
 			
 			ops.push({
 				inputs: {
+					g3: input.g3
+				},
+				outputs: {
+					lit: em
+				},
+				bindings: [],
+				optionalOutputs: [],
+				name: "Emissive Term",
+				factory: (cfg) => new UnlitLightPassRenderer(this,
+					<TextureRenderBuffer> cfg.inputs['g3'],
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					HdrMode.NativeHdr)
+			});
+			
+			ops.push({
+				inputs: {
 					g0: input.g0,
 					g1: input.g1,
 					g2: input.g2,
@@ -53,7 +72,8 @@ module Hyper.Renderer
 					linearDepth: input.linearDepth,
 					depth: depthCullEnabled ? input.depth : null,
 					shadowMaps: input.shadowMaps,
-					ssao: input.ssao
+					ssao: input.ssao,
+					lit: em
 				},
 				outputs: {
 					lit: outp
@@ -70,6 +90,7 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['depth'],
 					<TextureRenderBuffer> cfg.inputs['ssao'],
 					(<ShadowMapRenderBuffer> cfg.inputs['shadowMaps']).service,
+					<TextureRenderBuffer> cfg.inputs['lit'],
 					<TextureRenderBuffer> cfg.outputs['lit'],
 					HdrMode.NativeHdr)
 			});
@@ -80,6 +101,11 @@ module Hyper.Renderer
 		{
 			const width = input.g0.width;
 			const height = input.g0.height;
+			
+			const em = new HdrMosaicTextureRenderBufferInfo("Emissive Color Mosaicked", width, height,
+					this.renderer.supportsSRGB ?
+						TextureRenderBufferFormat.SRGBA8 :
+						TextureRenderBufferFormat.RGBA8);
 			
 			const outp = new HdrMosaicTextureRenderBufferInfo("Lit Color Mosaicked", width, height,
 					this.renderer.supportsSRGB ?
@@ -93,6 +119,22 @@ module Hyper.Renderer
 			
 			ops.push({
 				inputs: {
+					g3: input.g3
+				},
+				outputs: {
+					lit: em
+				},
+				bindings: [],
+				optionalOutputs: [],
+				name: "Emissive Term",
+				factory: (cfg) => new UnlitLightPassRenderer(this,
+					<TextureRenderBuffer> cfg.inputs['g3'],
+					<TextureRenderBuffer> cfg.outputs['lit'],
+					HdrMode.MobileHdr)
+			});
+			
+			ops.push({
+				inputs: {
 					g0: input.g0,
 					g1: input.g1,
 					g2: input.g2,
@@ -100,7 +142,8 @@ module Hyper.Renderer
 					linearDepth: input.linearDepth,
 					depth: depthCullEnabled ? input.depth : null,
 					shadowMaps: input.shadowMaps,
-					ssao: input.ssao
+					ssao: input.ssao,
+					lit: em
 				},
 				outputs: {
 					lit: outp
@@ -117,12 +160,96 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.inputs['depth'],
 					<TextureRenderBuffer> cfg.inputs['ssao'],
 					(<ShadowMapRenderBuffer> cfg.inputs['shadowMaps']).service,
+					<TextureRenderBuffer> cfg.inputs['lit'],
 					<TextureRenderBuffer> cfg.outputs['lit'],
 					HdrMode.MobileHdr)
 			});
 			return outp;
 		}
 		
+	}
+	
+	class UnlitLightPassRenderer implements RenderOperator
+	{
+		private fb: GLFramebuffer;
+		
+		private program: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attributes: GLProgramAttributes;		
+		};
+		
+		constructor(
+			private parent: LightRenderer,
+			private inG3: TextureRenderBuffer,
+			private outLit: TextureRenderBuffer,
+			private hdrMode: HdrMode
+		)
+		{
+			
+			this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+				depth: null,
+				colors: [
+					outLit.texture
+				]
+			});
+			
+			{
+				const program = parent.renderer.shaderManager.get('VS_DeferredUnlit', 'FS_DeferredUnlit',
+					['a_position'], {
+						useHdrMosaic: hdrMode == HdrMode.MobileHdr
+					});
+				this.program = {
+					program,
+					uniforms: program.getUniforms([
+						'u_g3', 'u_ssao',
+						'u_dither', 'u_ditherScale'
+					]),
+					attributes: program.getAttributes(['a_position'])
+				};
+			}
+		}
+		beforeRender(): void
+		{
+		}
+		perform(): void
+		{
+			const gl = this.parent.renderer.gl;
+			const scene = this.parent.renderer.currentScene;
+			this.fb.bind();
+			this.parent.renderer.state.flags = 
+				GLStateFlags.DepthWriteDisabled;
+			gl.viewport(0, 0, this.outLit.width, this.outLit.height);
+			
+			this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+			
+			// bind G-Buffer
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this.inG3.texture);
+			
+			const jitter = this.parent.renderer.uniformJitter;
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, jitter.texture);
+			
+			const p = this.program;
+			p.program.use();
+			gl.uniform1i(p.uniforms['u_g3'], 0);
+			gl.uniform1i(p.uniforms['u_dither'], 1);
+			gl.uniform2f(p.uniforms['u_ditherScale'],
+				this.outLit.width / jitter.size / 4,
+				this.outLit.height / jitter.size / 4);
+				
+			const quad = this.parent.renderer.quadRenderer;
+			quad.render(p.attributes['a_position']);
+			
+		}
+		afterRender(): void
+		{
+		}
+		dispose(): void
+		{
+			this.fb.dispose();
+		}
 	}
 	
 	const enum DirectionalLightProgramFlags
@@ -179,6 +306,7 @@ module Hyper.Renderer
 			private inDepth: TextureRenderBuffer,
 			private inSSAO: TextureRenderBuffer,
 			private inShadowMaps: ShadowMapRenderService,
+			private inLit: TextureRenderBuffer,
 			private outLit: TextureRenderBuffer,
 			private hdrMode: HdrMode
 		)
@@ -344,12 +472,23 @@ module Hyper.Renderer
 		perform(): void
 		{
 			const scene = this.parent.renderer.currentScene;
-			this.setState();
-			this.fb.bind();
-			
 			const gl = this.parent.renderer.gl;
-			gl.clearColor(0, 0, 0, 0);
-			gl.clear(gl.COLOR_BUFFER_BIT);
+			
+			this.fb.bind();
+			gl.viewport(0, 0, this.outLit.width, this.outLit.height);
+			
+			if (this.outLit != this.inLit) {
+				this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+				
+				this.parent.renderer.state.flags = 
+					GLStateFlags.DepthWriteDisabled;
+					
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, this.inLit.texture);
+				this.parent.renderer.passthroughRenderer.render();
+			}
+			
+			this.setState();
 			
 			const jitter = this.parent.renderer.gaussianJitter;
 			const vpMat = this.projectionViewMat;

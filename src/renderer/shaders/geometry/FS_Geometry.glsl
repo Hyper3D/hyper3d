@@ -16,8 +16,7 @@ void main()
 {
 	evaluateMaterial();
 	
-	vec3 preshaded = m_emissive + m_radiosity;
-	float aoRatio = dot(m_radiosity, vec3(1.)) / dot(m_emissive, vec3(1.));
+	vec3 preshaded = m_emissive;
 #if c_useNormalMap
 	vec3 normal = v_viewNormal * m_normal.z;
 	normal += v_viewTangent * m_normal.x;
@@ -39,7 +38,6 @@ void main()
 	g.metallic = m_metallic;
 	g.specular = m_specular;
 	g.preshaded = preshaded;
-	g.aoRatio = aoRatio;
 	g.materialId = m_materialId;
 	g.materialParam = m_materialParam;
 

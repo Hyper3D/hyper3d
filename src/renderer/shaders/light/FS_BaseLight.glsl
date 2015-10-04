@@ -10,6 +10,7 @@
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
+uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 
 uniform vec3 u_lightColor;
