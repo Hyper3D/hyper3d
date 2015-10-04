@@ -105,8 +105,7 @@ void main()
 		float weight = f * cone(distln, velln) + b * cone(distln, localVelLn) +
 			cylinder(distln, velln) * cylinder(distln, localVelLn) * 2.;
 
-		// fade the screen border becaise it might contain invalid brightness value because of
-		// a flaw of demosaick algorithm.
+		// fade the border artifact
 		weight *= clamp((min(min(coord.x, coord.y), 1. - max(coord.x, coord.y)) - edgeFade) * 100., 0., 1.);
 
 		sum += vec4(color, 1.) * weight;

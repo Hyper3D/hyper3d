@@ -71,11 +71,14 @@ void main()
 	coord *= u_globalDoubleInvRenderSize;
 	err *= u_globalQuadInvRenderSize;
 
+	highp vec4 coords = vec4(coord, coord + err);
 
-	highp vec2 coord1 = coord;
-	highp vec2 coord2 = coord + vec2(err.x, 0.);
-	highp vec2 coord3 = coord + vec2(0., err.y);
-	highp vec2 coord4 = coord + err; 
+	coords = fract(coords);
+
+	highp vec2 coord1 = coords.xy;
+	highp vec2 coord2 = coords.zy;
+	highp vec2 coord3 = coords.xw;
+	highp vec2 coord4 = coords.zw; 
 #endif // c_globalUseFullResolutionGBuffer
 
 	vec4 retValue = texture2D(u_mosaic, coord1);
