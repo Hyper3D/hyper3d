@@ -77,13 +77,13 @@ vec3 doSSR(out float confidence)
 		vec3 color = decodeInputColor(texture2D(u_color, hitPixel.xy));
 		
 		// distance fade
-		hitSteps = clamp(0., 1., 2. - hitSteps * 2.); hitSteps *= hitSteps;
+		hitSteps = clamp(2. - hitSteps * 2., 0., 1.); hitSteps *= hitSteps;
 		float fade = hitSteps;
 
 		// screen border fade
 		float dfb = min(hitPixel.x, 1. - hitPixel.x);
 		dfb = min(dfb, min(hitPixel.y, 1. - hitPixel.y));
-		dfb = clamp(0., 1., dfb * 10.);
+		dfb = clamp(dfb * 10., 0., 1.);
 		fade *= dfb;
 
 		confidence = fade;
@@ -112,7 +112,7 @@ void main()
 	gl_FragColor = texture2D(u_reflections, v_texCoord);
 
 	// TODO: adjust SSR confidence value
-	float nvDot = clamp(0., 1., dot(g.normal, normalize(vec3(v_viewDir, 1.))));
+	float nvDot = clamp(dot(g.normal, normalize(vec3(v_viewDir, 1.))), 0., 1.);
 	float fresnel = 1. - nvDot;
 	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
 	float roughness = mat.roughness;
