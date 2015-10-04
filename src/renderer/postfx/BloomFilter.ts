@@ -45,9 +45,9 @@ module Hyper.Renderer
 			// hope that GPU supports sRGB buffer... (or we'll lose much precision)
 			let ds0: LinearRGBTextureRenderBufferInfo;
 			
-			let prescaling: number = 1 / 32;
+			let prescaling: number = 1 / 128;
 			if (!this.renderer.supportsSRGB) {
-				prescaling = 1 / 8;
+				prescaling = 1 / 16;
 			}
 			if (input instanceof LinearRGBTextureRenderBufferInfo) {
 				prescaling = 1;
