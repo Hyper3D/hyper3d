@@ -30,5 +30,13 @@ module Hyper.Renderer
 			return i;
 		};
 	
+	export function getKeysOfObject(obj: any): string[]
+	{
+		const ret: string[] = [];
+		for (const key in obj) {
+			ret.push(key);
+		}
+		return ret;
+	}
 	
 }

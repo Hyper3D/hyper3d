@@ -133,7 +133,7 @@ module Hyper.Renderer
 			source.addEventListener('dispose', this.disposeHandler = () => this.onDispose());
 			
 			const attrs = <any> source.attributes; // TS: three.d.ts wrong typing?
-			const keys = source.attributesKeys;
+			const keys = source.attributesKeys || getKeysOfObject(attrs);
 			
 			this.attributes = [];
 			this.indexAttribute = null;
