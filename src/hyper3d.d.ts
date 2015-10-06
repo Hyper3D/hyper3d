@@ -44,7 +44,8 @@ declare module Hyper
 		Float2 = 1,
 		Float3 = 2,
 		Float4 = 3,
-		Texture2D = 4
+		Texture2D = 4,
+		TextureCube = 5
 	}
 	
 	export interface MaterialParameter

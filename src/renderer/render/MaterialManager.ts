@@ -132,7 +132,8 @@ module Hyper.Renderer
 			const params = source.parameters;
 			for (var name in params) {
 				var param = params[name];
-				if (param.type == MaterialParameterType.Texture2D) {
+				if (param.type == MaterialParameterType.Texture2D ||
+					param.type == MaterialParameterType.TextureCube) {
 					this.parameterTextureStages.push(name);
 				}
 			}
@@ -232,10 +233,13 @@ module Hyper.Renderer
 							parts.push(`gl.uniform4f(s.${unifName}, ${v}[0], ${v}[1], ${v}[2], ${v}[3]);`);
 							break;
 						case MaterialParameterType.Texture2D:
-							const texStage = texStages.indexOf(name);
-							parts.push(`gl.uniform1i(s.${unifName}, ${texStage});`);
-							parts.push(`gl.activeTexture(gl.TEXTURE0 + ${texStage});`);
-							parts.push(`tm.get(${v}).bind();`);
+						case MaterialParameterType.TextureCube:
+							{
+								const texStage = texStages.indexOf(name);
+								parts.push(`gl.uniform1i(s.${unifName}, ${texStage});`);
+								parts.push(`gl.activeTexture(gl.TEXTURE0 + ${texStage});`);
+								parts.push(`tm.get(${v}).bind();`);
+							}
 							break;
 						default:
 							throw new Error();
@@ -467,6 +471,9 @@ module Hyper.Renderer
 					break;
 				case MaterialParameterType.Texture2D:
 					parts.push(`uniform sampler2D p_${name};`);
+					break;
+				case MaterialParameterType.TextureCube:
+					parts.push(`uniform samplerCube p_${name};`);
 					break;
 			}
 		}
