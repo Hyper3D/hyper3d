@@ -9,6 +9,8 @@ vec3 m_emissive;
 float m_materialId;
 float m_materialParam;
 
+varying highp vec3 v_worldPosition;
+
 void evaluateShader();
 
 void evaluateMaterial()

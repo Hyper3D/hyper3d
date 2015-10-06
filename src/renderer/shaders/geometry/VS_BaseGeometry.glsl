@@ -27,6 +27,8 @@ vec3 worldTangent;
 
 vec3 lastWorldPosition;
 
+varying highp vec3 v_worldPosition;
+
 void computeExtraValues();
 
 #if c_skinningMode != SkinningModeNone
@@ -78,6 +80,7 @@ void evaluateGeometry()
 
 	lastWorldPosition = (u_lastModelMatrix * vec4(lastPosition, 1.)).xyz;
 
-
 	computeExtraValues();
+
+	v_worldPosition = worldPosition;
 }
