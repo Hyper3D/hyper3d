@@ -88,12 +88,16 @@ module Hyper
 	{
 		parameters: MaterialParameterAssignments;
 		
-		constructor(public material: Material)
+		constructor(public material: Material, assignments?: MaterialParameterAssignments)
 		{
 			super();
 			this.parameters = {};
 			for (const paramName in material.parameters) {
 				this.parameters[paramName] = material.parameters[paramName].default;
+				
+				if (assignments && assignments[paramName] != null) {
+					this.parameters[paramName] = assignments[paramName];
+				}
 			}
 		}
 		

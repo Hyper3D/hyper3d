@@ -83,6 +83,6 @@ declare module Hyper
 		parameters: MaterialParameterAssignments;
 		material: Material;
 		
-		constructor(material: Material);
+		constructor(material: Material, assignments?: MaterialParameterAssignments);
 	}
 }
