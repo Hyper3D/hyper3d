@@ -60,16 +60,31 @@ gulp.task('js:lib', function() {
     .pipe(ts(tsProject));
 
   return es.merge(
-    tsStream.dts.pipe(gulp.dest(destinations.pub_js)),
-    tsStream.js
-    .pipe(concatUtil.header('(function(Hyper){\n"use strict";\n'))
-    .pipe(concatUtil.footer('})(this.Hyper = this.Hyper || {});'))
+    tsStream.dts
     .pipe(gulp.dest(destinations.pub_js)),
+    
+    tsStream.js
+    .pipe(concatUtil.header(
+      '(function(Hyper){\n"use strict";\n'))
+    .pipe(concatUtil.footer(
+      '})(function(){\n' + 
+      '  if (typeof define === "function" && define.amd) {\n' +
+      '    var obj = {}; define(function(){return obj;});\n' +
+      '    return obj;\n' +
+      '  } else if (typeof module !== "undefined" && module.exports) {\n' +
+      '    return module.exports = {};\n' +
+      '  } else {\n' +
+      '    return this.Hyper = this.Hyper || {};\n' +
+      '  }\n' +
+      '}.call(this));'))
+    .pipe(gulp.dest(destinations.pub_js)),
+    
     gulp.src(
       sources.lib.js,
       { base: 'src' }
     )
     .pipe( gulp.dest(destinations.pub_js) ),
+    
     gulp.src(
       sources.lib.tsd,
       { base: 'src' }
@@ -121,6 +136,7 @@ gulp.task('bump', function() {
 // watch scripts, styles, and templates
 gulp.task('watch', function() {
   gulp.watch(sources.lib.ts, ['js:lib']);
+  gulp.watch(sources.lib.tsd, ['js:lib']);
   gulp.watch(sources.lib.js, ['js:lib']);
   gulp.watch(sources.lib.shaders, ['js:lib']);
   gulp.watch([shaderTemplateSource], ['js:lib']);
