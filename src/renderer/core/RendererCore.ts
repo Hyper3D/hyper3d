@@ -157,7 +157,9 @@ module Hyper.Renderer
 			this.ssaoRenderer = new SSAORenderer(this);
 			this.resampler = new ResampleFilterRenderer(this);
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
-			this.temporalAA = new TemporalAAFilterRenderer(this);
+			this.temporalAA = new TemporalAAFilterRenderer(this, {
+				useWiderFilter: this.hdrMode == HdrMode.MobileHdr
+			});
 			this.bloom = new BloomFilterRenderer(this);
 			this.motionBlur = new MotionBlurFilterRenderer(this);
 			

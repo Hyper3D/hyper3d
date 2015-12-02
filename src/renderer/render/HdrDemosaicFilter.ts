@@ -28,6 +28,7 @@ module Hyper.Renderer
 				width >>= 1; height >>= 1;
 			}
 			
+			const tmp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
 			const outp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
 			
 			ops.push({
@@ -35,7 +36,7 @@ module Hyper.Renderer
 					input: input,
 				},
 				outputs: {
-					output: outp
+					output: tmp
 				},
 				bindings: [],
 				optionalOutputs: [],
@@ -45,6 +46,22 @@ module Hyper.Renderer
 					<TextureRenderBuffer> cfg.outputs['output'],
 					params)
 			});
+			
+			ops.push({
+				inputs: {
+					input: tmp,
+				},
+				outputs: {
+					output: outp
+				},
+				bindings: [],
+				optionalOutputs: [],
+				name: `Smoothen Demosaic Result`,
+				factory: (cfg) => new BlurFilterRendererInstance(this,
+					<TextureRenderBuffer> cfg.inputs['input'],
+					<TextureRenderBuffer> cfg.outputs['output'])
+			});
+			
 			return outp;
 		}
 	}
@@ -105,6 +122,75 @@ module Hyper.Renderer
 			const p = this.program;
 			p.program.use();
 			gl.uniform1i(p.uniforms['u_mosaic'], 0);
+				
+			const quad = this.parent.renderer.quadRenderer;
+			quad.render(p.attributes['a_position']);
+		
+		}
+		afterRender(): void
+		{
+		}
+		dispose(): void
+		{
+			this.fb.dispose();
+		}
+	}
+	
+	class BlurFilterRendererInstance implements RenderOperator
+	{
+		private fb: GLFramebuffer;
+		
+		private program: {
+			program: GLProgram;
+			uniforms: GLProgramUniforms;
+			attributes: GLProgramAttributes;		
+		};
+		
+		constructor(
+			private parent: HdrDemosaicFilterRenderer,
+			private input: TextureRenderBuffer,
+			private out: TextureRenderBuffer
+		)
+		{
+			
+			this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+				depth: null,
+				colors: [
+					out.texture
+				]
+			});
+			
+			{
+				const program = parent.renderer.shaderManager.get('VS_Blur', 'FS_Blur',
+					['a_position']);
+				this.program = {
+					program,
+					uniforms: program.getUniforms([
+						'u_texture'
+					]),
+					attributes: program.getAttributes(['a_position'])
+				};
+			}
+		}
+		beforeRender(): void
+		{
+		}
+		perform(): void
+		{
+			const scene = this.parent.renderer.currentScene;
+			this.fb.bind();
+			
+			const gl = this.parent.renderer.gl;
+			gl.viewport(0, 0, this.out.width, this.out.height);
+			this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+			this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
+			
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
+			
+			const p = this.program;
+			p.program.use();
+			gl.uniform1i(p.uniforms['u_texture'], 0);
 				
 			const quad = this.parent.renderer.quadRenderer;
 			quad.render(p.attributes['a_position']);
