@@ -1,6 +1,6 @@
 highp vec2 encodeSpheremap(highp vec3 normal) {
-	highp vec2 e = normalize(normal.xy) * sqrt(normal.z * -0.5 + 0.5);
-	return e * 0.5 + 0.5;
+	highp vec2 e = normal.xy * inversesqrt(8. + normal.z * 8.);
+	return e + 0.5;
 }
 
 highp vec3 decodeSpheremap(highp vec2 encoded) {
