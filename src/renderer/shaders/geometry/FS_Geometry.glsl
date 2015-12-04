@@ -3,6 +3,10 @@
 #pragma require GBufferMosaic
 #pragma require FS_BaseGeometry
 
+// prevent distorted reflection due to (probably) insufficient normal precision
+// FIXME: this is too much
+// --- precision highp ---
+
 varying vec3 v_viewNormal;
 #if c_useNormalMap
 varying vec3 v_viewTangent;
