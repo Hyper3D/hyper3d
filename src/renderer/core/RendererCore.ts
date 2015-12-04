@@ -276,13 +276,13 @@ module Hyper.Renderer
 			
 			let toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
 			
-			toneMapped = this.temporalAA.setupFilter({
+			const antialiased = this.temporalAA.setupFilter({
 				color: toneMapped,
 				linearDepth: gbuffer.linearDepth,
 				g0: gbuffer.g0, g1: gbuffer.g1
 			}, ops);
 			
-			const visualizedBuf = toneMapped;
+			const visualizedBuf = antialiased;
 			let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
 			// visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Velocity, ops);
