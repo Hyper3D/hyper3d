@@ -1,10 +1,10 @@
 
-vec2 gBufferMosaicPatternNonNormalized(vec2 fragCoord) {
-	vec2 pos = floor(fragCoord.xy);
+vec2 gBufferMosaicPatternNonNormalized(highp vec2 fragCoord) {
+	highp vec2 pos = floor(fragCoord.xy);
 	return fract(pos * 0.5);
 }
 
-vec2 gBufferMosaicPattern(vec2 fragCoord) {
+vec2 gBufferMosaicPattern(highp vec2 fragCoord) {
 	return gBufferMosaicPatternNonNormalized(fragCoord) * 2.;
 }
 
