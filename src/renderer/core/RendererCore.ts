@@ -116,6 +116,11 @@ module Hyper.Renderer
 			this.setup();
 		}
 		
+		get useWiderTemporalAA(): boolean
+		{
+			return !this.useFullResolutionGBuffer; 
+		}
+		
 		setup(): void
 		{
 			this.shaderManager = createShaderManager(this);
@@ -158,7 +163,7 @@ module Hyper.Renderer
 			this.resampler = new ResampleFilterRenderer(this);
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
 			this.temporalAA = new TemporalAAFilterRenderer(this, {
-				useWiderFilter: this.hdrMode == HdrMode.MobileHdr || !this.useFullResolutionGBuffer
+				useWiderFilter: this.useWiderTemporalAA
 			});
 			this.bloom = new BloomFilterRenderer(this);
 			this.motionBlur = new MotionBlurFilterRenderer(this);
