@@ -187,8 +187,9 @@ module Hyper.Renderer
 			const projMat = tmpM;
 			projMat.copy(this.parent.renderer.currentCamera.projectionMatrix);
 			
-			const jitX = (Math.random() - Math.random()) / this.parent.renderer.renderWidth * 2;
-			const jitY = (Math.random() - Math.random()) / this.parent.renderer.renderHeight * 2;
+			const jitScale = this.parent.renderer.useFullResolutionGBuffer ? 2 : 4;
+			const jitX = (Math.random() - Math.random()) / this.parent.renderer.renderWidth * jitScale;
+			const jitY = (Math.random() - Math.random()) / this.parent.renderer.renderHeight * jitScale;
 			for (let i = 0; i < 4; ++i) {
 				projMat.elements[(i << 2)] += projMat.elements[(i << 2) + 3] * jitX;
 				projMat.elements[(i << 2) + 1] += projMat.elements[(i << 2) + 3] * jitY;

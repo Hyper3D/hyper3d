@@ -158,7 +158,7 @@ module Hyper.Renderer
 			this.resampler = new ResampleFilterRenderer(this);
 			this.toneMapFilter = new ToneMappingFilterRenderer(this);
 			this.temporalAA = new TemporalAAFilterRenderer(this, {
-				useWiderFilter: this.hdrMode == HdrMode.MobileHdr
+				useWiderFilter: this.hdrMode == HdrMode.MobileHdr || !this.useFullResolutionGBuffer
 			});
 			this.bloom = new BloomFilterRenderer(this);
 			this.motionBlur = new MotionBlurFilterRenderer(this);
@@ -285,7 +285,7 @@ module Hyper.Renderer
 			const visualizedBuf = antialiased;
 			let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
-			// visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Velocity, ops);
+			visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
 			
 			console.log(dumpRenderOperationAsDot(ops));
 			

@@ -9,12 +9,23 @@
 uniform sampler2D u_mosaic;
 uniform sampler2D u_depth;
 varying highp vec4 v_texCoords;
+varying highp vec2 v_texCoord;
 
 uniform highp vec4 u_depthLinearizeCoef;
 
+// FIXME: better method
+highp float wrapCoord(highp float coord)
+{
+	return fract(coord);
+}
+highp vec2 wrapCoord2(highp vec2 coord)
+{
+	return fract(coord);
+}
+
 void main()
 {
-	highp float targetDepth = texture2D(u_depth, v_texCoords.xy).x;
+	highp float targetDepth = texture2D(u_depth, v_texCoord.xy).x;
 
 #if c_gBufferIndex == 4
 	// depth
@@ -36,16 +47,24 @@ void main()
 #define NumComparands 2
 	highp vec2 coord1 = v_texCoords.xy;
 	highp vec2 coord2 = v_texCoords.zw;
+	coord1.x = wrapCoord(coord1.x);
+	coord2.x = wrapCoord(coord2.x);
 #elif c_gBufferIndex == 2
 #define NumComparands 2
 	highp vec2 coord1 = v_texCoords.xy;
 	highp vec2 coord2 = v_texCoords.zw;
+	coord1.y = wrapCoord(coord1.y);
+	coord2.y = wrapCoord(coord2.y);
 #elif c_gBufferIndex == 3
 #define NumComparands 4
 	highp vec2 coord1 = v_texCoords.xy;
 	highp vec2 coord2 = v_texCoords.zy;
 	highp vec2 coord3 = v_texCoords.xw;
 	highp vec2 coord4 = v_texCoords.zw;
+	coord1 = wrapCoord2(coord1);
+	coord2 = wrapCoord2(coord2);
+	coord3 = wrapCoord2(coord3);
+	coord4 = wrapCoord2(coord4);
 #endif // c_gBufferIndex
 
 #else // c_globalUseFullResolutionGBuffer
