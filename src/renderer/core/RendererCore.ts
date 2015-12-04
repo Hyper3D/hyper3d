@@ -285,7 +285,7 @@ module Hyper.Renderer
 			const visualizedBuf = antialiased;
 			let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 			
-			visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
+			// visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
 			
 			console.log(dumpRenderOperationAsDot(ops));
 			
