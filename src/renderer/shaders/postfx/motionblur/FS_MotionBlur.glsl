@@ -66,7 +66,7 @@ void main()
 	highp float localDepth = fetchDepth(u_linearDepth, v_texCoord);
 	float localVelLn = length(localVel);
 
-	vec4 sum = vec4(
+	highp vec4 sum = vec4(
 #if c_useLogRGB
 		decodeLogRGB(texture2D(u_color, v_texCoord)),
 #else
