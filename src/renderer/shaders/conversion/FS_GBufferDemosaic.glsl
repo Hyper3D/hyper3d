@@ -134,10 +134,10 @@ void main()
 	gl_FragColor = retValue;
 #endif // c_gBufferIndex == 4
 
-	// G0 and G3 contains color values. We should linearize them now
+	// G0 contains color values. We should linearize them now
 	// if possible.
-#if (c_gBufferIndex == 0 || c_gBufferIndex == 3) && c_globalSupportsSRGB
-	// final G0 and G3 is sRGB buffer; we can rely on hardware
+#if (c_gBufferIndex == 0) && c_globalSupportsSRGB
+	// final G0 is sRGB buffer; we can rely on hardware
 	// from this point
 	// (if not, we should linearize them in every shader that reads them)
 	gl_FragColor.xyz *= gl_FragColor.xyz;

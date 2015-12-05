@@ -9,9 +9,6 @@ vec2 gBufferMosaicPattern(highp vec2 fragCoord) {
 }
 
 vec4 encodeGBufferMosaic(vec4 g0, vec4 g1, vec4 g2, vec4 g3) {
-	g0.xyz *= g0.xyz;
-	g3.xyz *= g3.xyz;
-	
 #if 1
 	// using branch
 	vec2 pattern = gBufferMosaicPatternNonNormalized(gl_FragCoord.xy);
