@@ -16,7 +16,15 @@ var gulp = require('gulp'),
   filter = require('gulp-filter'),
   tagVersion = require('gulp-tag-version'),
   inquirer = require('inquirer'),
-  path = require('path');
+  path = require('path'),
+  browserify = require('browserify'),
+  uglify = require('gulp-uglify'),
+  browserifyGlobalShim = require('browserify-global-shim'),
+  buffer = require('vinyl-buffer'),
+  source = require('vinyl-source-stream'),
+  rename = require('gulp-rename'),
+  pipe = require('multipipe'),
+  mirror = require('gulp-mirror');
 
 var sources = {
   lib: {
@@ -29,9 +37,11 @@ var sources = {
 };
 var shaderTemplateSource = './src/renderer/shaders/ShadersTemplate.txt';
 
+var bundleMain = 'src/bundle-main.js';
+
 var destinations = {
   pub_js: './dist/',
-  pub_lib: './dist/lib/'
+  bundle_js: './build/'
 };
 
 gulp.task('dep:lib', function() {
@@ -72,6 +82,27 @@ gulp.task('js:lib', function() {
     )
     .pipe( gulp.dest(destinations.pub_js) )
   );
+});
+
+gulp.task('js:bundle', ['js:lib'], function () {
+  // replace require('three') with THREE
+  var gs = browserifyGlobalShim.configure({
+    'three': 'THREE'
+  });
+  return browserify({
+     entries: bundleMain
+  }).transform(gs)
+    .bundle()
+    .pipe(source('hyper3d.js'))
+    .pipe(buffer())
+    .pipe(mirror(
+      pipe(
+        uglify(),
+        rename('hyper3d.min.js')
+      ),
+      rename('hyper3d.js')
+    ))
+    .pipe(gulp.dest(destinations.bundle_js));
 });
 
 // deletes the dist folder for a clean build

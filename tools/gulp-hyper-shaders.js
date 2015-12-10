@@ -85,7 +85,7 @@ module.exports = function (src) {
 		
 		var fl = latestFile.clone({ contents: false });
 		fl.contents = new Buffer(text);
-		fl.path = path.join(fl.base, 'ShaderChunks.ts');
+		fl.path = path.join(fl.base, 'ShaderChunk.ts');
 		
 		this.push(fl);
 		cb();	

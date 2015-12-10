@@ -5,3 +5,4 @@ tools
 gulpfile.js
 tsd.json
 tsconfig.json
+build

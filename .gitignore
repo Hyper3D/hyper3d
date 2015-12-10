@@ -3,3 +3,4 @@ dist
 typings
 *.DS_Store
 *.tgz
+build
