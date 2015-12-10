@@ -384,6 +384,7 @@ export interface StandardMaterialAttributes
 	hasNormalMap: boolean;
 	hasSpecularMap: boolean;
 	hasAlphaMap: boolean;
+	lit: boolean;
 }
 
 function getStandardMaterial(attrs: StandardMaterialAttributes): Material
@@ -393,6 +394,7 @@ function getStandardMaterial(attrs: StandardMaterialAttributes): Material
 	if (attrs.hasNormalMap) 	key |= 1 << 1;
 	if (attrs.hasSpecularMap) 	key |= 1 << 2;
 	if (attrs.hasAlphaMap) 		key |= 1 << 3;
+	if (attrs.lit) 				key |= 1 << 4;
 	
 	let mat = standardMaterials[key];
 	if (!mat) {
@@ -438,7 +440,7 @@ function getStandardMaterial(attrs: StandardMaterialAttributes): Material
 			params['map'] = {
 				type: MaterialParameterType.Texture2D	
 			};
-			parts.push(`m_albedo *= texture2D(p_map, v_uv.xy).xyz;`);
+			parts.push(`${attrs.lit ? 'm_albedo' : 'm_emissive'} *= texture2D(p_map, v_uv.xy).xyz;`);
 		}
 		if (attrs.hasNormalMap) {
 			params['normalMap'] = {
@@ -460,7 +462,8 @@ function getStandardMaterial(attrs: StandardMaterialAttributes): Material
 		}
 		
 		mat = new Material({
-			shadingModel: MaterialShadingModel.Opaque,
+			shadingModel: attrs.lit ?
+				 MaterialShadingModel.Opaque : MaterialShadingModel.Unlit,
 			shader: parts.join('\n'),
 			parameters: params,
 			requiredVertexAttributes: vertAttrs
@@ -552,7 +555,8 @@ export function importThreeJsMaterial(mat: three.Material): MaterialInstance
 			hasMap: mat.map != null,
 			hasAlphaMap: mat.alphaMap != null,
 			hasNormalMap: mat.normalMap != null,
-			hasSpecularMap: mat.specularMap != null
+			hasSpecularMap: mat.specularMap != null,
+			lit: true
 		});
 		
 		inst = new ImportedMaterialInstance(hMat, mat);
@@ -574,6 +578,27 @@ export function importThreeJsMaterial(mat: three.Material): MaterialInstance
 		}
 		if (mat.specularMap) {
 			inst.parameters['specularMap'] = mat.specularMap;
+		}
+		
+		importedMaterialsCache.set(mat, inst);
+		
+		return inst;
+	} else if (mat instanceof three.MeshBasicMaterial) {
+		const hMat = getStandardMaterial({
+			hasMap: mat.map != null,
+			hasAlphaMap: mat.alphaMap != null,
+			hasNormalMap: false,
+			hasSpecularMap: false,
+			lit: false
+		});
+		
+		inst = new ImportedMaterialInstance(hMat, mat);
+		inst.parameters['emissive'] = importColor(mat.color);
+		if (mat.map) {
+			inst.parameters['map'] = mat.map;
+		}
+		if (mat.alphaMap) {
+			inst.parameters['alphaMap'] = mat.alphaMap;
 		}
 		
 		importedMaterialsCache.set(mat, inst);
