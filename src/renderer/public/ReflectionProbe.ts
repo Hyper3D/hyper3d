@@ -1,23 +1,21 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../version.ts" />
 
-module Hyper
+import * as three from 'three';
+
+export class ReflectionProbe extends three.Object3D
 {
-	export class ReflectionProbe extends THREE.Object3D
+	distance: number;
+	decayDistance: number;
+	priority: number;
+	
+	texture: three.CubeTexture;
+	
+	constructor()
 	{
-		distance: number;
-		decayDistance: number;
-		priority: number;
+		super();
 		
-		texture: THREE.CubeTexture;
-		
-		constructor()
-		{
-			super();
-			
-			this.distance = Infinity;
-			this.decayDistance = 5;
-		}
-		
+		this.distance = Infinity;
+		this.decayDistance = 5;
 	}
+	
 }

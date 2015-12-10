@@ -13,7 +13,6 @@ var gulp = require('gulp'),
   es = require('event-stream'),
   through = require('through2'),
   hyperShaders = require('./tools/gulp-hyper-shaders'),
-  mainBowerFiles = require('main-bower-files'),
   filter = require('gulp-filter'),
   tagVersion = require('gulp-tag-version'),
   inquirer = require('inquirer'),
@@ -36,7 +35,6 @@ var destinations = {
 };
 
 gulp.task('dep:lib', function() {
-  gulp.src(mainBowerFiles()).pipe(gulp.dest(destinations.pub_lib));
 });
 
 function addSource(inp) {
@@ -46,11 +44,10 @@ function addSource(inp) {
 
 gulp.task('js:lib', function() {
   var tsProject = ts.createProject('tsconfig.json', {
-    sortOutput: true,
-    out: 'hyper3d.js'
+    sortOutput: true
   });
   
-  var tsFiles = gulp.src(sources.lib.tsMain);
+  var tsFiles = gulp.src(sources.lib.ts);
     
   var shaderChunks = gulp.src(sources.lib.shaders)
     .pipe(hyperShaders(shaderTemplateSource ));
@@ -60,23 +57,7 @@ gulp.task('js:lib', function() {
     .pipe(ts(tsProject));
 
   return es.merge(
-    tsStream.dts
-    .pipe(gulp.dest(destinations.pub_js)),
-    
     tsStream.js
-    .pipe(concatUtil.header(
-      '(function(Hyper){\n"use strict";\n'))
-    .pipe(concatUtil.footer(
-      '})(function(){\n' + 
-      '  if (typeof define === "function" && define.amd) {\n' +
-      '    var obj = {}; define(function(){return obj;});\n' +
-      '    return obj;\n' +
-      '  } else if (typeof module !== "undefined" && module.exports) {\n' +
-      '    return module.exports = {};\n' +
-      '  } else {\n' +
-      '    return this.Hyper = this.Hyper || {};\n' +
-      '  }\n' +
-      '}.call(this));'))
     .pipe(gulp.dest(destinations.pub_js)),
     
     gulp.src(
@@ -122,7 +103,7 @@ gulp.task('bump', function() {
   inquirer.prompt( questions, function( answers ) {
     if(answers.bump === 'Y') {
 
-      return gulp.src(['./package.json', './bower.json'])
+      return gulp.src(['./package.json'])
           .pipe(bump({type: 'patch'}))
           .pipe(gulp.dest('./'))
           .pipe(git.commit('bump patch version'))
@@ -140,7 +121,6 @@ gulp.task('watch', function() {
   gulp.watch(sources.lib.js, ['js:lib']);
   gulp.watch(sources.lib.shaders, ['js:lib']);
   gulp.watch([shaderTemplateSource], ['js:lib']);
-  gulp.watch(mainBowerFiles().concat(['bower.json']), ['dep:lib']);
 });
 
 // default

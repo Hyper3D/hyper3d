@@ -1,5 +1,5 @@
 declare module Hyper 
-{
+{	
 	export interface WebGLHyperRendererParameters
 	{
 		canvas?: HTMLCanvasElement;
@@ -85,4 +85,8 @@ declare module Hyper
 		
 		constructor(material: Material, assignments?: MaterialParameterAssignments);
 	}
+}
+
+declare module 'hyper3d' {
+    export = Hyper;
 }

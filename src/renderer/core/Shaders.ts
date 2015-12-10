@@ -1,11 +1,10 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../utils/Utils.ts" />
-/// <reference path="RendererCore.ts" />
-module Hyper.Renderer
+
+import { ShaderChunk } from './GLShader';
+
+export interface ShaderChunkMap
 {
-	interface ShaderChunkMap
-	{
-		[name: string]: ShaderChunk;
-	}
-	export let shaderChunks: ShaderChunkMap;
+	[name: string]: ShaderChunk;
 }
+
+export { shaderChunks } from '../shaders/ShaderChunk';

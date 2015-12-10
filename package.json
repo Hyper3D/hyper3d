@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "description": "",
   "main": "dist/hyper3d.js",
-  "dependencies": {},
+  "dependencies": {
+    "three": "^0.73.0"
+  },
   "devDependencies": {
     "bower": "^1.4.1",
     "del": "^1.2.1",
@@ -26,5 +28,8 @@
     "through2": "^2.0.0",
     "tsd": "^0.6.4",
     "typescript": "^1.5.3"
+  },
+  "scripts": { 
+    "prepublish": "gulp build" 
   }
 }
