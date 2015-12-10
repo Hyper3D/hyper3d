@@ -346,6 +346,7 @@ module Hyper.Renderer
 						'u_velocityScale',
 						'u_velocityInvScale',
 						'u_minimumVelocity',
+						'u_minimumVelocitySquared',
 						
 						'u_jitter',
 						'u_jitterScale'
@@ -399,7 +400,8 @@ module Hyper.Renderer
 			gl.uniform2f(p.uniforms['u_velocityInvScale'],
 				this.maxVelocity / this.inG0.width * 2,
 				this.maxVelocity / this.inG0.height * 2);
-			gl.uniform1f(p.uniforms['u_minimumVelocity'], Math.pow(0.5 / this.maxVelocity, 2));
+			gl.uniform1f(p.uniforms['u_minimumVelocitySquared'], Math.pow(0.5 / this.maxVelocity, 2));
+			gl.uniform1f(p.uniforms['u_minimumVelocity'], 0.5 / this.maxVelocity);
 			gl.uniform2f(p.uniforms['u_jitterScale'],
 				this.inG0.width / jitter.size,
 				this.inG0.height / jitter.size);

@@ -36,7 +36,7 @@ module Hyper.Renderer
 			
 			const gl = renderer.gl;
 			
-			this.normalShadowMapSize = 1024;
+			this.normalShadowMapSize = 2048;
 			this.cubeShadowMapSize = 512;
 			
 			this.depthShadowMapTexture = gl.createTexture();

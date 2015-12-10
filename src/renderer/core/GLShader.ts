@@ -65,6 +65,8 @@ module Hyper.Renderer
 			
 			parameters = parameters || {};
 			
+			let highpRequired = false;
+			
 			function scan(chunk: ShaderChunk, name?: string): void
 			{
 				if (chunk.requires) {
@@ -87,21 +89,24 @@ module Hyper.Renderer
 					parts.push(`/* ---- ${name} ---- */`);
 				}
 				parts.push(chunk.source);
+				if (chunk.source.indexOf('// --- precision highp ---') >= 0) {
+					highpRequired = true;
+				}
 			}
 			
 			const gl = renderer.gl;
+			
+			chunks.forEach((chunk) => scan(chunk));
+			
 			switch (type) {
 				case gl.VERTEX_SHADER:
-					parts.push("");
 					break;
 				case gl.FRAGMENT_SHADER:
-					parts.push("precision mediump float;");
+					parts.unshift(`precision ${highpRequired ? 'highp' : 'mediump'} float;`);
 					break;
 				default:
 					throw new Error();
 			}
-			
-			chunks.forEach((chunk) => scan(chunk));
 			
 			const globalParams: any = renderer.shaderManager.globalParameters;
 			

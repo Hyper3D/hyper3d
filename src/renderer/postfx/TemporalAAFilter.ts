@@ -15,17 +15,13 @@ module Hyper.Renderer
 	
 	export interface TemporalAAFilterParameters
 	{
-		// TODO: parameters!
-		
+		useWiderFilter: boolean;
 	}
+	
 	export class TemporalAAFilterRenderer
 	{
-		params: TemporalAAFilterParameters; // value can be modified
-		
-		constructor(public renderer: RendererCore)
+		constructor(public renderer: RendererCore, public params: TemporalAAFilterParameters)
 		{
-			this.params = {
-			};
 		}
 		
 		dispose(): void
@@ -150,7 +146,9 @@ module Hyper.Renderer
 			
 			{
 				const program = parent.renderer.shaderManager.get('VS_TemporalAA', 'FS_TemporalAA',
-					['a_position']);
+					['a_position'], {
+						useWiderFilter: parent.params.useWiderFilter
+					}); 
 				this.program = {
 					program,
 					uniforms: program.getUniforms([

@@ -2,6 +2,7 @@
 #pragma require GBuffer
 #pragma require DepthFetch
 #pragma require YUV
+#pragma parameter useWiderFilter
 
 uniform sampler2D u_input;
 uniform sampler2D u_linearDepth;
@@ -33,15 +34,24 @@ void main()
 	vec3 currentColor = texture2D(u_input, v_texCoord).xyz;
 
 	highp vec2 curCoord = v_texCoord.xy;
-	highp vec4 curCoord2 = curCoord.xyxy + vec4(u_globalInvRenderSize, -u_globalInvRenderSize);
-	vec3 currentColor1 = texture2D(u_input, vec2(curCoord.x, curCoord2.y)).xyz;
-	vec3 currentColor2 = texture2D(u_input, vec2(curCoord.x, curCoord2.w)).xyz;
-	vec3 currentColor3 = texture2D(u_input, vec2(curCoord2.x, curCoord.y)).xyz;
-	vec3 currentColor4 = texture2D(u_input, vec2(curCoord2.z, curCoord.y)).xyz;
+#if c_useWiderFilter
+	highp vec4 curCoord2 = curCoord.xyxy + vec4(u_globalDoubleInvRenderSize, -u_globalDoubleInvRenderSize);
 	vec3 currentColor5 = texture2D(u_input, curCoord2.xy).xyz;
 	vec3 currentColor6 = texture2D(u_input, curCoord2.xw).xyz;
 	vec3 currentColor7 = texture2D(u_input, curCoord2.zy).xyz;
 	vec3 currentColor8 = texture2D(u_input, curCoord2.zw).xyz;
+	curCoord2 = curCoord.xyxy + vec4(u_globalInvRenderSize, -u_globalInvRenderSize);
+#else
+	highp vec4 curCoord2 = curCoord.xyxy + vec4(u_globalInvRenderSize, -u_globalInvRenderSize);
+	vec3 currentColor5 = texture2D(u_input, curCoord2.xy).xyz;
+	vec3 currentColor6 = texture2D(u_input, curCoord2.xw).xyz;
+	vec3 currentColor7 = texture2D(u_input, curCoord2.zy).xyz;
+	vec3 currentColor8 = texture2D(u_input, curCoord2.zw).xyz;
+#endif
+	vec3 currentColor1 = texture2D(u_input, vec2(curCoord.x, curCoord2.y)).xyz;
+	vec3 currentColor2 = texture2D(u_input, vec2(curCoord.x, curCoord2.w)).xyz;
+	vec3 currentColor3 = texture2D(u_input, vec2(curCoord2.x, curCoord.y)).xyz;
+	vec3 currentColor4 = texture2D(u_input, vec2(curCoord2.z, curCoord.y)).xyz;
 
 	highp vec2 oldCoord = v_texCoord - velocity;
 	highp vec4 oldCoord2 = oldCoord.xyxy + vec4(u_globalQuadInvRenderSize, -u_globalQuadInvRenderSize);
@@ -62,8 +72,8 @@ void main()
 
 	vec3 minColor = min(min(currentColor1, currentColor2), min(currentColor3, min(currentColor4, currentColor0)));
 	vec3 maxColor = max(max(currentColor1, currentColor2), max(currentColor3, max(currentColor4, currentColor0)));
-	minColor = mix(minColor, min(min(currentColor5, currentColor6), min(currentColor7, min(currentColor8, minColor))), 0.7);
-	maxColor = mix(maxColor, max(max(currentColor5, currentColor6), max(currentColor7, max(currentColor8, maxColor))), 0.7);
+	minColor = mix(minColor, min(min(currentColor5, currentColor6), min(currentColor7, min(currentColor8, minColor))), 0.5);
+	maxColor = mix(maxColor, max(max(currentColor5, currentColor6), max(currentColor7, max(currentColor8, maxColor))), 0.5);
 
 	vec3 oldLastColor = lastColor;
 	lastColor = encodePalYuv(lastColor);

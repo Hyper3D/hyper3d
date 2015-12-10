@@ -493,6 +493,8 @@ module Hyper.Renderer
 			const jitter = this.parent.renderer.gaussianJitter;
 			const vpMat = this.projectionViewMat;
 			
+			const jitterScale = this.parent.renderer.hdrMode == HdrMode.MobileHdr ? 1/4 : 1/2;
+			
 			// setup common uniforms
 			for (const p of this.pointLightProgram) {
 				p.program.use();
@@ -501,8 +503,8 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g2'], 2);
 				gl.uniform1i(p.uniforms['u_dither'], 3);
 				gl.uniform2f(p.uniforms['u_ditherScale'],
-					this.outLit.width / jitter.size / 4,
-					this.outLit.height / jitter.size / 4);
+					this.outLit.width / jitter.size * jitterScale,
+					this.outLit.height / jitter.size * jitterScale);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_jitter'], 5);
 				// u_jitterScale == u_ditherScale
@@ -523,8 +525,8 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g2'], 2);
 				gl.uniform1i(p.uniforms['u_dither'], 3);
 				gl.uniform2f(p.uniforms['u_ditherScale'],
-					this.outLit.width / jitter.size / 4,
-					this.outLit.height / jitter.size / 4);
+					this.outLit.width / jitter.size * jitterScale,
+					this.outLit.height / jitter.size * jitterScale);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_jitter'], 5);
 				// u_jitterScale == u_ditherScale
@@ -544,8 +546,8 @@ module Hyper.Renderer
 				gl.uniform1i(p.uniforms['u_g2'], 2);
 				gl.uniform1i(p.uniforms['u_dither'], 3);
 				gl.uniform2f(p.uniforms['u_ditherScale'],
-					this.outLit.width / jitter.size / 4,
-					this.outLit.height / jitter.size / 4);
+					this.outLit.width / jitter.size * jitterScale,
+					this.outLit.height / jitter.size * jitterScale);
 				gl.uniform1i(p.uniforms['u_linearDepth'], 4);
 				gl.uniform1i(p.uniforms['u_ssao'], 5);
 				gl.uniform2f(p.uniforms['u_viewDirOffset'],

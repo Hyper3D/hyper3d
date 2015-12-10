@@ -1,17 +1,14 @@
 
-vec2 gBufferMosaicPatternNonNormalized(vec2 fragCoord) {
-	vec2 pos = floor(fragCoord.xy);
+vec2 gBufferMosaicPatternNonNormalized(highp vec2 fragCoord) {
+	highp vec2 pos = floor(fragCoord.xy);
 	return fract(pos * 0.5);
 }
 
-vec2 gBufferMosaicPattern(vec2 fragCoord) {
+vec2 gBufferMosaicPattern(highp vec2 fragCoord) {
 	return gBufferMosaicPatternNonNormalized(fragCoord) * 2.;
 }
 
 vec4 encodeGBufferMosaic(vec4 g0, vec4 g1, vec4 g2, vec4 g3) {
-	g0.xyz *= g0.xyz;
-	g3.xyz *= g3.xyz;
-	
 #if 1
 	// using branch
 	vec2 pattern = gBufferMosaicPatternNonNormalized(gl_FragCoord.xy);

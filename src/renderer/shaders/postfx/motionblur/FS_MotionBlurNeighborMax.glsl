@@ -39,12 +39,12 @@ void main()
 		result = s;
 	}
 
-	s = texture2D(u_input, v_texCoord2.wy).xyz;
+	s = texture2D(u_input, v_texCoord2.zy).xyz;
 	if (s.z > result.z) {
 		result = s;
 	}
 
-	s = texture2D(u_input, v_texCoord2.ww).xyz;
+	s = texture2D(u_input, v_texCoord2.zw).xyz;
 	if (s.z > result.z) {
 		result = s;
 	}

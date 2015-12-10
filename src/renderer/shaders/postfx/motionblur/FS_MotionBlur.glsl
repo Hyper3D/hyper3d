@@ -19,6 +19,7 @@ uniform sampler2D u_jitter;
 uniform vec2 u_velocityScale;
 uniform vec2 u_velocityInvScale;
 
+uniform float u_minimumVelocitySquared;
 uniform float u_minimumVelocity;
 
 float cone(float dist, float vel)
@@ -34,7 +35,7 @@ float cylinder(float dist, float vel)
 
 float softDepthCompare(highp float a, highp float b)
 {
-	const float extent = 0.1;
+	const float extent = 0.01;
 	return clamp(1. - (a - b) * (1. / extent), 0., 1.);
 }
 
@@ -55,17 +56,18 @@ void main()
 
 	// velocity in the neighborhood
 	vec2 vn = texture2D(u_velTile, v_texCoord).xy - 0.5;
-	if (dot(vn, vn) < u_minimumVelocity) {
+	float fnLenSq = dot(vn, vn);
+	if (fnLenSq < u_minimumVelocitySquared) {
 		// no blur
 		gl_FragColor = texture2D(u_color, v_texCoord);
 		return;
 	}
 
-
 	vec2 localVel = velocityAt(v_texCoord);
 	highp float localDepth = fetchDepth(u_linearDepth, v_texCoord);
-	float localVelLn = length(localVel);
+	float localVelLn = max(length(localVel), u_minimumVelocity);
 
+	// sample initial point
 	vec4 sum = vec4(
 #if c_useLogRGB
 		decodeLogRGB(texture2D(u_color, v_texCoord)),
@@ -73,8 +75,9 @@ void main()
 		texture2D(u_color, v_texCoord).xyz,
 #endif
 		1.);
-	sum *= 0.5 / (localVelLn + 0.1); // ??
+	sum *= .25 * u_minimumVelocity / localVelLn;
 
+	// start sampling neighbor points
 	highp vec2 coord = v_texCoord;
 
 	float edgeFade = max(u_globalQuadInvRenderSize.x, u_globalQuadInvRenderSize.y);
@@ -84,7 +87,7 @@ void main()
 	coord -= vn * 0.5; // make blur "double-sided" (actually this is wrong but artifact is subtle)
 	vn *= (1. / float(c_numSamples));
 	coord += vn * jitter;
-
+	
 	for (int i = 1; i < c_numSamples; ++i) {
 		coord += vn;
 
@@ -99,15 +102,14 @@ void main()
 		float b = softDepthCompare(localDepth, depth);
 		float f = softDepthCompare(depth, localDepth);
 
-		float distln = distance(coord * u_velocityScale, v_texCoord * u_velocityScale);
-		float velln = length(vel); 
+		float distln = distance(coord * u_velocityScale, v_texCoord * u_velocityScale); // FIXME: optimize
+		float velln = max(length(vel), u_minimumVelocity); 
 
 		float weight = f * cone(distln, velln) + b * cone(distln, localVelLn) +
-			cylinder(distln, velln) * cylinder(distln, localVelLn) * 2.;
+			cylinder(distln + u_minimumVelocity * 2., velln) * cylinder(distln + u_minimumVelocity * 2., localVelLn) * 2.;  
 
 		// fade the border artifact
 		weight *= clamp((min(min(coord.x, coord.y), 1. - max(coord.x, coord.y)) - edgeFade) * 100., 0., 1.);
-
 		sum += vec4(color, 1.) * weight;
 	}
 

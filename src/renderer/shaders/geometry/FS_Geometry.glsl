@@ -3,6 +3,10 @@
 #pragma require GBufferMosaic
 #pragma require FS_BaseGeometry
 
+// prevent distorted reflection due to (probably) insufficient normal precision
+// FIXME: this is too much
+// --- precision highp ---
+
 varying vec3 v_viewNormal;
 #if c_useNormalMap
 varying vec3 v_viewTangent;
@@ -49,7 +53,6 @@ void main()
 	// we have to convert color to gamma space to
 	// prevent the loss of precision
 	g0.xyz = sqrt(g0.xyz);
-	g3.xyz = sqrt(g3.xyz);
 	
 	gl_FragColor = encodeGBufferMosaic(g0, g1, g2, g3);
 }
