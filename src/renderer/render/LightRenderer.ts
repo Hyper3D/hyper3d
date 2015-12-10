@@ -1,5 +1,7 @@
 /// <reference path="../Prefix.d.ts" />
 
+import * as three from 'three';
+
 import {
 	DepthTextureRenderBufferInfo,
 	GBuffer0TextureRenderBufferInfo,
@@ -321,9 +323,9 @@ const enum PointLightProgramFlags
 class LightPassRenderer implements RenderOperator
 {
 	private fb: GLFramebuffer;
-	private tmpMat: THREE.Matrix4;
-	private projectionViewMat: THREE.Matrix4;
-	private viewMat: THREE.Matrix4;
+	private tmpMat: three.Matrix4;
+	private projectionViewMat: three.Matrix4;
+	private viewMat: three.Matrix4;
 	private viewVec: ViewVectors;
 	private totalAmbient: {
 		r: number;
@@ -347,7 +349,7 @@ class LightPassRenderer implements RenderOperator
 		attributes: GLProgramAttributes;		
 	};
 	
-	private frustumCorners: THREE.Vector3[];
+	private frustumCorners: three.Vector3[];
 	
 	constructor(
 		private parent: LightRenderer,
@@ -372,8 +374,8 @@ class LightPassRenderer implements RenderOperator
 			]
 		});
 		
-		this.tmpMat = new THREE.Matrix4();
-		this.projectionViewMat = new THREE.Matrix4();
+		this.tmpMat = new three.Matrix4();
+		this.projectionViewMat = new three.Matrix4();
 		this.viewMat = null;
 		this.viewVec = null;
 		this.totalAmbient = {r: 0, g: 0, b: 0};
@@ -382,7 +384,7 @@ class LightPassRenderer implements RenderOperator
 		
 		this.frustumCorners = [];
 		for (let i = 0; i < 5; ++i) {
-			this.frustumCorners.push(new THREE.Vector3());
+			this.frustumCorners.push(new three.Vector3());
 		}
 		
 		for (let i = 0; i < 4; ++i) {
@@ -633,9 +635,9 @@ class LightPassRenderer implements RenderOperator
 			}
 		}
 	}
-	private prepareTree(obj: THREE.Object3D): void
+	private prepareTree(obj: three.Object3D): void
 	{
-		if (obj instanceof THREE.Light) {
+		if (obj instanceof three.Light) {
 			this.prepareLight(obj);
 		}
 		
@@ -643,13 +645,13 @@ class LightPassRenderer implements RenderOperator
 			this.prepareTree(child);
 		}
 	}
-	private prepareLight(light: THREE.Light): void
+	private prepareLight(light: three.Light): void
 	{
-		if (light instanceof THREE.DirectionalLight) {
+		if (light instanceof three.DirectionalLight) {
 			if (light.castShadow) {
-				const camera: THREE.OrthographicCamera = light.shadowCamera = 
-					<THREE.OrthographicCamera>light.shadowCamera 
-					|| new THREE.OrthographicCamera(-1, 1, 1, -1);
+				const camera: three.OrthographicCamera = light.shadowCamera = 
+					<three.OrthographicCamera>light.shadowCamera 
+					|| new three.OrthographicCamera(-1, 1, 1, -1);
 				
 				// decide shadow map axis direction
 				const lightDir = tmpV3a.copy(light.position).normalize();
@@ -702,7 +704,7 @@ class LightPassRenderer implements RenderOperator
 			}
 		}
 		
-		if (light instanceof THREE.PointLight) {
+		if (light instanceof three.PointLight) {
 			if (light.castShadow) {
 				let near = 0.1;
 				
@@ -710,9 +712,9 @@ class LightPassRenderer implements RenderOperator
 					near = light.shadowCameraNear;
 				}
 				
-				const camera: THREE.CubeCamera = (<any>light).shadowCamera = 
-					<THREE.CubeCamera>(<any>light).shadowCamera 
-					|| new THREE.CubeCamera(near, light.distance, 1024); // FIXME: what about infinite distance point light?
+				const camera: three.CubeCamera = (<any>light).shadowCamera = 
+					<three.CubeCamera>(<any>light).shadowCamera 
+					|| new three.CubeCamera(near, light.distance, 1024); // FIXME: what about infinite distance point light?
 				
 				camera.position.copy(light.getWorldPosition(tmpV3a));
 				camera.updateMatrixWorld(true);
@@ -723,9 +725,9 @@ class LightPassRenderer implements RenderOperator
 		}
 	}
 	
-	private renderTree(obj: THREE.Object3D): void
+	private renderTree(obj: three.Object3D): void
 	{
-		if (obj instanceof THREE.Light) {
+		if (obj instanceof three.Light) {
 			this.renderLight(obj);
 		}
 		
@@ -733,14 +735,14 @@ class LightPassRenderer implements RenderOperator
 			this.renderTree(child);
 		}
 	}
-	private renderLight(light: THREE.Light): void
+	private renderLight(light: three.Light): void
 	{
 		const gl = this.parent.renderer.gl;
 		let colorR = light.color.r;
 		let colorG = light.color.g;
 		let colorB = light.color.b;
 		
-		if (light instanceof THREE.DirectionalLight) {
+		if (light instanceof three.DirectionalLight) {
 			const hasShadowMap = light.castShadow;
 			
 			if (hasShadowMap && light.shadowCamera) {
@@ -793,7 +795,7 @@ class LightPassRenderer implements RenderOperator
 			gl.depthFunc(gl.LESS);
 		}
 		
-		if (light instanceof THREE.PointLight) {
+		if (light instanceof three.PointLight) {
 			let radius = light.distance;
 			
 			if (radius == 0) {
@@ -802,7 +804,7 @@ class LightPassRenderer implements RenderOperator
 			
 			const isFullScreen = true; // TODO
 			let hasShadowMap = light.castShadow;
-			const shadowCamera: THREE.CubeCamera =
+			const shadowCamera: three.CubeCamera =
 				(<any>light).shadowCamera;
 			
 			if (hasShadowMap && shadowCamera) {
@@ -888,11 +890,11 @@ class LightPassRenderer implements RenderOperator
 			gl.depthFunc(gl.LESS);
 		}
 		
-		if (light instanceof THREE.SpotLight) {
+		if (light instanceof three.SpotLight) {
 			// TODO: spot light
 		}
 		
-		if (light instanceof THREE.AmbientLight) {
+		if (light instanceof three.AmbientLight) {
 			const t = this.totalAmbient;
 			t.r += colorR;
 			t.g += colorG;

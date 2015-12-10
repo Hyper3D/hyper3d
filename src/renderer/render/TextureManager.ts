@@ -1,7 +1,4 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../core/RendererCore.ts" />
-/// <reference path="../utils/Utils.ts" />
-/// <reference path="../utils/IdWeakMap.ts" />
 
 import * as three from 'three';
 

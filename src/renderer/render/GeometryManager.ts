@@ -1,7 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="TextureManager.ts" />
-/// <reference path="../core/RenderPipeline.ts" />
-/// <reference path="../core/RendererCore.ts" />
+
+import * as three from 'three';
 
 import { RendererCore } from '../core/RendererCore'; 
 import { getKeysOfObject } from '../utils/Utils'; 
@@ -27,14 +26,14 @@ export class GeometryManager
 	
 	get(source: any): Geometry
 	{
-		if (source instanceof THREE.BufferGeometry) {
+		if (source instanceof three.BufferGeometry) {
 			let g = this.table[source.id];
 			if (!g) {
 				g = new Geometry(this, source);
 				this.table[source.id] = g;
 			}
 			return g;
-		} else if (source instanceof THREE.Geometry) {
+		} else if (source instanceof three.Geometry) {
 			let g = this.table[source.id];
 			if (!g) {
 				const bg = makeBufferGeometryFromGeometry(source);
@@ -57,9 +56,9 @@ export class GeometryManager
 	}
 }
 
-function makeBufferGeometryFromGeometry(geo: THREE.Geometry): THREE.BufferGeometry
+function makeBufferGeometryFromGeometry(geo: three.Geometry): three.BufferGeometry
 {
-	const bg = new THREE.BufferGeometry();
+	const bg = new three.BufferGeometry();
 	geo.addEventListener('disposed', () =>{
 		bg.dispose();
 	});
@@ -69,7 +68,7 @@ function makeBufferGeometryFromGeometry(geo: THREE.Geometry): THREE.BufferGeomet
 	const faces = geo.faces;
 	if (geo.skinWeights && !bg.getAttribute('skinWeights') &&
 		geo.skinWeights.length > 0) {
-		const buf: THREE.Vector4[] = <any> geo.skinWeights;
+		const buf: three.Vector4[] = <any> geo.skinWeights;
 		const arr = new Float32Array(faces.length * 12);
 		for (let i = 0; i < faces.length; ++i) {
 			const face = faces[i];
@@ -89,12 +88,12 @@ function makeBufferGeometryFromGeometry(geo: THREE.Geometry): THREE.BufferGeomet
 			arr[i * 12 + 10] = buf[idx].z;
 			arr[i * 12 + 11] = buf[idx].w;
 		}
-		const attr = new THREE.BufferAttribute(arr, 4);
+		const attr = new three.BufferAttribute(arr, 4);
 		bg.addAttribute('skinWeights', attr);
 	}
 	if (geo.skinIndices && !bg.getAttribute('skinIndices') &&
 		geo.skinIndices.length > 0) {
-		const buf: THREE.Vector4[] = <any> geo.skinIndices;
+		const buf: three.Vector4[] = <any> geo.skinIndices;
 		const arr = new Float32Array(faces.length * 12);
 		for (let i = 0; i < faces.length; ++i) {
 			const face = faces[i];
@@ -114,21 +113,21 @@ function makeBufferGeometryFromGeometry(geo: THREE.Geometry): THREE.BufferGeomet
 			arr[i * 12 + 10] = buf[idx].z;
 			arr[i * 12 + 11] = buf[idx].w;
 		}
-		const attr = new THREE.BufferAttribute(arr, 4);
+		const attr = new three.BufferAttribute(arr, 4);
 		bg.addAttribute('skinIndices', attr);
 	}
 	
 	return bg;
 }
 
-export class Geometry extends THREE.EventDispatcher
+export class Geometry extends three.EventDispatcher
 {
 	private disposeHandler: () => void;
 	attributes: GeometryAttribute[];
 	indexAttribute: GeometryAttribute;
 	numFaces: number;
 	
-	constructor(private manager: GeometryManager, public source: THREE.BufferGeometry)
+	constructor(private manager: GeometryManager, public source: three.BufferGeometry)
 	{
 		super();
 		
@@ -142,7 +141,7 @@ export class Geometry extends THREE.EventDispatcher
 		this.numFaces = 0;
 		
 		for (const key of keys) {
-			const attr: THREE.BufferAttribute = attrs[key];
+			const attr: three.BufferAttribute = attrs[key];
 			const gattr = new GeometryAttribute(manager.renderer, attr, key);
 			this.attributes.push(gattr);
 			
@@ -197,12 +196,12 @@ export class GeometryAttribute
 	typedArray: Float32Array;
 	typedArrayValid: boolean;
 	
-	constructor(private renderer: RendererCore, private source: THREE.BufferAttribute, public name: string)
+	constructor(private renderer: RendererCore, private source: three.BufferAttribute, public name: string)
 	{
 		this.buffer = null;
 		
 		this.isIndex = name == 'index';
-		this.isDynamic = source instanceof THREE.DynamicBufferAttribute;
+		this.isDynamic = source instanceof three.DynamicBufferAttribute;
 		
 		this.typedArray = null;
 		

@@ -1,11 +1,4 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="TextureManager.ts" />
-/// <reference path="../core/TypedRenderBuffers.ts" />
-/// <reference path="../core/RendererCore.ts" />
-/// <reference path="MaterialManager.ts" />
-/// <reference path="BaseGeometryPassRenderer.ts" />
-/// <reference path="../core/GLFramebuffer.ts" />
-/// <reference path="../utils/Geometry.ts" />
 
 import * as three from 'three';
 

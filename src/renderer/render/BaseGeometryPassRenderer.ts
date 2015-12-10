@@ -1,5 +1,7 @@
 /// <reference path="../Prefix.d.ts" />
 
+import * as three from 'three';
+
 import { TextureManager } from './TextureManager';
 
 import { 
@@ -60,7 +62,7 @@ export function isMaterialShadingModelDeferred(model: MaterialShadingModel): boo
 export class BaseGeometryPassRenderer
 {
 	private state: GeometryRenderState;
-	private tmpMat: THREE.Matrix4;
+	private tmpMat: three.Matrix4;
 	private objs: IntegerMap<BaseGeometryPassRendererObject>;
 	
 	constructor(
@@ -69,19 +71,19 @@ export class BaseGeometryPassRenderer
 		public needsLastWorldPosition: boolean
 	)
 	{
-		this.tmpMat = new THREE.Matrix4();
+		this.tmpMat = new three.Matrix4();
 		this.state = {
-			projectionViewMat: new THREE.Matrix4(),
-			viewMat: new THREE.Matrix4(),
-			frustum: new THREE.Frustum(),
-			lastViewProjMat: new THREE.Matrix4(),
+			projectionViewMat: new three.Matrix4(),
+			viewMat: new three.Matrix4(),
+			frustum: new three.Frustum(),
+			lastViewProjMat: new three.Matrix4(),
 			nextToken: false
 		};
 		
 		this.objs = new IntegerMap<BaseGeometryPassRendererObject>();
 	}
 	
-	renderGeometry(viewMatrix: THREE.Matrix4, projectionMatrix: THREE.Matrix4): void
+	renderGeometry(viewMatrix: three.Matrix4, projectionMatrix: three.Matrix4): void
 	{
 		const state = this.state;
 		state.viewMat.copy(viewMatrix);
@@ -105,17 +107,17 @@ export class BaseGeometryPassRenderer
 		
 		state.lastViewProjMat.copy(state.projectionViewMat);
 	}
-	private cullObject(obj: THREE.Object3D): boolean
+	private cullObject(obj: three.Object3D): boolean
 	{
 		return obj.frustumCulled &&
 			!this.state.frustum.intersectsObject(obj);
 	}
-	private renderTree(obj: THREE.Object3D): void
+	private renderTree(obj: three.Object3D): void
 	{
 		const geometry = (<any>obj).geometry;
 		
 		if (geometry != null && !this.cullObject(obj)) {
-			if (obj instanceof THREE.Mesh &&
+			if (obj instanceof three.Mesh &&
 				!this.skipsMesh(obj)) {
 				this.renderMesh(obj, geometry);
 			}
@@ -125,7 +127,7 @@ export class BaseGeometryPassRenderer
 			this.renderTree(child);
 		}
 	}
-	private renderMesh(mesh: THREE.Mesh, geo: any): void
+	private renderMesh(mesh: three.Mesh, geo: any): void
 	{
 		const gl = this.core.gl;
 		let lobj: BaseGeometryPassRendererObject = this.objs.get(mesh.id);
@@ -136,7 +138,7 @@ export class BaseGeometryPassRenderer
 		
 		lobj.render(this.state);
 	}
-	skipsMesh(mesh: THREE.Mesh): boolean
+	skipsMesh(mesh: three.Mesh): boolean
 	{
 		// to be overrided
 		return false;
@@ -145,7 +147,7 @@ export class BaseGeometryPassRenderer
 	{
 		return !isMaterialShadingModelDeferred(mat.material.shadingModel);
 	}
-	setupAdditionalUniforms(mesh: THREE.Mesh, shader: BaseGeometryPassShader): void
+	setupAdditionalUniforms(mesh: three.Mesh, shader: BaseGeometryPassShader): void
 	{
 		// to be overrided
 	}
@@ -156,11 +158,11 @@ export class BaseGeometryPassRenderer
 
 interface GeometryRenderState
 {
-	projectionViewMat: THREE.Matrix4;
-	viewMat: THREE.Matrix4;
-	frustum: THREE.Frustum;
+	projectionViewMat: three.Matrix4;
+	viewMat: three.Matrix4;
+	frustum: three.Frustum;
 	
-	lastViewProjMat: THREE.Matrix4;
+	lastViewProjMat: three.Matrix4;
 	
 	nextToken: boolean;
 }
@@ -168,13 +170,13 @@ interface GeometryRenderState
 class BaseGeometryPassRendererObject
 {
 	token: boolean;
-	lastModelMatrix: THREE.Matrix4;
+	lastModelMatrix: three.Matrix4;
 	shaderInst: ShaderInstance;
 	shader: BaseGeometryPassShader;
 	
 	skinning: SkinningShaderInstance;
 	
-	constructor(private obj: THREE.Mesh, private renderer: BaseGeometryPassRenderer)
+	constructor(private obj: three.Mesh, private renderer: BaseGeometryPassRenderer)
 	{
 		this.token = false;
 		
@@ -185,7 +187,7 @@ class BaseGeometryPassRendererObject
 		
 		this.lastModelMatrix = obj.matrixWorld.clone();
 		
-		const useSkinning = obj instanceof THREE.SkinnedMesh;
+		const useSkinning = obj instanceof three.SkinnedMesh;
 		
 		let flags = BaseGeometryPassShaderFlags.None;
 		
@@ -251,7 +253,7 @@ class BaseGeometryPassRendererObject
 			if (index != null) {
 				index.drawElements();
 				
-				// TODO: use THREE.GeometryBuffer.offsets
+				// TODO: use three.GeometryBuffer.offsets
 			} else {
 				gl.drawArrays(gl.TRIANGLES, 0, geo2.numFaces * 3);
 			}

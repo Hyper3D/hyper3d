@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="RendererCore.ts" />
+
 import { RendererCore } from './RendererCore';
 
 export class QuadRenderer

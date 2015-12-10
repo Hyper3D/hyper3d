@@ -1,6 +1,4 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="../utils/Utils.ts" />
-/// <reference path="RenderPipeline.ts" />
 
 import {
 	RenderBufferInfo, 
