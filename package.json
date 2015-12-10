@@ -1,8 +1,9 @@
 {
   "name": "hyper3d",
   "version": "0.0.0",
-  "description": "",
+  "description": "High-end WebGL renderer for three.js",
   "main": "dist/hyper3d.js",
+  "author": "yvt <i@yvt.jp>",
   "dependencies": {
     "three": "^0.73.0"
   },
@@ -31,5 +32,10 @@
   },
   "scripts": { 
     "prepublish": "gulp build" 
+  },
+  "typescript": {
+    "definitions": [
+      "dist/hyper3d.d.ts"
+    ]
   }
 }
