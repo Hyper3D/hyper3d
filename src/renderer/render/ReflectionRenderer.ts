@@ -510,7 +510,7 @@ export class SSRRenderer implements RenderOperator
 			GLStateFlags.DepthWriteDisabled;
 			
 		if (this.inLit !== this.out) {
-			this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+			this.parent.renderer.invalidateFramebuffer();
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.inLit.texture);
 			this.parent.renderer.passthroughRenderer.render();

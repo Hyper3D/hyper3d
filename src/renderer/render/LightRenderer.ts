@@ -398,7 +398,7 @@ class LightPassRenderer implements RenderOperator
 				program,
 				uniforms: program.getUniforms([
 					'u_g0', 'u_g1', 'u_g2', 'u_linearDepth',
-					'u_lightColor', 
+					'u_lightColor', 'u_lightStrength', 
 					'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
 					'u_shadowMap', 'u_shadowMapMatrix', 
 					'u_jitter', 'u_jitterScale', 'u_jitterAmount',
@@ -425,7 +425,7 @@ class LightPassRenderer implements RenderOperator
 				program,
 				uniforms: program.getUniforms([
 					'u_g0', 'u_g1', 'u_g2', 'u_linearDepth',
-					'u_lightDir', 'u_lightColor', 
+					'u_lightDir', 'u_lightColor', 'u_lightStrength',  
 					'u_viewDirCoefX', 'u_viewDirCoefY', 'u_viewDirOffset',
 					'u_shadowMap', 'u_shadowMapMatrix', 
 					'u_jitter', 'u_jitterScale', 'u_jitterAmount',
@@ -761,10 +761,6 @@ class LightPassRenderer implements RenderOperator
 			const p = this.directionalLightProgram[flags];
 			p.program.use();
 			
-			colorR *= light.intensity;
-			colorG *= light.intensity;
-			colorB *= light.intensity;
-			
 			const dir = light.position;
 			tmpVec.set(dir.x, dir.y, dir.z, 0.);
 			tmpVec.applyMatrix4(this.parent.renderer.currentCamera.matrixWorldInverse);
@@ -772,6 +768,7 @@ class LightPassRenderer implements RenderOperator
 			gl.uniform3f(p.uniforms['u_lightDir'], tmpVec.x, tmpVec.y, tmpVec.z);
 			
 			gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
+			gl.uniform1f(p.uniforms['u_lightStrength'], light.intensity);
 			
 			if (hasShadowMap) {
 				const gen = this.inShadowMaps;
@@ -832,10 +829,6 @@ class LightPassRenderer implements RenderOperator
 			const p = this.pointLightProgram[flags];
 			p.program.use();
 			
-			colorR *= light.intensity;
-			colorG *= light.intensity;
-			colorB *= light.intensity;
-			
 			// light shape
 			if (light instanceof PointLight) {
 				gl.uniform1f(p.uniforms['u_lightRadius'], light.radius);
@@ -863,6 +856,7 @@ class LightPassRenderer implements RenderOperator
 			gl.uniform1f(p.uniforms['u_minimumDistance'], 0.01 * light.intensity); // FIXME
 			
 			gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
+			gl.uniform1f(p.uniforms['u_lightStrength'], light.intensity);
 			
 			if (hasShadowMap) {
 				const gen = this.inShadowMaps;

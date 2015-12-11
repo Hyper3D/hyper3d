@@ -8,16 +8,16 @@
 #pragma parameter hasShadowMap
 
 uniform highp vec3 u_lightPos;
-uniform float u_lightInvInfluenceRadiusSquared;
-uniform float u_minimumDistance; // squared
-uniform float u_lightRadius;
-uniform float u_lightLength;
+uniform highp float u_lightInvInfluenceRadiusSquared;
+uniform highp float u_minimumDistance; // squared
+uniform highp float u_lightRadius;
+uniform highp float u_lightLength;
 uniform vec3 u_lightDir; // capsule
 
 #if c_hasShadowMap
 uniform samplerCube u_shadowMap;
 uniform sampler2D u_jitter;
-uniform mat4 u_shadowMapMatrix;
+uniform highp mat4 u_shadowMapMatrix;
 uniform vec2 u_jitterAmount;
 varying vec2 v_jitterCoord;
 uniform float u_invDistanceToJitter;
@@ -82,7 +82,7 @@ void main()
 
 #endif // c_hasShadowMap
 
-	vec3 lightDir = u_lightPos - viewPos;
+	highp vec3 lightDir = u_lightPos - viewPos;
 	float dist = dot(lightDir, lightDir) * u_lightInvInfluenceRadiusSquared;
 
 	if (dist >= 1.) {
@@ -93,7 +93,7 @@ void main()
 		// TODO: sized point light
 	}
 
-	float strength = 1. - dist;
+	highp float strength = 1. - dist;
 
 	strength *= 1. / max(u_minimumDistance, dot(lightDir, lightDir));
 

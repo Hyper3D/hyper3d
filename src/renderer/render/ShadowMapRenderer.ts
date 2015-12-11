@@ -82,14 +82,19 @@ export class ShadowMapRenderer
 		this.normalShadowMapSize = 2048;
 		this.cubeShadowMapSize = 512;
 		
+		const ext = renderer.ext.get('WEBGL_depth_texture');
+		if (!ext) {
+			throw new Error("Depth texture not supported");
+		}
+		
 		this.depthShadowMapTexture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.depthShadowMapTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, this.normalShadowMapSize, this.normalShadowMapSize, 0,
-			gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_STENCIL, this.normalShadowMapSize, this.normalShadowMapSize, 0,
+			gl.DEPTH_STENCIL, ext.UNSIGNED_INT_24_8_WEBGL, null);
 		
 		this.colorShadowMapTexture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.colorShadowMapTexture);

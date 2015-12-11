@@ -185,14 +185,18 @@ class TextureRenderBufferImpl implements TextureRenderBuffer
 					gl.RGBA, ext.HALF_FLOAT_OES, null);
 				break;
 			case TextureRenderBufferFormat.Depth:
+				ext = manager.core.ext.get('WEBGL_depth_texture');
+				if (!ext) {
+					throw new Error("Depth texture not supported");
+				}
 				this.texture = gl.createTexture();
 				gl.bindTexture(gl.TEXTURE_2D, this.texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0,
-					gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null); // FIXME: support 24-bit depth?
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_STENCIL, width, height, 0,
+					gl.DEPTH_STENCIL, ext.UNSIGNED_INT_24_8_WEBGL, null); // FIXME: support 24-bit depth?
 				break;
 		}
 		

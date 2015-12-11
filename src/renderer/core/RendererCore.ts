@@ -340,7 +340,20 @@ export class RendererCore
 				case gl.DEPTH_ATTACHMENT:
 					bits |= gl.DEPTH_BUFFER_BIT;
 					break;
+				case gl.STENCIL_ATTACHMENT:
+					bits |= gl.STENCIL_BUFFER_BIT;
+					break;
+				case gl.DEPTH_STENCIL_ATTACHMENT:
+					bits |= gl.DEPTH_BUFFER_BIT;
+					bits |= gl.STENCIL_BUFFER_BIT;
+					break;
 			}
+		}
+		if (attachments.length == 0) {
+			// all
+			bits = gl.COLOR_BUFFER_BIT |
+				gl.DEPTH_BUFFER_BIT |
+				gl.STENCIL_BUFFER_BIT;
 		}
 		gl.clear(bits);
 	}

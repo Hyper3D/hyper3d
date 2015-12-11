@@ -19,7 +19,7 @@ void setupPointLight()
 	decodeGBuffer(g, g0, g1, g2, g3);
 }
 
-void doPointLight(vec3 lightDir, float shadow)
+void doPointLight(vec3 lightDir, highp float shadow)
 {
 	mat = getMaterialInfoFromGBuffer(g);
 
@@ -28,7 +28,7 @@ void doPointLight(vec3 lightDir, float shadow)
 
 	vec3 lit = evaluatePointLight(params, mat, u_lightColor);
 
-	lit *= shadow;
+	lit *= shadow * u_lightStrength;
 	
 	emitLightPassOutput(lit);
 }

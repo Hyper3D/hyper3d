@@ -26,7 +26,7 @@ export class GLFramebuffer implements IDisposable
 		
 		if (attachments.depth != null) {
 			if (attachments.depth instanceof WebGLTexture) {
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT,
 					gl.TEXTURE_2D, attachments.depth, 0);
 			} else if (attachments.depth instanceof WebGLRenderbuffer) {
 				gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,

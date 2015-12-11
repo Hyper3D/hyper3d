@@ -51,6 +51,6 @@ void main()
 
 #endif // c_hasShadowMap
 
-	doPointLight(u_lightDir, shadowValue);
+	doPointLight(u_lightDir, shadowValue * u_lightStrength);
 
 }

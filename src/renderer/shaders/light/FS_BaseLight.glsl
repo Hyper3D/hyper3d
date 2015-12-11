@@ -14,9 +14,10 @@ uniform sampler2D u_g3;
 uniform sampler2D u_linearDepth;
 
 uniform vec3 u_lightColor;
+uniform highp float u_lightStrength;
 
 varying highp vec2 v_texCoord;
-varying mediump vec2 v_viewDir;
+varying highp vec2 v_viewDir;
 
 uniform sampler2D u_dither;
 varying highp vec2 v_ditherCoord;
