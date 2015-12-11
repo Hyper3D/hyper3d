@@ -1,11 +1,13 @@
 
 vec2 decodeVelocityMap(vec2 v)
 {
-	v = v * 2. - 1.;
-	return v * v * sign(v);
+	v = (v - 127. / 255.);
+
+	return v * length(v);
 }
 
 vec2 encodeVelocityMap(vec2 v)
 {
-	return sqrt(abs(v)) * sign(v) * .5 + .5;
+	v *= inversesqrt(length(v));
+	return v + (127. / 255.);
 }

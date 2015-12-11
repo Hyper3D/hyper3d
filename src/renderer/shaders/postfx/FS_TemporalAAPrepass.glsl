@@ -16,28 +16,45 @@ float calculateLuminance(vec3 color)
 	return color.x + color.y;
 }
 
-void main()
+vec3 fetchVelocity(highp vec2 coord)
 {
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
+	vec4 g0 = texture2D(u_g0, coord);
+	vec4 g1 = texture2D(u_g1, coord);
 	vec4 g2 = vec4(0.);
 	vec4 g3 = vec4(0.);
-
-	// FIXME: this won't work without full G-buffer!
-	/* if (isGBufferEmpty(g0, g1, g2, g3)) { 
-		// velocity might contain invalid value because
-		// it's not cleared properly. (see GeometryRenderer)
-		g0.w = 0.5; g1.w = 0.5;
-	} */
 
 	GBufferContents g;
 	decodeGBuffer(g, g0, g1, g2, g3);
 
-	vec2 velocity = g.velocity * 0.5;
+	return vec3(g.velocity * 0.5, dot(g.velocity, g.velocity));
+}
+
+void main()
+{
+	// velocity dilation
+	vec4 coords = vec4(v_texCoord.xyxy + vec4(u_globalInvRenderSize, -u_globalInvRenderSize));
+	vec3 best = fetchVelocity(v_texCoord.xy);
+	{
+		vec3 v = fetchVelocity(coords.xy);
+		if (v.z > best.z) best = v;
+	}
+	{
+		vec3 v = fetchVelocity(coords.zy);
+		if (v.z > best.z) best = v;
+	}
+	{
+		vec3 v = fetchVelocity(coords.xw);
+		if (v.z > best.z) best = v;
+	}
+	{
+		vec3 v = fetchVelocity(coords.zw);
+		if (v.z > best.z) best = v;
+	}
+
+	vec2 velocity = best.xy;
 	float velocityLen = length(velocity * u_globalRenderSize);
 
 	highp vec2 oldCoord = v_texCoord - velocity;
-	highp vec4 oldCoord2 = oldCoord.xyxy + vec4(u_globalInvRenderSize, -u_globalInvRenderSize);
 
 	vec4 lastValue = texture2D(u_oldAccum, oldCoord);
 	vec3 lastColor = lastValue.xyz;

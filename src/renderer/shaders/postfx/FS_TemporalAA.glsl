@@ -13,11 +13,6 @@ uniform sampler2D u_oldDepth;
 
 varying highp vec2 v_texCoord;
 
-float calculateLuminance(vec3 color)
-{
-	return color.x + color.y;
-}
-
 void main()
 {
 	
@@ -28,8 +23,6 @@ void main()
 
 	GBufferContents g;
 	decodeGBuffer(g, g0, g1, g2, g3);
-
-	vec2 velocity = g.velocity * 0.1; // FIXME: why does 0.1 looks best?
 
 	vec3 currentColor = texture2D(u_input, v_texCoord).xyz;
 
@@ -53,13 +46,11 @@ void main()
 	vec3 currentColor3 = texture2D(u_input, vec2(curCoord2.x, curCoord.y)).xyz;
 	vec3 currentColor4 = texture2D(u_input, vec2(curCoord2.z, curCoord.y)).xyz;
 
-	highp vec2 oldCoord = v_texCoord - velocity;
-	highp vec4 oldCoord2 = oldCoord.xyxy + vec4(u_globalQuadInvRenderSize, -u_globalQuadInvRenderSize);
+	highp vec4 neighborCoords = curCoord.xyxy + vec4(u_globalQuadInvRenderSize, -u_globalQuadInvRenderSize);
 
-	vec4 lastValue = texture2D(u_oldAccum, oldCoord);
+	vec4 lastValue = texture2D(u_oldAccum, curCoord);
 	vec3 lastColor = lastValue.xyz;
 
-#if 1
 	vec3 currentColor0 = encodePalYuv(currentColor);
 	currentColor1 = encodePalYuv(currentColor1);
 	currentColor2 = encodePalYuv(currentColor2);
@@ -81,52 +72,14 @@ void main()
 	lastColor = decodePalYuv(lastColor);
 
 	vec3 diffLastColor = oldLastColor - lastColor;
-	lastValue.w *= 1. - dot(diffLastColor, diffLastColor); // warning: needs to be clamped if FP buffer is used
-#else
-	vec3 currentColor0 = currentColor;
-	vec3 colorCentroid = (currentColor1 + currentColor2 + currentColor3 + currentColor4
-	 + currentColor0 + currentColor5 + currentColor6 + currentColor7 + currentColor8 ) * (1. / 9.);
-	currentColor1 -= colorCentroid; currentColor2 -= colorCentroid;
-	currentColor3 -= colorCentroid; currentColor4 -= colorCentroid;
-	currentColor5 -= colorCentroid; currentColor6 -= colorCentroid;
-	currentColor7 -= colorCentroid; currentColor8 -= colorCentroid;
-	currentColor0 -= colorCentroid;
-	highp vec3 colorDist = abs(currentColor1) + abs(currentColor2) + abs(currentColor3) + abs(currentColor4)
-		+ abs(currentColor0) + abs(currentColor5) + abs(currentColor6) + abs(currentColor7) + abs(currentColor8)
-		+ .001 + colorCentroid * 0.01;
-	colorDist = normalize(colorDist);
-	vec3 subcolor = lastColor - colorCentroid;
-	float subcolorDot = dot(subcolor, colorDist);
-	float currentColor1Dot = dot(currentColor1, colorDist);
-	float currentColor2Dot = dot(currentColor2, colorDist);
-	float currentColor3Dot = dot(currentColor3, colorDist);
-	float currentColor4Dot = dot(currentColor4, colorDist);
-	float currentColor0Dot = dot(currentColor0, colorDist);
-	float currentColor5Dot = dot(currentColor5, colorDist);
-	float currentColor6Dot = dot(currentColor6, colorDist);
-	float currentColor7Dot = dot(currentColor7, colorDist);
-	float currentColor8Dot = dot(currentColor8, colorDist);
-	float minDot = min(min(currentColor1Dot, currentColor2Dot), min(currentColor3Dot, min(currentColor4Dot, currentColor0Dot)));
-	float maxDot = max(max(currentColor1Dot, currentColor2Dot), max(currentColor3Dot, max(currentColor4Dot, currentColor0Dot)));
-	float minDot2 = min(min(currentColor5Dot, currentColor6Dot), min(currentColor7Dot, min(currentColor8Dot, minDot)));
-	float maxDot2 = max(max(currentColor5Dot, currentColor6Dot), max(currentColor7Dot, max(currentColor8Dot, maxDot)));
-	minDot = mix(minDot, minDot2, 1.); maxDot = mix(maxDot, maxDot2, 1.);
-	subcolorDot = clamp(subcolorDot, minDot, maxDot);
-
-	vec3 oldLastColor = lastColor;
-	lastColor = colorCentroid + colorDist * subcolorDot;
-
-	vec3 diffLastColor = oldLastColor - lastColor;
-	lastValue.w *= 1. - dot(diffLastColor, diffLastColor); // warning: needs to be clamped if FP buffer is used
-
-#endif
+	lastValue.w *= max(0., 1. - dot(diffLastColor, diffLastColor) * 10.); // warning: needs to be clamped if FP buffer is used
 
 	// prevent ghosting
 	float blendAmount = lastValue.w;
-	blendAmount = min(blendAmount, texture2D(u_input, oldCoord2.xy).w);
-	blendAmount = min(blendAmount, texture2D(u_input, oldCoord2.xw).w);
-	blendAmount = min(blendAmount, texture2D(u_input, oldCoord2.zy).w);
-	blendAmount = min(blendAmount, texture2D(u_input, oldCoord2.zw).w);
+	blendAmount = min(blendAmount, texture2D(u_oldAccum, neighborCoords.xy).w);
+	blendAmount = min(blendAmount, texture2D(u_oldAccum, neighborCoords.xw).w);
+	blendAmount = min(blendAmount, texture2D(u_oldAccum, neighborCoords.zy).w);
+	blendAmount = min(blendAmount, texture2D(u_oldAccum, neighborCoords.zw).w);
 
 	gl_FragColor.xyz = mix(currentColor, lastColor, blendAmount);
 	gl_FragColor.w = lastValue.w;
