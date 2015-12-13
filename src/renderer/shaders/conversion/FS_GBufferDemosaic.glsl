@@ -7,7 +7,7 @@
 #pragma require DepthFetch
 
 uniform sampler2D u_mosaic;
-uniform sampler2D u_depth;
+uniform highp sampler2D u_depth;
 varying highp vec4 v_texCoords;
 varying highp vec2 v_texCoord;
 

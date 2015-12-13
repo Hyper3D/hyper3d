@@ -9,7 +9,7 @@
 uniform vec3 u_lightDir;
 
 #if c_hasShadowMap
-uniform sampler2D u_shadowMap;
+uniform highp sampler2D u_shadowMap;
 uniform sampler2D u_jitter;
 uniform mat4 u_shadowMapMatrix;
 uniform vec2 u_jitterAmount;
