@@ -75,7 +75,7 @@ bool rayTraceScreenSpace(
 
 	highp float k = k0, prevZMaxEstimate = csOrig.z;
 	highp float rayZMin = prevZMaxEstimate, rayZMax = prevZMaxEstimate;
-	highp float sceneZMax = rayZMax + 100.;
+	highp float sceneZMax = rayZMax + 100000.;
 	const highp float zThickness = .1;
 	highp vec2 p = p0;
 	float stepCount = 0.;
