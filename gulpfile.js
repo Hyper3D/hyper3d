@@ -24,7 +24,8 @@ var gulp = require('gulp'),
   source = require('vinyl-source-stream'),
   rename = require('gulp-rename'),
   pipe = require('multipipe'),
-  mirror = require('gulp-mirror');
+  mirror = require('gulp-mirror'),
+  licensify = require('licensify');
 
 var sources = {
   lib: {
@@ -92,12 +93,15 @@ gulp.task('js:bundle', ['js:lib'], function () {
   return browserify({
      entries: bundleMain
   }).transform(gs)
+    .plugin(licensify)
     .bundle()
     .pipe(source('hyper3d.js'))
     .pipe(buffer())
     .pipe(mirror(
       pipe(
-        uglify(),
+        uglify({
+          preserveComments: 'license'
+        }),
         rename('hyper3d.min.js')
       ),
       rename('hyper3d.js')
