@@ -52,6 +52,8 @@ import {
 
 import { tmpM } from '../utils/Geometry';
 
+import { CenteredNoise } from '../utils/PoissonDiskSampler';
+
 export interface GeometryPassOutput
 {
 	g0: GBuffer0TextureRenderBufferInfo;
@@ -191,6 +193,8 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 	private screenVelOffX: number;
 	private screenVelOffY: number;
 	
+	private jitGen: CenteredNoise;
+	
 	constructor(
 		private parent: GeometryRenderer,
 		private outMosaic: TextureRenderBuffer,
@@ -208,6 +212,8 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 		
 		this.lastJitX = this.lastJitY = 0;
 		this.screenVelOffX = this.screenVelOffY = 0;
+		
+		this.jitGen = new CenteredNoise();
 	}
 	
 	setupAdditionalUniforms(mesh: three.Mesh, shader: BaseGeometryPassShader): void // override
@@ -230,9 +236,10 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 		const projMat = tmpM;
 		projMat.copy(this.parent.renderer.currentCamera.projectionMatrix);
 		
-		const jitScale = this.parent.renderer.useWiderTemporalAA ? 4 : 2;
-		const jitX = (Math.random() - Math.random()) / this.parent.renderer.renderWidth * jitScale;
-		const jitY = (Math.random() - Math.random()) / this.parent.renderer.renderHeight * jitScale;
+		const jitScale = (this.parent.renderer.useWiderTemporalAA ? 2 : 1) * 1.5;
+		const jit = this.jitGen.sample();
+		const jitX = jit.x / this.parent.renderer.renderWidth * jitScale;
+		const jitY = jit.y / this.parent.renderer.renderHeight * jitScale;
 		for (let i = 0; i < 4; ++i) {
 			projMat.elements[(i << 2)] += projMat.elements[(i << 2) + 3] * jitX;
 			projMat.elements[(i << 2) + 1] += projMat.elements[(i << 2) + 3] * jitY;
