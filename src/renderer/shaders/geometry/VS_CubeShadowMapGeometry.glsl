@@ -13,6 +13,6 @@ void main()
 
 	gl_Position = u_viewProjectionMatrix * vec4(worldPosition, 1.);
 
-	v_viewPosition = gl_Position.xyz * u_viewPositionScale;
+	v_viewPosition = (u_viewMatrix * vec4(worldPosition, 1.)).xyz * u_viewPositionScale;
 }
 

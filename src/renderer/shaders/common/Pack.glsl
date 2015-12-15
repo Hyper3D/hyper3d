@@ -9,17 +9,17 @@ highp float unpack16(vec2 packedValue) {
 }
 
 vec3 pack24(highp float value) {
-	value *= 255.;
+	value *= 256.;
 	highp float i1 = floor(value);
 	highp float f1 = value - i1;
-	f1 *= 255.;
+	f1 *= 256.;
 	highp float i2 = floor(f1);
 	highp float f2 = f1 - i2;
 	return vec3(i1 * (1. / 255.), i2 * (1. / 255.), f2);
 }
 
 highp float unpack24(vec3 packedValue) {
-	return dot(packedValue, vec3(1., 1. / 255., 1. / 255. / 255.));
+	return dot(packedValue, vec3(1., 1. / 256., 1. / 256. / 256.) * 255. / 256.);
 }
 
 vec4 pack32f(highp float value) 
