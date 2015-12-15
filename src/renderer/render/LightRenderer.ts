@@ -686,7 +686,7 @@ class LightPassRenderer implements RenderOperator
 				}
 				
 				// extend near limit
-				minZ -= light.shadowCameraNear; // FIXME: incorrect usage of shadowCameraNear
+				minZ -= computeFarDepthFromProjectionMatrix(this.parent.renderer.currentCamera.projectionMatrix); // FIXME: heuristics
 				
 				// make matricies
 				const midX = (minX + maxX) * 0.5;
