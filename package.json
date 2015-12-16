@@ -4,6 +4,10 @@
   "description": "High-end WebGL renderer for three.js",
   "main": "dist/hyper3d.js",
   "author": "yvt <i@yvt.jp>",
+  "keywords": [
+    "WebGL", "rendering", "engine",
+    "ThreeJS", "Three", "3D", "renderer"
+  ],
   "dependencies": {
     "three": "^0.73.0"
   },
