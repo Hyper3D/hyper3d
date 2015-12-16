@@ -8,6 +8,14 @@
     "WebGL", "rendering", "engine",
     "ThreeJS", "Three", "3D", "renderer"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hyper3D/hyper3d"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Hyper3D/hyper3d/issues"
+  },
   "dependencies": {
     "three": "^0.73.0"
   },
