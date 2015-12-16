@@ -40,7 +40,9 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "scripts": {
+    "tsd-install": "tsd install",
     "prepublish": "npm run-script build",
+    "watch": "gulp",
     "build": "gulp build",
     "bundle": "gulp js:bundle"
   },
