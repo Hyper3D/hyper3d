@@ -70,7 +70,9 @@ void main()
 	}
 
 	float blendAmt = lastValue.w;
-	blendAmt = mix(blendAmt, .95, .5);
+	blendAmt = 1. / (1.001 - blendAmt);
+	blendAmt += 1.;
+	blendAmt = min(1.001 - 1. / blendAmt, 1.);
 
 	gl_FragColor.w = blendAmt;
 }

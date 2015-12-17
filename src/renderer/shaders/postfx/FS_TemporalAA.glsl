@@ -72,7 +72,7 @@ void main()
 	lastColor = decodePalYuv(lastColor);
 
 	vec3 diffLastColor = oldLastColor - lastColor;
-	lastValue.w *= max(0., 1. - dot(diffLastColor, diffLastColor) * 10.); // warning: needs to be clamped if FP buffer is used
+	lastValue.w *= max(0., 1. - dot(diffLastColor, diffLastColor) * 5.);
 
 	// prevent ghosting
 	float blendAmount = lastValue.w;
