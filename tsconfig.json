@@ -51,6 +51,7 @@
 		"src/renderer/utils/Pack.ts",
 		"src/renderer/utils/Utils.ts",
 		"src/renderer/utils/PoissonDiskSampler.ts",
-		"src/renderer/validator/SRGBValidator.ts"
+		"src/renderer/validator/SRGBValidator.ts",
+		"src/renderer/validator/FPColorBufferValidator.ts"
 	]
 }

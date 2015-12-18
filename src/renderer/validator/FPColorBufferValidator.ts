@@ -6,7 +6,7 @@ import {
 } from '../core/RendererCore';
 import { GLFramebuffer } from '../core/GLFramebuffer';
 
-export function validateSRGBCompliance(core: RendererCore): boolean
+export function validateHalfFloatColorBuffer(core: RendererCore): boolean
 {
 	const program = core.shaderManager.get('VS_Passthrough', 'FS_Constant', [
 		'a_position'
@@ -15,7 +15,12 @@ export function validateSRGBCompliance(core: RendererCore): boolean
 	const unifs = program.getUniforms(['u_constantColor']);
 	const quad = core.quadRenderer;
 	const gl = core.gl;
-	const srgb = core.ext.get('EXT_sRGB');
+	const halfFloat = core.ext.get('OES_texture_half_float');
+	
+	if (halfFloat == null) {
+		console.warn("validateHalfFloatColorBuffer: OES_texture_half_float is not available.");
+		return false;
+	}
 	
 	program.use();
 	
@@ -23,10 +28,10 @@ export function validateSRGBCompliance(core: RendererCore): boolean
 	
 	try {
 		gl.bindTexture(gl.TEXTURE_2D, tex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, srgb.SRGB_ALPHA_EXT, 8, 8, 0,
-			srgb.SRGB_ALPHA_EXT, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 7, 7, 0,
+			gl.RGBA, halfFloat.HALF_FLOAT_OES, null);
 		if (gl.getError()) {
-			console.warn("validateSRGBCompliance: could not create sRGB texture.");
+			console.warn("validateHalfFloatColorBuffer: could not create half float texture.");
 			return false;
 		}
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -39,26 +44,26 @@ export function validateSRGBCompliance(core: RendererCore): boolean
 		});
 		try {
 			fb.bind();
-			core.state.flags = GLStateFlags.Default;
-			gl.viewport(0, 0, 8, 8);
+			core.state.flags = GLStateFlags.BlendEnabled;
 			
-			const testPatterns: number[][] = [
-				[0, 0], [13, 63], [54, 127], [133, 191], [255, 255]	
-			];
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			gl.blendFunc(gl.ONE, gl.ONE);
+			gl.viewport(0, 0, 7, 7);
 			
-			const buf = new Uint8Array(8 * 8 * 4);
-			for (const pat of testPatterns) {
-				const inValue = pat[0] / 255;
-				const outValueExpected = pat[1];
+			const buf = new Float32Array(7 * 7 * 4);
+			for (let i = 1; i <= 8; ++i) {
+				const inValue = 0.2;
+				const outValueExpected = 0.2 * i;
 				gl.uniform4f(unifs['u_constantColor'], inValue, inValue, inValue, 1);
 				quad.render(attrs['a_position']);
 				
-				gl.readPixels(0, 0, 8, 8, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+				gl.readPixels(0, 0, 7, 7, gl.RGBA, gl.FLOAT, buf);
 				
-				for (let i = 0; i < buf.length; ++i) {
-					const expect = (i & 3) == 3 ? 255 : outValueExpected;
-					if (Math.abs(buf[i] - expect) > 1) {
-						console.warn(`validateSRGBCompliance: expected ${expect}, got ${buf[i]}`);
+				for (let j = 0; j < buf.length; ++j) {
+					const expect = (j & 3) == 3 ? i : outValueExpected;
+					if (Math.abs(buf[j] - expect) > 0.05) {
+						console.warn(`validateHalfFloatColorBuffer: expected ${expect}, got ${buf[j]} at ${j}`);
 						return false;
 					}
 				}
@@ -67,7 +72,7 @@ export function validateSRGBCompliance(core: RendererCore): boolean
 			fb.dispose();
 		}
 	} catch (e) {
-		console.warn(`validateSRGBCompliance: error: ${e}`);
+		console.warn(`validateHalfFloatColorBuffer: error: ${e}`);
 		return false;
 	} finally {
 		gl.deleteTexture(tex);

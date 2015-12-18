@@ -43,6 +43,7 @@ export class GLFramebuffer implements IDisposable
 		const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
 		
 		if (status != gl.FRAMEBUFFER_COMPLETE) {
+			gl.deleteFramebuffer(handle);
 			throw new Error(`incomplete framebuffer: ${status}`);
 		}
 			

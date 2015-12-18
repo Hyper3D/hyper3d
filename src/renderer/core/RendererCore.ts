@@ -51,6 +51,7 @@ import {
 	computeFarDepthFromProjectionMatrix
 } from '../utils/Geometry';
 import { validateSRGBCompliance } from '../validator/SRGBValidator';
+import { validateHalfFloatColorBuffer } from '../validator/FPColorBufferValidator';
 
 export enum HdrMode
 {
@@ -112,7 +113,7 @@ export class RendererCore
 	renderWidth: number;
 	renderHeight: number;
 	
-	constructor(public gl: WebGLRenderingContext, params: WebGLHyperRendererParameters)
+	constructor(public gl: WebGLRenderingContext, private params: WebGLHyperRendererParameters)
 	{
 		this.useFullResolutionGBuffer = params.useFullResolutionGBuffer == null ? false :
 			params.useFullResolutionGBuffer;
@@ -131,9 +132,8 @@ export class RendererCore
 		this.supportsSRGB = !!(this.ext.get('EXT_sRGB'));
 		this.supportsHdrTexture = !!(this.ext.get('OES_texture_half_float') && 
 			this.ext.get('OES_texture_half_float_linear'));
-		this.supportsHdrRenderingBuffer = !!(this.ext.get('EXT_color_buffer_half_float') &&
-			this.ext.get('OES_texture_half_float'));
-		this.hdrMode = this.supportsHdrRenderingBuffer && params.useFPBuffer ? HdrMode.NativeHdr : HdrMode.MobileHdr;
+		this.supportsHdrRenderingBuffer = false;
+		this.hdrMode = HdrMode.MobileHdr;
 		
 		this.renderWidth = this.width = gl.drawingBufferWidth;
 		this.renderHeight = this.height = gl.drawingBufferHeight;
@@ -165,6 +165,14 @@ export class RendererCore
 				this.supportsSRGB = false;
 			}
 		}
+		
+		// a certain browser implicitly supports FP render buffer
+		// in spite of the lack of support for EXT_color_buffer_half_float. 
+		if (validateHalfFloatColorBuffer(this)) {
+			this.supportsHdrRenderingBuffer = true;
+		}
+		this.hdrMode = this.supportsHdrRenderingBuffer && 
+			this.params.useFPBuffer ? HdrMode.NativeHdr : HdrMode.MobileHdr;
 		
 		// set global shader parameters
 		this.shaderManager.setGlobalParameter('globalUseFullResolutionGBuffer', this.useFullResolutionGBuffer);
