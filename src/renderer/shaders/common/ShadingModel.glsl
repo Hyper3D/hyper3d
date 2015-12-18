@@ -95,7 +95,7 @@ vec3 evaluatePointLight(
 	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
 	vec3 refl = mix(minRefl, vec3(1.), fresnel);
 
-	float diffuseMix = 1. - material.metallic;
+	vec3 diffuseMix = 1. - refl;
 	diffuseMix *= evaluateDisneyPrincipledDiffuse(params.nlDot, params.nvDot, params.hlDot, material.roughness);
 
 	float specular = evaluateGGXSpecularDistribution(params.nhDot, material.roughness);
@@ -134,7 +134,7 @@ vec3 evaluateUniformLight(
 	vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
 	vec3 refl = mix(minRefl, vec3(1.), fresnel);
 
-	float diffuseMix = 1. - material.metallic;
+	vec3 diffuseMix = 1. - refl;
 
 	vec3 diffuse = material.albedo;
 

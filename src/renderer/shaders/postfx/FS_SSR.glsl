@@ -127,6 +127,10 @@ void main()
 		if (reflAmt.w > 0.00001) { 
 			ssrAmount = 1.;
 
+			// FIXME: why does reflAmt sometimes become greater than pi (energy conservation)?
+			//        maybe it's bug in ShadingModel.glsl?
+			reflAmt.xyz = min(reflAmt.xyz, M_PI); 
+
 			float ssrConfidence;
 			vec3 ssr = doSSR(ssrConfidence);
 			ssr *= reflAmt.xyz * (1. / M_PI);
