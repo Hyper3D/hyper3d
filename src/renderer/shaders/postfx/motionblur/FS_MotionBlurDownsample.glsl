@@ -11,6 +11,7 @@ uniform sampler2D u_g1;
 uniform highp vec2 u_texCoordIncr;
 
 uniform vec2 u_velocityScale;
+uniform float u_amount;
 
 // based on: 
 //
@@ -42,7 +43,7 @@ void main()
 			GBufferContents g;
 			decodeGBuffer(g, g0, g1, g2, g3);
 
-			g.velocity *= u_velocityScale;
+			g.velocity *= u_velocityScale * u_amount;
 			vec3 vel = vec3(g.velocity, dot(g.velocity, g.velocity));
 			if (vel.z > best.z) {
 				best = vel;

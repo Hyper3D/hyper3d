@@ -18,6 +18,7 @@ uniform sampler2D u_jitter;
 
 uniform vec2 u_velocityScale;
 uniform vec2 u_velocityInvScale;
+uniform float u_amount;
 
 uniform float u_minimumVelocitySquared;
 uniform float u_minimumVelocity;
@@ -48,7 +49,7 @@ vec2 velocityAt(highp vec2 coord)
 	GBufferContents g;
 	decodeGBuffer(g, g0, g1, g2, g3);
 
-	return g.velocity * u_velocityScale;
+	return g.velocity * u_velocityScale * u_amount;
 }
 
 void main()
@@ -57,7 +58,7 @@ void main()
 	// velocity in the neighborhood
 	vec2 vn = texture2D(u_velTile, v_texCoord).xy - 0.5;
 	float fnLenSq = dot(vn, vn);
-	if (fnLenSq < u_minimumVelocitySquared) {
+	if (fnLenSq < u_minimumVelocitySquared * 8.) {
 		// no blur
 		gl_FragColor = texture2D(u_color, v_texCoord);
 		return;
@@ -87,9 +88,12 @@ void main()
 	coord -= vn * 0.5; // make blur "double-sided" (actually this is wrong but artifact is subtle)
 	vn *= (1. / float(c_numSamples));
 	coord += vn * jitter;
+
+	float fpos = -1.;
 	
 	for (int i = 1; i < c_numSamples; ++i) {
 		coord += vn;
+		fpos += 2. / float(c_numSamples);
 
 		highp float depth = fetchDepth(u_linearDepth, coord);
 #if c_useLogRGB
@@ -110,6 +114,10 @@ void main()
 
 		// fade the border artifact
 		weight *= clamp((min(min(coord.x, coord.y), 1. - max(coord.x, coord.y)) - edgeFade) * 100., 0., 1.);
+
+		// fade the endpoint of blur
+		weight *= 1. - fpos * fpos;
+
 		sum += vec4(color, 1.) * weight;
 	}
 

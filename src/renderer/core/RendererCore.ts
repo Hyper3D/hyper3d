@@ -302,7 +302,7 @@ export class RendererCore
 			g1: gbuffer.g1,
 			linearDepth: gbuffer.linearDepth
 		}, {
-			maxBlur: Math.max(this.renderWidth, this.renderHeight) / 50
+			maxBlur: Math.max(this.renderWidth, this.renderHeight) / 40
 		}, ops);
 		
 		demosaiced = this.bloom.setupFilter(demosaiced, ops);

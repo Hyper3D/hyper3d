@@ -50,8 +50,11 @@ export interface MotionBlurFilterParameters
 
 export class MotionBlurFilterRenderer
 {
+	amount: number;
+	
 	constructor(public renderer: RendererCore)
 	{
+		this.amount = 1;
 	}
 	
 	dispose(): void
@@ -200,7 +203,8 @@ class MotionBlurTileMaxRenderer implements RenderOperator
 					'u_g0', 'u_g1',
 					'u_texCoordIncr',
 					'u_texCoordOffset',
-					'u_velocityScale'
+					'u_velocityScale',
+					'u_amount'
 				]),
 				attributes: program.getAttributes(['a_position'])
 			};
@@ -230,6 +234,7 @@ class MotionBlurTileMaxRenderer implements RenderOperator
 		
 		gl.uniform1i(p.uniforms['u_g0'], 0);
 		gl.uniform1i(p.uniforms['u_g1'], 1);
+		gl.uniform1f(p.uniforms['u_amount'], this.parent.amount);
 		gl.uniform2f(p.uniforms['u_velocityScale'],
 			this.inG0.width / this.maxVelocity * 0.25,
 			this.inG0.height / this.maxVelocity * 0.25);
@@ -377,6 +382,7 @@ class MotionBlurFinalPassRenderer implements RenderOperator
 					'u_velocityInvScale',
 					'u_minimumVelocity',
 					'u_minimumVelocitySquared',
+					'u_amount',
 					
 					'u_jitter',
 					'u_jitterScale'
@@ -399,7 +405,7 @@ class MotionBlurFinalPassRenderer implements RenderOperator
 		this.parent.renderer.state.flags = 
 			GLStateFlags.DepthWriteDisabled;
 		
-		const jitter = this.parent.renderer.uniformJitter;
+		const jitter = this.parent.renderer.uniformDitherJitter;
 		
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.inG0.texture);
@@ -435,6 +441,7 @@ class MotionBlurFinalPassRenderer implements RenderOperator
 		gl.uniform2f(p.uniforms['u_jitterScale'],
 			this.inG0.width / jitter.size,
 			this.inG0.height / jitter.size);
+		gl.uniform1f(p.uniforms['u_amount'], this.parent.amount);
 		
 		const quad = this.parent.renderer.quadRenderer;
 		quad.render(p.attributes['a_position']);
