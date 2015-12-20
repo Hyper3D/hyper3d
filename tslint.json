@@ -45,6 +45,7 @@
         "no-use-before-declare": true,
         "no-unreachable": true,
         "no-require-imports": true,
+        "no-console": true,
         "boolean-trivia": true,
         "type-operator-spacing": true,
         "prefer-const": true,

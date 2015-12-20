@@ -1,4 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
+/* tslint:disable:no-console */
 
 export class LogManager
 {
