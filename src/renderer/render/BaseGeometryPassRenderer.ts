@@ -38,7 +38,7 @@ import {
 
 import { GLShader } from '../core/GLShader';
 
-import { tmpM } from '../utils/Geometry';
+import { Matrix4Pool } from '../utils/ObjectPool';
 
 import { ShaderChunk } from '../core/GLShader';
 
@@ -231,9 +231,11 @@ class BaseGeometryPassRendererObject
 			gl.uniformMatrix4fv(shader.uniforms['u_lastViewProjectionMatrix'], false,
 				state.lastViewProjMat.elements);
 			
-			tmpM.multiplyMatrices(state.viewMat, obj.matrixWorld);
+            const m = Matrix4Pool.alloc();
+			m.multiplyMatrices(state.viewMat, obj.matrixWorld);
 			gl.uniformMatrix4fv(shader.uniforms['u_viewModelMatrix'], false,
-				tmpM.elements);
+				m.elements);
+            Matrix4Pool.free(m);
 				
 			gl.uniformMatrix4fv(shader.uniforms['u_viewMatrix'], false,
 				state.viewMat.elements);

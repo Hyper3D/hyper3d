@@ -50,7 +50,7 @@ import {
 	GLProgramAttributes
 } from '../core/GLProgram';
 
-import { tmpM } from '../utils/Geometry';
+import { Matrix4Pool } from '../utils/ObjectPool';
 
 import { CenteredNoise } from '../utils/PoissonDiskSampler';
 
@@ -233,7 +233,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 		this.fb.bind();
 		
 		// jitter projection matrix for temporal AA
-		const projMat = tmpM;
+		const projMat = Matrix4Pool.alloc();
 		projMat.copy(this.parent.renderer.currentCamera.projectionMatrix);
 		
 		const jitScale = (this.parent.renderer.useWiderTemporalAA ? 2 : 1) * 1.5;
@@ -256,6 +256,8 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 		this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
 		this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
 			projMat);
+            
+        Matrix4Pool.free(projMat);
 	}
 	afterRender(): void
 	{

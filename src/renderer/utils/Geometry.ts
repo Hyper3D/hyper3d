@@ -1,6 +1,7 @@
 /// <reference path="../Prefix.d.ts" />
 
 import * as three from 'three';
+import {Vector4Pool, Matrix4Pool} from './ObjectPool';
 
 export interface ViewVectors
 {
@@ -8,16 +9,6 @@ export interface ViewVectors
 	coefX: three.Vector2;
 	coefY: three.Vector2;
 }
-
-export const tmpM = new three.Matrix4();
-export const tmpM2 = new three.Matrix4();
-export const tmpM3 = new three.Matrix4();
-export const tmpVec = new three.Vector4();
-export const tmpVec2 = new three.Vector4();
-export const tmpV3a = new three.Vector3();
-export const tmpV3b = new three.Vector3();
-export const tmpV3c = new three.Vector3();
-export const tmpV3d = new three.Vector3();
 
 export function computeViewVectorCoefFromProjectionMatrix(m: three.Matrix4, old?: ViewVectors): ViewVectors
 {
@@ -28,23 +19,31 @@ export function computeViewVectorCoefFromProjectionMatrix(m: three.Matrix4, old?
 			coefY: new three.Vector2()
 		};
 	}
+    
+    const t1 = Vector4Pool.alloc();
+    const t2 = Vector4Pool.alloc();
+    const tm = Matrix4Pool.alloc();
 	
-	tmpVec.set(0, 0, 1, 1);
-	tmpVec.applyMatrix4(m);
+	t1.set(0, 0, 1, 1);
+	t1.applyMatrix4(m);
 	
-	tmpM.getInverse(m);
+	tm.getInverse(m);
 	
-	tmpVec2.set(0, 0, tmpVec.z, tmpVec.w);
-	tmpVec2.applyMatrix4(tmpM);
-	old.offset.set(tmpVec2.x, tmpVec2.y);
+	t2.set(0, 0, t1.z, t1.w);
+	t2.applyMatrix4(tm);
+	old.offset.set(t2.x, t2.y);
 	
-	tmpVec2.set(-1, 0, tmpVec.z, tmpVec.w);
-	tmpVec2.applyMatrix4(tmpM);
-	old.coefX.set(tmpVec2.x, tmpVec2.y);
+	t2.set(-1, 0, t1.z, t1.w);
+	t2.applyMatrix4(tm);
+	old.coefX.set(t2.x, t2.y);
 	
-	tmpVec2.set(0, -1, tmpVec.z, tmpVec.w);
-	tmpVec2.applyMatrix4(tmpM);
-	old.coefY.set(tmpVec2.x, tmpVec2.y);
+	t2.set(0, -1, t1.z, t1.w);
+	t2.applyMatrix4(tm);
+	old.coefY.set(t2.x, t2.y);
+    
+    Vector4Pool.free(t1);
+    Vector4Pool.free(t2);
+    Matrix4Pool.free(tm);
 	
 	return old;
 }

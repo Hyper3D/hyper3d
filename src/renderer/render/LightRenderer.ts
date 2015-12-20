@@ -50,15 +50,14 @@ import { GLFramebuffer } from '../core/GLFramebuffer';
 import {
 	ViewVectors,
 	computeViewVectorCoefFromProjectionMatrix,
-	computeFarDepthFromProjectionMatrix,
-	tmpV3a,
-	tmpV3b,
-	tmpV3c,
-	tmpVec,
-	tmpM,
-	tmpM2,
-	tmpM3
+	computeFarDepthFromProjectionMatrix
 } from '../utils/Geometry';
+
+import {
+    Vector3Pool,
+    Vector4Pool,
+    Matrix4Pool
+} from '../utils/ObjectPool';
 
 import { PointLight } from '../public/Lights';
 
@@ -647,6 +646,10 @@ class LightPassRenderer implements RenderOperator
 	}
 	private prepareLight(light: three.Light): void
 	{
+        const tV3a = Vector3Pool.alloc();
+        const tV3b = Vector3Pool.alloc();
+        const tV3c = Vector3Pool.alloc();
+        
 		if (light instanceof three.DirectionalLight) {
 			if (light.castShadow) {
 				const camera: three.OrthographicCamera = light.shadowCamera = 
@@ -654,15 +657,15 @@ class LightPassRenderer implements RenderOperator
 					|| new three.OrthographicCamera(-1, 1, 1, -1);
 				
 				// decide shadow map axis direction
-				const lightDir = tmpV3a.copy(light.position).normalize();
-				const texU = tmpV3b;
+				const lightDir = tV3a.copy(light.position).normalize();
+				const texU = tV3b;
 				if (Math.abs(lightDir.z) > 0.5) {
 					texU.set(1, 0, 0);
 				} else {
 					texU.set(0, 0, 1);
 				}
 				texU.cross(lightDir).normalize();
-				const texV = tmpV3c.crossVectors(texU, lightDir).normalize();
+				const texV = tV3c.crossVectors(texU, lightDir).normalize();
 				texU.crossVectors(texV, lightDir);
 				
 				// compute frustrum limit
@@ -716,13 +719,17 @@ class LightPassRenderer implements RenderOperator
 					<three.CubeCamera>(<any>light).shadowCamera 
 					|| new three.CubeCamera(near, light.distance, 1024); // FIXME: what about infinite distance point light?
 				
-				camera.position.copy(light.getWorldPosition(tmpV3a));
+				camera.position.copy(light.getWorldPosition(tV3a));
 				camera.updateMatrixWorld(true);
 				
 				const gen = this.inShadowMaps;
 				gen.prepareShadowMap((<any>light).shadowCamera, ShadowMapType.Normal);
 			}
 		}
+        
+        Vector3Pool.free(tV3a);
+        Vector3Pool.free(tV3b);
+        Vector3Pool.free(tV3c);
 	}
 	
 	private renderTree(obj: three.Object3D): void
@@ -742,6 +749,10 @@ class LightPassRenderer implements RenderOperator
 		let colorG = light.color.g;
 		let colorB = light.color.b;
 		
+        const tV3a = Vector3Pool.alloc();
+        const tV3b = Vector3Pool.alloc();
+        const tV3c = Vector3Pool.alloc();
+        
 		if (light instanceof three.DirectionalLight) {
 			const hasShadowMap = light.castShadow;
 			
@@ -762,10 +773,12 @@ class LightPassRenderer implements RenderOperator
 			p.program.use();
 			
 			const dir = light.position;
-			tmpVec.set(dir.x, dir.y, dir.z, 0.);
-			tmpVec.applyMatrix4(this.parent.renderer.currentCamera.matrixWorldInverse);
-			tmpVec.normalize();
-			gl.uniform3f(p.uniforms['u_lightDir'], tmpVec.x, tmpVec.y, tmpVec.z);
+            const dir3 = Vector4Pool.alloc().set(dir.x, dir.y, dir.z, 0);
+			dir3.set(dir.x, dir.y, dir.z, 0.);
+			dir3.applyMatrix4(this.parent.renderer.currentCamera.matrixWorldInverse);
+			dir3.normalize();
+			gl.uniform3f(p.uniforms['u_lightDir'], dir3.x, dir3.y, dir3.z);
+            Vector4Pool.free(dir3);
 			
 			gl.uniform3f(p.uniforms['u_lightColor'], colorR, colorG, colorB);
 			gl.uniform1f(p.uniforms['u_lightStrength'], light.intensity);
@@ -773,12 +786,20 @@ class LightPassRenderer implements RenderOperator
 			if (hasShadowMap) {
 				const gen = this.inShadowMaps;
 				
-				tmpM2.multiplyMatrices(light.shadowCamera.projectionMatrix,
+                const m1 = Matrix4Pool.alloc();
+                const m2 = Matrix4Pool.alloc();
+                const m3 = Matrix4Pool.alloc();
+                
+				m2.multiplyMatrices(light.shadowCamera.projectionMatrix,
 					light.shadowCamera.matrixWorldInverse);
-				tmpM.multiplyMatrices(tmpM2, this.parent.renderer.currentCamera.matrixWorld);
-				tmpM2.makeScale(.5, .5, .5).multiply(tmpM);
-				tmpM3.makeTranslation(.5, .5, .5).multiply(tmpM2);
-				gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, tmpM3.elements);
+				m1.multiplyMatrices(m2, this.parent.renderer.currentCamera.matrixWorld);
+				m2.makeScale(.5, .5, .5).multiply(m1);
+				m3.makeTranslation(.5, .5, .5).multiply(m2);
+				gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, m3.elements);
+                
+                Matrix4Pool.free(m1);
+                Matrix4Pool.free(m2);
+                Matrix4Pool.free(m3);
 				
 				gl.activeTexture(gl.TEXTURE5);
 				gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
@@ -815,7 +836,7 @@ class LightPassRenderer implements RenderOperator
 				hasShadowMap = false;
 			}
 			
-			const pos = light.getWorldPosition(tmpV3b);
+			const pos = light.getWorldPosition(tV3b);
 			pos.applyMatrix4(this.viewMat);
 			
 			let flags = PointLightProgramFlags.Default;
@@ -836,10 +857,10 @@ class LightPassRenderer implements RenderOperator
 				gl.uniform1f(p.uniforms['u_invDistanceToJitter'], 1 / light.radius); // FIXME: maybe not correct
 				if (light.length > 0) {
 					// Z-axis oriented
-					tmpV3a.set(0, 0, 1).transformDirection(light.matrixWorld).normalize();
-					gl.uniform3f(p.uniforms['u_lightDir'], tmpV3a.x, tmpV3a.y, tmpV3a.z);
-					tmpV3a.multiplyScalar(light.length * 0.5);
-					pos.sub(tmpV3a);
+					tV3a.set(0, 0, 1).transformDirection(light.matrixWorld).normalize();
+					gl.uniform3f(p.uniforms['u_lightDir'], tV3a.x, tV3a.y, tV3a.z);
+					tV3a.multiplyScalar(light.length * 0.5);
+					pos.sub(tV3a);
 				} else {
 					gl.uniform3f(p.uniforms['u_lightDir'], 0, 0, 0);
 				}
@@ -862,11 +883,19 @@ class LightPassRenderer implements RenderOperator
 				const gen = this.inShadowMaps;
 				const scl = 1 / light.distance;
 				
-				tmpM2.getInverse(shadowCamera.matrixWorld);
-				tmpM.multiplyMatrices(tmpM2, this.parent.renderer.currentCamera.matrixWorld);
-				tmpM3.makeScale(scl, scl, scl).multiply(tmpM);
-				gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, tmpM3.elements);
+                const m1 = Matrix4Pool.alloc();
+                const m2 = Matrix4Pool.alloc();
+                const m3 = Matrix4Pool.alloc();
+                
+				m2.getInverse(shadowCamera.matrixWorld);
+				m1.multiplyMatrices(m2, this.parent.renderer.currentCamera.matrixWorld);
+				m3.makeScale(scl, scl, scl).multiply(m1);
+				gl.uniformMatrix4fv(p.uniforms['u_shadowMapMatrix'], false, m3.elements);
 				
+                Matrix4Pool.free(m1);
+                Matrix4Pool.free(m2);
+                Matrix4Pool.free(m3);
+                
 				gl.activeTexture(gl.TEXTURE5);
 				gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
 				
@@ -894,6 +923,10 @@ class LightPassRenderer implements RenderOperator
 			t.g += colorG;
 			t.b += colorB;
 		}
+        
+        Vector3Pool.free(tV3a);
+        Vector3Pool.free(tV3b);
+        Vector3Pool.free(tV3c);
 	}
 	
 	afterRender(): void
