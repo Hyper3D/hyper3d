@@ -18,39 +18,39 @@ varying vec2 v_jitterCoord;
 
 void main()
 {
-	setupLight();
-	setupPointLight();
+    setupLight();
+    setupPointLight();
 
 #if c_hasShadowMap
 
-	highp vec3 viewPos = viewPos;
-	highp vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz; // w is always 1 for orthographic camera
-	shadowCoord.z -= 0.002;
-	
-	float shadowValue = 0.;
-	vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
-	vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
+    highp vec3 viewPos = viewPos;
+    highp vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz; // w is always 1 for orthographic camera
+    shadowCoord.z -= 0.002;
 
-	jitter1 *= u_jitterAmount.xyxy;
-	jitter2 *= u_jitterAmount.xyxy;
+    float shadowValue = 0.;
+    vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
+    vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
 
-	shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.xy, 0.));
-	shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.zw, 0.));
-	shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.xy, 0.));
-	shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.zw, 0.));
+    jitter1 *= u_jitterAmount.xyxy;
+    jitter2 *= u_jitterAmount.xyxy;
 
-	if (shadowValue < 0.0001) {
-		discard;
-	}
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.xy, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.zw, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.xy, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.zw, 0.));
 
-	shadowValue *= 1. / 4.;
+    if (shadowValue < 0.0001) {
+        discard;
+    }
+
+    shadowValue *= 1. / 4.;
 
 #else // c_hasShadowMap
 
-	float shadowValue = 1.;
+    float shadowValue = 1.;
 
 #endif // c_hasShadowMap
 
-	doPointLight(u_lightDir, shadowValue * u_lightStrength);
+    doPointLight(u_lightDir, shadowValue * u_lightStrength);
 
 }

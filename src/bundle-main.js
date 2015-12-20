@@ -1,1 +1,1 @@
-window.Hyper = require('../dist/hyper3d');
+window.Hyper = require("../dist/hyper3d");

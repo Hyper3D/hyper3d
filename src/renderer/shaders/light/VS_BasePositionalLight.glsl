@@ -24,26 +24,26 @@ void main()
 {
 
 #if c_isFullScreen
-	gl_Position = vec4(a_position, 1., 1.);
-	float v_w = 1.;
+    gl_Position = vec4(a_position, 1., 1.);
+    float v_w = 1.;
 #else
-	gl_Position = vec4(computeWorldPosition(), 1.);
-	gl_Position = u_viewProjectionMatrix * gl_Position;
-	v_w = gl_Position.w;
+    gl_Position = vec4(computeWorldPosition(), 1.);
+    gl_Position = u_viewProjectionMatrix * gl_Position;
+    v_w = gl_Position.w;
 #endif
 
-	v_texCoord = gl_Position.xy * 0.5 + 0.5;
+    v_texCoord = gl_Position.xy * 0.5 + 0.5;
 
-	v_viewDir = u_viewDirOffset;
-	v_viewDir += u_viewDirCoefX * gl_Position.x;
-	v_viewDir += u_viewDirCoefY * gl_Position.y;
+    v_viewDir = u_viewDirOffset;
+    v_viewDir += u_viewDirCoefX * gl_Position.x;
+    v_viewDir += u_viewDirCoefY * gl_Position.y;
 
-	v_ditherCoord.xy = u_ditherScale * gl_Position.xy;
-	v_jitterCoord.xy = v_ditherCoord.xy + vec2(.1, .1);
+    v_ditherCoord.xy = u_ditherScale * gl_Position.xy;
+    v_jitterCoord.xy = v_ditherCoord.xy + vec2(.1, .1);
 
-	v_texCoord *= v_w;
-	v_viewDir *= v_w;
-	v_ditherCoord *= v_w;
-	v_jitterCoord *= v_w;
+    v_texCoord *= v_w;
+    v_viewDir *= v_w;
+    v_ditherCoord *= v_w;
+    v_jitterCoord *= v_w;
 
 }

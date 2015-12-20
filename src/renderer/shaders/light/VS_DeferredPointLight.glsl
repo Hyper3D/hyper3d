@@ -8,6 +8,6 @@ uniform float u_lightInfluenceRadius;
 
 vec3 computeWorldPosition()
 {
-	return u_lightPos + a_position * u_lightInfluenceRadius;
+    return u_lightPos + a_position * u_lightInfluenceRadius;
 }
 #endif

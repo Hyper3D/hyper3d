@@ -36,116 +36,116 @@ GBufferContents g;
 vec3 decodeInputColor(vec4 color)
 {
 #if c_colorIsLogRGB
-	return decodeLogRGB(color);
+    return decodeLogRGB(color);
 #else
-	return color.xyz;
+    return color.xyz;
 #endif
 }
 
 vec3 doSSR(out float confidence)
 {
-	highp float baseDepth = fetchDepth(u_linearDepth, v_texCoord);
-	highp vec3 baseViewDir = vec3(v_viewDir, 1.);
-	highp vec3 baseViewPos = baseViewDir * baseDepth;
-	vec3 baseNormal = g.normal;
+    highp float baseDepth = fetchDepth(u_linearDepth, v_texCoord);
+    highp vec3 baseViewDir = vec3(v_viewDir, 1.);
+    highp vec3 baseViewPos = baseViewDir * baseDepth;
+    vec3 baseNormal = g.normal;
 
-	vec3 reflectionVec = normalize(reflect(baseViewDir, baseNormal));
+    vec3 reflectionVec = normalize(reflect(baseViewDir, baseNormal));
 
-	float jitter = texture2D(u_jitter, v_jitterCoord).x;
+    float jitter = texture2D(u_jitter, v_jitterCoord).x;
 
-	vec3 hitPoint;
-	vec2 hitPixel;
-	float hitSteps;
+    vec3 hitPoint;
+    vec2 hitPixel;
+    float hitSteps;
 
-	if (rayTraceScreenSpace(
-		u_linearDepth,
-		baseViewPos,
-		reflectionVec,
-		u_projectionMatrix,
-		u_globalRenderSize,
-		u_globalInvRenderSize,
-		u_stride,
-		0.5 + jitter,
-		64. + baseDepth * 4.,
-		hitPixel,
-		hitPoint,
-		hitSteps
-		)) {
+    if (rayTraceScreenSpace(
+        u_linearDepth,
+        baseViewPos,
+        reflectionVec,
+        u_projectionMatrix,
+        u_globalRenderSize,
+        u_globalInvRenderSize,
+        u_stride,
+        0.5 + jitter,
+        64. + baseDepth * 4.,
+        hitPixel,
+        hitPoint,
+        hitSteps
+        )) {
 
-		hitPixel.xy *= u_globalInvRenderSize;
+        hitPixel.xy *= u_globalInvRenderSize;
 
-		vec3 color = decodeInputColor(texture2D(u_color, hitPixel.xy));
-		
-		// distance fade
-		hitSteps = clamp(2. - hitSteps * 2., 0., 1.); hitSteps *= hitSteps;
-		float fade = hitSteps;
+        vec3 color = decodeInputColor(texture2D(u_color, hitPixel.xy));
 
-		// screen border fade
-		float dfb = min(hitPixel.x, 1. - hitPixel.x);
-		dfb = min(dfb, min(hitPixel.y, 1. - hitPixel.y));
-		dfb = clamp(dfb * 10., 0., 1.);
-		fade *= dfb;
+        // distance fade
+        hitSteps = clamp(2. - hitSteps * 2., 0., 1.); hitSteps *= hitSteps;
+        float fade = hitSteps;
 
-		confidence = fade;
+        // screen border fade
+        float dfb = min(hitPixel.x, 1. - hitPixel.x);
+        dfb = min(dfb, min(hitPixel.y, 1. - hitPixel.y));
+        dfb = clamp(dfb * 10., 0., 1.);
+        fade *= dfb;
 
-		return color.xyz;
-	} else {
-		confidence = 0.;
-		return vec3(0.);
-	}
+        confidence = fade;
+
+        return color.xyz;
+    } else {
+        confidence = 0.;
+        return vec3(0.);
+    }
 }
 
 void main()
 {
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
-	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = vec4(0.); // unused
+    vec4 g0 = texture2D(u_g0, v_texCoord);
+    vec4 g1 = texture2D(u_g1, v_texCoord);
+    vec4 g2 = texture2D(u_g2, v_texCoord);
+    vec4 g3 = vec4(0.); // unused
 
-	if (isGBufferEmpty(g0, g1, g2, g3)) {
-		discard;
-		return;
-	}
+    if (isGBufferEmpty(g0, g1, g2, g3)) {
+        discard;
+        return;
+    }
 
-	decodeGBuffer(g, g0, g1, g2, g3);
+    decodeGBuffer(g, g0, g1, g2, g3);
 
-	gl_FragColor = texture2D(u_reflections, v_texCoord);
+    gl_FragColor = texture2D(u_reflections, v_texCoord);
 
-	// TODO: adjust SSR confidence value
-	float nvDot = clamp(dot(g.normal, normalize(vec3(v_viewDir, 1.))), 0., 1.);
-	float fresnel = 1. - nvDot;
-	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
-	float roughness = mat.roughness;
-	if (isMaterialClearCoat(mat)) {
-		roughness = min(roughness, mat.clearCoatRoughness);
-	}
-	roughness *= roughness;
-	float ssrAmount = min(1., 1.5 - roughness * 8.);
-	if (ssrAmount > 0.) {
-		vec4 reflAmt = evaluateReflection(nvDot, mat);
-		reflAmt += evaluateReflectionForClearCoat(nvDot, mat);
-		if (reflAmt.w > 0.00001) { 
-			ssrAmount = 1.;
+    // TODO: adjust SSR confidence value
+    float nvDot = clamp(dot(g.normal, normalize(vec3(v_viewDir, 1.))), 0., 1.);
+    float fresnel = 1. - nvDot;
+    MaterialInfo mat = getMaterialInfoFromGBuffer(g);
+    float roughness = mat.roughness;
+    if (isMaterialClearCoat(mat)) {
+        roughness = min(roughness, mat.clearCoatRoughness);
+    }
+    roughness *= roughness;
+    float ssrAmount = min(1., 1.5 - roughness * 8.);
+    if (ssrAmount > 0.) {
+        vec4 reflAmt = evaluateReflection(nvDot, mat);
+        reflAmt += evaluateReflectionForClearCoat(nvDot, mat);
+        if (reflAmt.w > 0.00001) {
+            ssrAmount = 1.;
 
-			// FIXME: why does reflAmt sometimes become greater than pi (energy conservation)?
-			//        maybe it's bug in ShadingModel.glsl?
-			reflAmt.xyz = min(reflAmt.xyz, M_PI); 
+            // FIXME: why does reflAmt sometimes become greater than pi (energy conservation)?
+            //        maybe it's bug in ShadingModel.glsl?
+            reflAmt.xyz = min(reflAmt.xyz, M_PI);
 
-			float ssrConfidence;
-			vec3 ssr = doSSR(ssrConfidence);
-			ssr *= reflAmt.xyz * (1. / M_PI);
+            float ssrConfidence;
+            vec3 ssr = doSSR(ssrConfidence);
+            ssr *= reflAmt.xyz * (1. / M_PI);
 
-			ssrConfidence *= ssrAmount;
+            ssrConfidence *= ssrAmount;
 
 #if c_useHdrMosaic
-			vec4 encoded = encodeHdrMosaic(ssr);
-			gl_FragColor.xyz = mix(gl_FragColor.xyz, encoded.xyz, ssrConfidence);
-			gl_FragColor.w = max(gl_FragColor.w, encoded.w);
+            vec4 encoded = encodeHdrMosaic(ssr);
+            gl_FragColor.xyz = mix(gl_FragColor.xyz, encoded.xyz, ssrConfidence);
+            gl_FragColor.w = max(gl_FragColor.w, encoded.w);
 #else
-			gl_FragColor.xyz = mix(gl_FragColor.xyz, ssr, ssrConfidence);
-			gl_FragColor.w = 1.;
+            gl_FragColor.xyz = mix(gl_FragColor.xyz, ssr, ssrConfidence);
+            gl_FragColor.w = 1.;
 #endif
-		}
-	}
+        }
+    }
 
 }

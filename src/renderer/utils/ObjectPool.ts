@@ -1,5 +1,5 @@
 
-import * as three from 'three';
+import * as three from "three";
 
 export interface ObjectPool<T>
 {
@@ -10,7 +10,7 @@ export interface ObjectPool<T>
 class ObjectPoolImpl<T>
 {
     private pool: T[];
-    
+
     constructor(private factory: () => T)
     {
         this.pool = [];

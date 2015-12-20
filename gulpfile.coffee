@@ -25,6 +25,7 @@ pipe = require('multipipe')
 mirror = require('gulp-mirror')
 licensify = require('licensify')
 fs = require('fs')
+tslint = require('gulp-tslint')
 
 # --------------------- path -----------------------
 
@@ -107,6 +108,11 @@ gulp.task 'js:bundle', [ 'js:lib' ], ->
        rename('hyper3d.js')))
     .pipe(gulp.dest(destinations.bundle_js))
 
+gulp.task 'js:lint', ->
+  gulp.src(sources.lib.ts)
+    .pipe(tslint())
+    .pipe(tslint.report('verbose'))
+
 # deletes the dist folder for a clean build
 gulp.task 'clean', ->
   del [ './dist', './build' ], (err, deletedFiles) ->
@@ -145,16 +151,18 @@ gulp.task 'bump', ->
 
 # watch scripts, styles, and templates
 gulp.task 'watch', ->
-  gulp.watch sources.lib.ts, [ 'js:lib' ]
-  gulp.watch sources.lib.tsd, [ 'js:lib' ]
-  gulp.watch sources.lib.js, [ 'js:lib' ]
-  gulp.watch sources.lib.shaders, [ 'js:lib' ]
-  gulp.watch [ shaderTemplateSource ], [ 'js:lib' ]
+  buildTasks = [ 'js:lint', 'js:lib' ]
+  gulp.watch sources.lib.ts, buildTasks
+  gulp.watch sources.lib.tsd, buildTasks
+  gulp.watch sources.lib.js, buildTasks
+  gulp.watch sources.lib.shaders, buildTasks
+  gulp.watch [ shaderTemplateSource ], buildTasks
   return
   
 # ---------------- default task -----------------
 
 gulp.task 'default', [
+  'js:lint',
   'js:lib'
   'watch'
 ]

@@ -7,8 +7,8 @@ uniform mat4 u_viewMatrix;
 
 void main()
 {
-	evaluateGeometry();
+    evaluateGeometry();
 
-	gl_Position = u_viewProjectionMatrix * vec4(worldPosition, 1.);
+    gl_Position = u_viewProjectionMatrix * vec4(worldPosition, 1.);
 }
 

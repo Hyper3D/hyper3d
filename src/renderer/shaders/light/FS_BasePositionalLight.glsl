@@ -9,6 +9,6 @@ varying float v_w;
 void setupPositionalLight()
 {
 #if !c_isFullScreen
-	perspectiveScaling = 1. / v_w;
+    perspectiveScaling = 1. / v_w;
 #endif
 }

@@ -27,75 +27,75 @@ float evaluateWeight(vec3 viewPos);
 
 void emitIBLOutput(vec3 lit, float weight)
 {
-	// dither
-	vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
+    // dither
+    vec3 dither = texture2D(u_dither, v_ditherCoord).xyz;
 
 #if c_useHdrMosaic
-	vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
-	gl_FragColor = mosaicked;
+    vec4 mosaicked = encodeHdrMosaicDithered(lit, dither);
+    gl_FragColor = mosaicked;
 
 #if c_isBlendPass
-	gl_FragColor.w = weight;
+    gl_FragColor.w = weight;
 #endif // c_isBlendPass
 #else // c_useHdrMosaic
-	if (lit != lit) lit *= 0.; // reject denormals
-	gl_FragColor = vec4(lit, weight);
+    if (lit != lit) lit *= 0.; // reject denormals
+    gl_FragColor = vec4(lit, weight);
 #endif // c_useHdrMosaic
 }
 
 void main()
 {
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
-	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = vec4(0.);
+    vec4 g0 = texture2D(u_g0, v_texCoord);
+    vec4 g1 = texture2D(u_g1, v_texCoord);
+    vec4 g2 = texture2D(u_g2, v_texCoord);
+    vec4 g3 = vec4(0.);
 
-	if (isGBufferEmpty(g0, g1, g2, g3)) {
-		discard;
-		return;
-	}
+    if (isGBufferEmpty(g0, g1, g2, g3)) {
+        discard;
+        return;
+    }
 
-	GBufferContents g;
-	decodeGBuffer(g, g0, g1, g2, g3);
+    GBufferContents g;
+    decodeGBuffer(g, g0, g1, g2, g3);
 
-	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
+    MaterialInfo mat = getMaterialInfoFromGBuffer(g);
 
-	highp vec3 viewDir = vec3(v_viewDir, 1.);
-	highp float depth = fetchDepth(u_linearDepth, v_texCoord);
-	highp vec3 viewPos = viewDir * depth;
+    highp vec3 viewDir = vec3(v_viewDir, 1.);
+    highp float depth = fetchDepth(u_linearDepth, v_texCoord);
+    highp vec3 viewPos = viewDir * depth;
 
-	float weight = evaluateWeight(viewPos);
+    float weight = evaluateWeight(viewPos);
 
-	vec3 reflVector = reflect(-(viewDir), g.normal);
-	reflVector = (u_reflectionMatrix * vec4(reflVector, 0.)).xyz;
+    vec3 reflVector = reflect(-(viewDir), g.normal);
+    reflVector = (u_reflectionMatrix * vec4(reflVector, 0.)).xyz;
 
-	float ssao = texture2D(u_ssao, v_texCoord).r;
-	ssao *= ssao;
-	ssao = mix(1., ssao, min(mat.roughness * 4., 1.));
+    float ssao = texture2D(u_ssao, v_texCoord).r;
+    ssao *= ssao;
+    ssao = mix(1., ssao, min(mat.roughness * 4., 1.));
 
-	// sampling from image
-	// TODO: lod bias dependent of texture resolution
-	// TODO: correct lod bias
-	vec3 refl = textureCube(u_reflection, reflVector, mat.roughness * 14.).xyz;
-	refl.xyz *= refl.xyz; // linearize
+    // sampling from image
+    // TODO: lod bias dependent of texture resolution
+    // TODO: correct lod bias
+    vec3 refl = textureCube(u_reflection, reflVector, mat.roughness * 14.).xyz;
+    refl.xyz *= refl.xyz; // linearize
 
-	refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
+    refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
 
-	if (isMaterialClearCoat(mat)) {
-		// second specular lobe
-		vec3 reflcc = textureCube(u_reflection, reflVector, mat.clearCoatRoughness * 14.).xyz;
-		reflcc.xyz *= reflcc.xyz; // linearize
+    if (isMaterialClearCoat(mat)) {
+        // second specular lobe
+        vec3 reflcc = textureCube(u_reflection, reflVector, mat.clearCoatRoughness * 14.).xyz;
+        reflcc.xyz *= reflcc.xyz; // linearize
 
-		reflcc *= evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
+        reflcc *= evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
 
-		refl += reflcc;
-	}
+        refl += reflcc;
+    }
 
-	// apply SSAO
-	refl *= ssao;
+    // apply SSAO
+    refl *= ssao;
 
-	// lighting model
+    // lighting model
 
-	emitIBLOutput(refl.xyz, weight);
+    emitIBLOutput(refl.xyz, weight);
 }
 

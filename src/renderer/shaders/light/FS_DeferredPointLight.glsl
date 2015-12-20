@@ -25,77 +25,77 @@ uniform float u_invDistanceToJitter;
 
 float shadowTextureCubePack24(samplerCube tex, highp vec3 coord, highp float comparand)
 {
-	highp float value = unpack24(textureCube(tex, coord.xyz).xyz);
-	return step(comparand, value);
+    highp float value = unpack24(textureCube(tex, coord.xyz).xyz);
+    return step(comparand, value);
 }
 
 void makePerpendicularVectors(vec3 source, out vec3 out1, out vec3 out2)
 {
-	vec3 up = abs(source.z) > sqrt(0.5) ? vec3(1., 0., 0.) : vec3(0., 0., 1.);
-	out1 = normalize(cross(source, up));
-	out2 = cross(source, out1);
+    vec3 up = abs(source.z) > sqrt(0.5) ? vec3(1., 0., 0.) : vec3(0., 0., 1.);
+    out1 = normalize(cross(source, up));
+    out2 = cross(source, out1);
 }
 
 void main()
 {
-	setupPositionalLight();
-	setupLight();
-	setupPointLight();
+    setupPositionalLight();
+    setupLight();
+    setupPointLight();
 
 #if c_hasShadowMap
 
-	highp vec3 viewPos = viewPos;
-	vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz;
+    highp vec3 viewPos = viewPos;
+    vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz;
 
-	float shadowDist = length(shadowCoord);
-	shadowCoord = normalize(shadowCoord);
-	
-	float shadowValue = 0.;
-	vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
-	vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
+    float shadowDist = length(shadowCoord);
+    shadowCoord = normalize(shadowCoord);
 
-	vec2 jamt = u_jitterAmount;
-	jamt += u_invDistanceToJitter / shadowDist; // soft shadow near the light
+    float shadowValue = 0.;
+    vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
+    vec4 jitter2 = texture2D(u_jitter, v_jitterCoord.xy) - 0.5;
 
-	jitter1 *= jamt.xyxy;
-	jitter2 *= jamt.xyxy;
+    vec2 jamt = u_jitterAmount;
+    jamt += u_invDistanceToJitter / shadowDist; // soft shadow near the light
 
-	vec3 jitterVec1, jitterVec2;
-	makePerpendicularVectors(shadowCoord, jitterVec1, jitterVec2);
+    jitter1 *= jamt.xyxy;
+    jitter2 *= jamt.xyxy;
 
-	shadowDist -= 0.001;
+    vec3 jitterVec1, jitterVec2;
+    makePerpendicularVectors(shadowCoord, jitterVec1, jitterVec2);
 
-	shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter1.x * jitterVec1 + jitter1.y * jitterVec2, shadowDist);
-	shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter1.z * jitterVec1 + jitter1.w * jitterVec2, shadowDist);
-	shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter2.x * jitterVec1 + jitter2.y * jitterVec2, shadowDist);
-	shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter2.z * jitterVec1 + jitter2.w * jitterVec2, shadowDist);
+    shadowDist -= 0.001;
 
-	if (shadowValue < 0.0001) {
-		discard;
-	}
+    shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter1.x * jitterVec1 + jitter1.y * jitterVec2, shadowDist);
+    shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter1.z * jitterVec1 + jitter1.w * jitterVec2, shadowDist);
+    shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter2.x * jitterVec1 + jitter2.y * jitterVec2, shadowDist);
+    shadowValue += shadowTextureCubePack24(u_shadowMap, shadowCoord + jitter2.z * jitterVec1 + jitter2.w * jitterVec2, shadowDist);
 
-	shadowValue *= 1. / 4.;
+    if (shadowValue < 0.0001) {
+        discard;
+    }
+
+    shadowValue *= 1. / 4.;
 
 #else // c_hasShadowMap
 
-	float shadowValue = 1.;
+    float shadowValue = 1.;
 
 #endif // c_hasShadowMap
 
-	highp vec3 lightDir = u_lightPos - viewPos;
-	float dist = dot(lightDir, lightDir) * u_lightInvInfluenceRadiusSquared;
+    highp vec3 lightDir = u_lightPos - viewPos;
+    float dist = dot(lightDir, lightDir) * u_lightInvInfluenceRadiusSquared;
 
-	if (dist >= 1.) {
-		discard;
-	}
+    if (dist >= 1.) {
+        discard;
+    }
 
-	if (u_lightRadius > 0. || u_lightLength > 0.) {
-		// TODO: sized point light
-	}
+    if (u_lightRadius > 0. || u_lightLength > 0.) {
+        // TODO: sized point light
+    }
 
-	highp float strength = 1. - dist;
+    highp float strength = 1. - dist;
 
-	strength *= 1. / max(u_minimumDistance, dot(lightDir, lightDir));
+    strength *= 1. / max(u_minimumDistance, dot(lightDir, lightDir));
 
-	doPointLight(normalize(lightDir), shadowValue * strength);
+    doPointLight(normalize(lightDir), shadowValue * strength);
 }

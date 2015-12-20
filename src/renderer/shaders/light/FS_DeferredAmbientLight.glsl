@@ -6,31 +6,31 @@ uniform sampler2D u_ssao;
 
 void main()
 {
-	setupLight();
-	
-	vec4 g0 = texture2D(u_g0, v_texCoord);
-	vec4 g1 = texture2D(u_g1, v_texCoord);
-	vec4 g2 = texture2D(u_g2, v_texCoord);
-	vec4 g3 = vec4(0.);
+    setupLight();
 
-	if (isGBufferEmpty(g0, g1, g2, g3)) {
-		discard;
-		return;
-	}
+    vec4 g0 = texture2D(u_g0, v_texCoord);
+    vec4 g1 = texture2D(u_g1, v_texCoord);
+    vec4 g2 = texture2D(u_g2, v_texCoord);
+    vec4 g3 = vec4(0.);
 
-	GBufferContents g;
-	decodeGBuffer(g, g0, g1, g2, g3);
+    if (isGBufferEmpty(g0, g1, g2, g3)) {
+        discard;
+        return;
+    }
 
-	MaterialInfo mat = getMaterialInfoFromGBuffer(g);
+    GBufferContents g;
+    decodeGBuffer(g, g0, g1, g2, g3);
 
-	float ssao = texture2D(u_ssao, v_texCoord).r;
-	ssao *= ssao;
+    MaterialInfo mat = getMaterialInfoFromGBuffer(g);
 
-	vec3 viewDir = vec3(v_viewDir, 1.);
-	UniformLightBRDFParameters params = computeUniformLightBRDFParameters(
-		g.normal, normalize(viewDir));
+    float ssao = texture2D(u_ssao, v_texCoord).r;
+    ssao *= ssao;
 
-	vec3 lit = evaluateUniformLight(params, mat, u_lightColor * ssao);
+    vec3 viewDir = vec3(v_viewDir, 1.);
+    UniformLightBRDFParameters params = computeUniformLightBRDFParameters(
+        g.normal, normalize(viewDir));
 
-	emitLightPassOutput(lit);
+    vec3 lit = evaluateUniformLight(params, mat, u_lightColor * ssao);
+
+    emitLightPassOutput(lit);
 }

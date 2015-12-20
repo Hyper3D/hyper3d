@@ -3,5 +3,5 @@
 
 float evaluateWeight(vec3 viewPos)
 {
-	return 1.;
+    return 1.;
 }

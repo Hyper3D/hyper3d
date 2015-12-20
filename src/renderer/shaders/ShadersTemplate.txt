@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
 
-import { ShaderChunkMap } from '../core/Shaders';
+import { ShaderChunkMap } from "../core/Shaders";
 
 export const shaderChunks: ShaderChunkMap = /*--SHADERS--*/;

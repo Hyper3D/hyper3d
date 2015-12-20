@@ -29,30 +29,30 @@ highp vec3 viewPos;
 
 void setupLight()
 {
-	viewDir = vec3(v_viewDir * perspectiveScaling, 1.);
-	viewPos = viewDir * fetchDepth(u_linearDepth, v_texCoord * perspectiveScaling);
-	viewPos = -viewPos; // FIXME: ??
+    viewDir = vec3(v_viewDir * perspectiveScaling, 1.);
+    viewPos = viewDir * fetchDepth(u_linearDepth, v_texCoord * perspectiveScaling);
+    viewPos = -viewPos; // FIXME: ??
 
-	viewDirNormalized = normalize(viewDir);
+    viewDirNormalized = normalize(viewDir);
 }
 
 void emitLightPassOutput(vec3 lit)
 {
 #if c_useHdrMosaic
-	float lum = max(max(lit.x, lit.y), lit.z);
+    float lum = max(max(lit.x, lit.y), lit.z);
 
-	// overflow protection
-	const float lumLimit = HdrMosaicMaximumLevel * 0.7;
-	if (lum > lumLimit) {
-		lit *= lumLimit / lum;
-	}
+    // overflow protection
+    const float lumLimit = HdrMosaicMaximumLevel * 0.7;
+    if (lum > lumLimit) {
+        lit *= lumLimit / lum;
+    }
 
-	// dither
-	vec3 dither = texture2D(u_dither, v_ditherCoord * perspectiveScaling).xyz;
+    // dither
+    vec3 dither = texture2D(u_dither, v_ditherCoord * perspectiveScaling).xyz;
 
-	gl_FragColor = encodeHdrMosaicDithered(lit, dither);
+    gl_FragColor = encodeHdrMosaicDithered(lit, dither);
 #else
-	if (lit != lit) lit *= 0.; // reject denormals
-	gl_FragColor = vec4(lit, 0.);
+    if (lit != lit) lit *= 0.; // reject denormals
+    gl_FragColor = vec4(lit, 0.);
 #endif
 }

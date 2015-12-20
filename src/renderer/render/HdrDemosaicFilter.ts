@@ -1,239 +1,224 @@
 /// <reference path="../Prefix.d.ts" />
 
-import {
-	TextureRenderBufferInfo,
-	TextureRenderBufferFormat,
-	TextureRenderBuffer
-} from '../core/RenderBuffers';
+import { TextureRenderBuffer } from "../core/RenderBuffers";
 
 import {
-	LogRGBTextureRenderBufferInfo,
-	LinearRGBTextureRenderBufferInfo,
-	HdrMosaicTextureRenderBufferInfo
-} from '../core/TypedRenderBuffers';
+    LogRGBTextureRenderBufferInfo,
+    HdrMosaicTextureRenderBufferInfo
+} from "../core/TypedRenderBuffers";
 
 import {
-	RenderOperator,
-	RenderOperation
-} from '../core/RenderPipeline';
+    RenderOperator,
+    RenderOperation
+} from "../core/RenderPipeline";
 
 import {
-	RendererCore,
-	GLStateFlags
-} from '../core/RendererCore';
+    RendererCore,
+    GLStateFlags
+} from "../core/RendererCore";
 
 import {
-	GLProgram,
-	GLProgramUniforms,
-	GLProgramUniformSetters,
-	GLProgramAttributes
-} from '../core/GLProgram';
+    GLProgram,
+    GLProgramUniforms,
+    GLProgramAttributes
+} from "../core/GLProgram";
 
-import { GLShader } from '../core/GLShader';
-
-import { GLFramebuffer } from '../core/GLFramebuffer';
-
-import {
-	ViewVectors,
-	computeViewVectorCoefFromProjectionMatrix
-} from '../utils/Geometry';
+import { GLFramebuffer } from "../core/GLFramebuffer";
 
 export interface HdrDemosaicFilterParameters
 {
-	halfSized: boolean;
+    halfSized: boolean;
 }
 export class HdrDemosaicFilterRenderer
 {
-	constructor(public renderer: RendererCore)
-	{
-	}
-	
-	dispose(): void
-	{
-	}
-	
-	setupFilter(input: HdrMosaicTextureRenderBufferInfo, params: HdrDemosaicFilterParameters, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
-	{
-		let width = input.width;
-		let height = input.height;
-		
-		if (params.halfSized) {
-			width >>= 1; height >>= 1;
-		}
-		
-		const tmp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
-		const outp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
-		
-		ops.push({
-			inputs: {
-				input: input,
-			},
-			outputs: {
-				output: tmp
-			},
-			bindings: [],
-			optionalOutputs: [],
-			name: `HDR Demosaic`,
-			factory: (cfg) => new HdrDemosaicFilterRendererInstance(this,
-				<TextureRenderBuffer> cfg.inputs['input'],
-				<TextureRenderBuffer> cfg.outputs['output'],
-				params)
-		});
-		
-		ops.push({
-			inputs: {
-				input: tmp,
-			},
-			outputs: {
-				output: outp
-			},
-			bindings: [],
-			optionalOutputs: [],
-			name: `Smoothen Demosaic Result`,
-			factory: (cfg) => new BlurFilterRendererInstance(this,
-				<TextureRenderBuffer> cfg.inputs['input'],
-				<TextureRenderBuffer> cfg.outputs['output'])
-		});
-		
-		return outp;
-	}
+    constructor(public renderer: RendererCore)
+    {
+    }
+
+    dispose(): void
+    {
+    }
+
+    setupFilter(input: HdrMosaicTextureRenderBufferInfo, params: HdrDemosaicFilterParameters, ops: RenderOperation[]): LogRGBTextureRenderBufferInfo
+    {
+        let width = input.width;
+        let height = input.height;
+
+        if (params.halfSized) {
+            width >>= 1; height >>= 1;
+        }
+
+        const tmp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
+        const outp = new LogRGBTextureRenderBufferInfo("LogRGB", width, height, input.format);
+
+        ops.push({
+            inputs: {
+                input: input,
+            },
+            outputs: {
+                output: tmp
+            },
+            bindings: [],
+            optionalOutputs: [],
+            name: `HDR Demosaic`,
+            factory: (cfg) => new HdrDemosaicFilterRendererInstance(this,
+                <TextureRenderBuffer> cfg.inputs["input"],
+                <TextureRenderBuffer> cfg.outputs["output"],
+                params)
+        });
+
+        ops.push({
+            inputs: {
+                input: tmp,
+            },
+            outputs: {
+                output: outp
+            },
+            bindings: [],
+            optionalOutputs: [],
+            name: `Smoothen Demosaic Result`,
+            factory: (cfg) => new BlurFilterRendererInstance(this,
+                <TextureRenderBuffer> cfg.inputs["input"],
+                <TextureRenderBuffer> cfg.outputs["output"])
+        });
+
+        return outp;
+    }
 }
 
 class HdrDemosaicFilterRendererInstance implements RenderOperator
 {
-	private fb: GLFramebuffer;
-	
-	private program: {
-		program: GLProgram;
-		uniforms: GLProgramUniforms;
-		attributes: GLProgramAttributes;		
-	};
-	
-	constructor(
-		private parent: HdrDemosaicFilterRenderer,
-		private input: TextureRenderBuffer,
-		private out: TextureRenderBuffer,
-		private params: HdrDemosaicFilterParameters
-	)
-	{
-		
-		this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
-			depth: null,
-			colors: [
-				out.texture
-			]
-		});
-		
-		{
-			const program = parent.renderer.shaderManager.get('VS_HdrDemosaic', 'FS_HdrDemosaic',
-				['a_position']);
-			this.program = {
-				program,
-				uniforms: program.getUniforms([
-					'u_mosaic'
-				]),
-				attributes: program.getAttributes(['a_position'])
-			};
-		}
-	}
-	beforeRender(): void
-	{
-	}
-	perform(): void
-	{
-		const scene = this.parent.renderer.currentScene;
-		this.fb.bind();
-		
-		const gl = this.parent.renderer.gl;
-		gl.viewport(0, 0, this.out.width, this.out.height);
-		this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
-		this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
-		
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
-		
-		const p = this.program;
-		p.program.use();
-		gl.uniform1i(p.uniforms['u_mosaic'], 0);
-			
-		const quad = this.parent.renderer.quadRenderer;
-		quad.render(p.attributes['a_position']);
-	
-	}
-	afterRender(): void
-	{
-	}
-	dispose(): void
-	{
-		this.fb.dispose();
-	}
+    private fb: GLFramebuffer;
+
+    private program: {
+        program: GLProgram;
+        uniforms: GLProgramUniforms;
+        attributes: GLProgramAttributes;
+    };
+
+    constructor(
+        private parent: HdrDemosaicFilterRenderer,
+        private input: TextureRenderBuffer,
+        private out: TextureRenderBuffer,
+        private params: HdrDemosaicFilterParameters
+    )
+    {
+
+        this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+            depth: null,
+            colors: [
+                out.texture
+            ]
+        });
+
+        {
+            const program = parent.renderer.shaderManager.get("VS_HdrDemosaic", "FS_HdrDemosaic",
+                ["a_position"]);
+            this.program = {
+                program,
+                uniforms: program.getUniforms([
+                    "u_mosaic"
+                ]),
+                attributes: program.getAttributes(["a_position"])
+            };
+        }
+    }
+    beforeRender(): void
+    {
+    }
+    perform(): void
+    {
+        this.fb.bind();
+
+        const gl = this.parent.renderer.gl;
+        gl.viewport(0, 0, this.out.width, this.out.height);
+        this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+        this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
+
+        const p = this.program;
+        p.program.use();
+        gl.uniform1i(p.uniforms["u_mosaic"], 0);
+
+        const quad = this.parent.renderer.quadRenderer;
+        quad.render(p.attributes["a_position"]);
+
+    }
+    afterRender(): void
+    {
+    }
+    dispose(): void
+    {
+        this.fb.dispose();
+    }
 }
 
 class BlurFilterRendererInstance implements RenderOperator
 {
-	private fb: GLFramebuffer;
-	
-	private program: {
-		program: GLProgram;
-		uniforms: GLProgramUniforms;
-		attributes: GLProgramAttributes;		
-	};
-	
-	constructor(
-		private parent: HdrDemosaicFilterRenderer,
-		private input: TextureRenderBuffer,
-		private out: TextureRenderBuffer
-	)
-	{
-		
-		this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
-			depth: null,
-			colors: [
-				out.texture
-			]
-		});
-		
-		{
-			const program = parent.renderer.shaderManager.get('VS_Blur', 'FS_Blur',
-				['a_position']);
-			this.program = {
-				program,
-				uniforms: program.getUniforms([
-					'u_texture'
-				]),
-				attributes: program.getAttributes(['a_position'])
-			};
-		}
-	}
-	beforeRender(): void
-	{
-	}
-	perform(): void
-	{
-		const scene = this.parent.renderer.currentScene;
-		this.fb.bind();
-		
-		const gl = this.parent.renderer.gl;
-		gl.viewport(0, 0, this.out.width, this.out.height);
-		this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
-		this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
-		
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
-		
-		const p = this.program;
-		p.program.use();
-		gl.uniform1i(p.uniforms['u_texture'], 0);
-			
-		const quad = this.parent.renderer.quadRenderer;
-		quad.render(p.attributes['a_position']);
-	
-	}
-	afterRender(): void
-	{
-	}
-	dispose(): void
-	{
-		this.fb.dispose();
-	}
+    private fb: GLFramebuffer;
+
+    private program: {
+        program: GLProgram;
+        uniforms: GLProgramUniforms;
+        attributes: GLProgramAttributes;
+    };
+
+    constructor(
+        private parent: HdrDemosaicFilterRenderer,
+        private input: TextureRenderBuffer,
+        private out: TextureRenderBuffer
+    )
+    {
+
+        this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+            depth: null,
+            colors: [
+                out.texture
+            ]
+        });
+
+        {
+            const program = parent.renderer.shaderManager.get("VS_Blur", "FS_Blur",
+                ["a_position"]);
+            this.program = {
+                program,
+                uniforms: program.getUniforms([
+                    "u_texture"
+                ]),
+                attributes: program.getAttributes(["a_position"])
+            };
+        }
+    }
+    beforeRender(): void
+    {
+    }
+    perform(): void
+    {
+        this.fb.bind();
+
+        const gl = this.parent.renderer.gl;
+        gl.viewport(0, 0, this.out.width, this.out.height);
+        this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
+        this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
+
+        const p = this.program;
+        p.program.use();
+        gl.uniform1i(p.uniforms["u_texture"], 0);
+
+        const quad = this.parent.renderer.quadRenderer;
+        quad.render(p.attributes["a_position"]);
+
+    }
+    afterRender(): void
+    {
+    }
+    dispose(): void
+    {
+        this.fb.dispose();
+    }
 }

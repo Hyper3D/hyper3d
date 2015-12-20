@@ -1,10 +1,10 @@
 /// <reference path="../Prefix.d.ts" />
 
-import { ShaderChunk } from './GLShader';
+import { ShaderChunk } from "./GLShader";
 
 export interface ShaderChunkMap
 {
-	[name: string]: ShaderChunk;
+    [name: string]: ShaderChunk;
 }
 
-export { shaderChunks } from '../shaders/ShaderChunk';
+export { shaderChunks } from "../shaders/ShaderChunk";

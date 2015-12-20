@@ -35,52 +35,52 @@ void computeExtraValues();
 
 void doSkinningOne(inout mat4 mat, inout mat4 lastMat, float index, float weight)
 {
-	if (weight == 0.) {
-		return;
-	}
-	
-	BoneMatrix m = getBoneMatrix(index);
-	
-	mat += m.current * weight;
-	lastMat += m.last * weight;
+    if (weight == 0.) {
+        return;
+    }
+
+    BoneMatrix m = getBoneMatrix(index);
+
+    mat += m.current * weight;
+    lastMat += m.last * weight;
 }
 
 #endif
 
 void evaluateGeometry()
 {
-	vec3 position = a_position;
-	vec3 lastPosition = a_position;
-	vec3 normal = a_normal;
-	vec3 tangent = a_tangent;
+    vec3 position = a_position;
+    vec3 lastPosition = a_position;
+    vec3 normal = a_normal;
+    vec3 tangent = a_tangent;
 
 #if c_skinningMode != SkinningModeNone
 
-	mat4 skinMat = mat4(0.);
-	mat4 skinLastMat = mat4(0.);
+    mat4 skinMat = mat4(0.);
+    mat4 skinLastMat = mat4(0.);
 
-	doSkinningOne(skinMat, skinLastMat, a_skinIndices.x, a_skinWeights.x);
-	doSkinningOne(skinMat, skinLastMat, a_skinIndices.y, a_skinWeights.y);
-	doSkinningOne(skinMat, skinLastMat, a_skinIndices.z, a_skinWeights.z);
-	doSkinningOne(skinMat, skinLastMat, a_skinIndices.w, a_skinWeights.w);
+    doSkinningOne(skinMat, skinLastMat, a_skinIndices.x, a_skinWeights.x);
+    doSkinningOne(skinMat, skinLastMat, a_skinIndices.y, a_skinWeights.y);
+    doSkinningOne(skinMat, skinLastMat, a_skinIndices.z, a_skinWeights.z);
+    doSkinningOne(skinMat, skinLastMat, a_skinIndices.w, a_skinWeights.w);
 
-	skinMat = u_skinInvBindMatrix * skinMat * u_skinBindMatrix;
-	skinLastMat = u_skinInvBindMatrix * skinLastMat * u_skinBindMatrix;
+    skinMat = u_skinInvBindMatrix * skinMat * u_skinBindMatrix;
+    skinLastMat = u_skinInvBindMatrix * skinLastMat * u_skinBindMatrix;
 
-	position = (skinMat * vec4(position, 1.)).xyz;
-	lastPosition = (skinLastMat * vec4(lastPosition, 1.)).xyz;
-	normal = (skinMat * vec4(normal, 0.)).xyz;
-	tangent = (skinMat * vec4(tangent, 0.)).xyz;
+    position = (skinMat * vec4(position, 1.)).xyz;
+    lastPosition = (skinLastMat * vec4(lastPosition, 1.)).xyz;
+    normal = (skinMat * vec4(normal, 0.)).xyz;
+    tangent = (skinMat * vec4(tangent, 0.)).xyz;
 
 #endif
 
-	worldPosition = (u_modelMatrix * vec4(position, 1.)).xyz;
-	worldNormal = (u_modelMatrix * vec4(normal, 0.)).xyz;
-	worldTangent = (u_modelMatrix * vec4(tangent, 0.)).xyz;
+    worldPosition = (u_modelMatrix * vec4(position, 1.)).xyz;
+    worldNormal = (u_modelMatrix * vec4(normal, 0.)).xyz;
+    worldTangent = (u_modelMatrix * vec4(tangent, 0.)).xyz;
 
-	lastWorldPosition = (u_lastModelMatrix * vec4(lastPosition, 1.)).xyz;
+    lastWorldPosition = (u_lastModelMatrix * vec4(lastPosition, 1.)).xyz;
 
-	computeExtraValues();
+    computeExtraValues();
 
-	v_worldPosition = worldPosition;
+    v_worldPosition = worldPosition;
 }

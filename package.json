@@ -42,6 +42,7 @@
     "gulp-mirror": "^0.4.0",
     "gulp-rename": "^1.2.2",
     "gulp-tag-version": "^1.3.0",
+    "gulp-tslint": "^4.2.1",
     "gulp-typescript": "^2.8.0",
     "gulp-uglify": "^1.5.1",
     "gulp-util": "^3.0.6",
@@ -53,6 +54,7 @@
     "requirejs": "^2.1.20",
     "through2": "^2.0.0",
     "tsd": "^0.6.4",
+    "tslint": "^3.2.1",
     "typescript": "^1.5.3",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
