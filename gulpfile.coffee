@@ -24,6 +24,7 @@ rename = require('gulp-rename')
 pipe = require('multipipe')
 mirror = require('gulp-mirror')
 licensify = require('licensify')
+fs = require('fs')
 
 # --------------------- path -----------------------
 
@@ -50,6 +51,14 @@ addSource = (inp) ->
   p = through.obj()
   es.duplex p, es.merge(inp, p)
   
+versionModule = (path) ->
+  packageInfo = JSON.parse fs.readFileSync('./package.json')
+  version = packageInfo.version
+  
+  stream = source(path)
+  stream.end "exports.REVISION = #{JSON.stringify(version)};\n"
+  stream
+  
 # ---------------------- tasks ----------------------
   
 gulp.task 'dep:lib', ->
@@ -63,16 +72,21 @@ gulp.task 'js:lib', ->
   shaderChunks = gulp.src(sources.lib.shaders)
     .pipe(hyperShaders(shaderTemplateSource))
     
+    
+  versionFile = versionModule('./renderer/public/Version.js')
+    
   tsStream = tsFiles
     .pipe(addSource(shaderChunks))
     .pipe(ts(tsProject))
     
   es.merge(
     tsStream.js
-      .pipe(gulp.dest(destinations.pub_js)), 
+      .pipe(gulp.dest(destinations.pub_js)),
     gulp.src(sources.lib.js, base: 'src')
       .pipe(gulp.dest(destinations.pub_js)), 
     gulp.src(sources.lib.tsd, base: 'src')
+      .pipe(gulp.dest(destinations.pub_js)),
+    versionFile
       .pipe(gulp.dest(destinations.pub_js))
   )
 

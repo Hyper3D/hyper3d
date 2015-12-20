@@ -3,7 +3,7 @@
 import * as three from 'three';
 import { RendererCore } from '../core/RendererCore';
 
-export const REVISION = '0.0.1';
+import { REVISION } from './Version';
 
 export interface WebGLHyperRendererLogParameters
 {
