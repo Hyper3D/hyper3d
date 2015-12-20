@@ -20,7 +20,7 @@ npm run-script tsd-install
 ### Build as npm package
 
 ```sh
-npm run-script build
+npm run-script lib
 
 # ..or, automatically rebuild whenever a source file was modified
 # npm run-script watch
@@ -41,7 +41,7 @@ containing everything. In this case, use the following command to bundle up all
 required modules into a single file.
 
 ```sh
-npm run-script bundle
+npm run-script build
 ```
 
 Generated files can be found at the `build` directory. You can use it like this:

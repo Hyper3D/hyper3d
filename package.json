@@ -62,7 +62,7 @@
     "prepublish": "npm run-script build",
     "watch": "gulp",
     "build": "gulp build",
-    "bundle": "gulp js:bundle"
+    "lib": "gulp js:lib"
   },
   "typescript": {
     "definitions": [

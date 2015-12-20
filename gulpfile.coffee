@@ -95,17 +95,18 @@ gulp.task 'js:bundle', [ 'js:lib' ], ->
 
 # deletes the dist folder for a clean build
 gulp.task 'clean', ->
-  del [ './dist' ], (err, deletedFiles) ->
+  del [ './dist', './build' ], (err, deletedFiles) ->
     if deletedFiles.length
       util.log 'Deleted', util.colors.red(deletedFiles.join(' ,'))
     else
-      util.log util.colors.yellow('/dist directory empty - nothing to delete')
+      util.log util.colors.yellow('empty - nothing to delete')
     return
   return
 
 gulp.task 'build', [
   'js:lib'
   'dep:lib'
+  'js:bundle'
 ]
 
 gulp.task 'bump', ->
@@ -140,6 +141,6 @@ gulp.task 'watch', ->
 # ---------------- default task -----------------
 
 gulp.task 'default', [
-  'build'
+  'js:lib'
   'watch'
 ]
