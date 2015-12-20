@@ -3,6 +3,7 @@
 import { IDisposable } from '../utils/Utils';
 import { shaderChunks } from './shaders';
 import { RendererCore } from '../core/RendererCore';
+import { Logger } from '../utils/Logger';
 
 export interface ShaderChunk
 {
@@ -138,19 +139,20 @@ export class GLShader implements IDisposable
 	static compile(renderer: RendererCore, type: number, source: string): GLShader
 	{
 		const gl = renderer.gl;
+        const logger = renderer.log.getLogger('shader');
 		let shader = new GLShader(gl, gl.createShader(type));
 		try {
 			
 			gl.shaderSource(shader.shader, source);
 			gl.compileShader(shader.shader);
 			
-			const log = gl.getShaderInfoLog(shader.shader);
-			if (log.length > 0) {
-				console.log("for shader:");
-				console.log(source);
-				console.log("shader compile log:");
-				console.log(log);
-			}
+            if (logger.isEnabled) {
+                const log = gl.getShaderInfoLog(shader.shader);
+                if (log.length > 0) {
+                    logger.log(`Shader compilation log generated for the following shader:\n${source}\n` + 
+                        `Following is the log message:\n${log}`);
+                }
+            }
 			if (!gl.getShaderParameter(shader.shader, gl.COMPILE_STATUS)) {
 				throw new Error("shader compilation failed.");
 			}

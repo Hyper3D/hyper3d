@@ -5,11 +5,20 @@ import { RendererCore } from '../core/RendererCore';
 
 export const REVISION = '0.0.1';
 
+export interface WebGLHyperRendererLogParameters
+{
+    core: boolean;
+    shader: boolean;
+    
+    [topic: string]: boolean;
+}
+
 export interface WebGLHyperRendererParameters
 {
 	canvas?: HTMLCanvasElement;
 	useFullResolutionGBuffer?: boolean;
 	useFPBuffer?: boolean;
+    log?: WebGLHyperRendererLogParameters | boolean;
 }
 
 export class WebGLHyperRenderer implements three.Renderer

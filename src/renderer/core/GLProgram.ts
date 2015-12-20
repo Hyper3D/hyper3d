@@ -5,6 +5,7 @@ import { shaderChunks } from './shaders';
 import { RendererCore } from '../core/RendererCore';
 import { GlobalShaderUniformSubscriber } from './ShaderManager';
 import { GLShader } from './GLShader';
+import { Logger } from '../utils/Logger';
 
 export interface GLProgramAttributes
 {
@@ -21,6 +22,7 @@ export interface GLProgramUniformSetters
 
 export class GLProgram implements IDisposable
 {
+    private logger: Logger;
 	private gl: WebGLRenderingContext;
 	private linked: boolean;
 	
@@ -28,6 +30,8 @@ export class GLProgram implements IDisposable
 	
 	constructor(private core: RendererCore, public program: WebGLProgram)
 	{
+        this.logger = core.log.getLogger('shader');
+        
 		this.attrLocs = {};
 		this.nextAttrLoc = 0;
 		this.gl = core.gl;
@@ -56,11 +60,12 @@ export class GLProgram implements IDisposable
 		const gl = this.gl;
 		gl.linkProgram(this.program);
 			
-		const log = gl.getProgramInfoLog(this.program);
-		if (log.length > 0) {
-			console.log("program link log:");
-			console.log(log);
-		}
+        if (this.logger.isEnabled) {
+            const log = gl.getProgramInfoLog(this.program);
+            if (log.length > 0) {
+                this.logger.log(`Program link log was generated:\n${log}`);
+            }
+        }
 		if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
 			throw new Error("program compilation failed.");
 		}

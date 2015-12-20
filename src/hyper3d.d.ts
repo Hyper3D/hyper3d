@@ -1,11 +1,20 @@
 declare module Hyper 
 {	
-	export interface WebGLHyperRendererParameters
-	{
-		canvas?: HTMLCanvasElement;
-		useFullResolutionGBuffer?: boolean;
-		useFPBuffer?: boolean;
-	}
+    export interface WebGLHyperRendererLogParameters
+    {
+        core: boolean;
+        shader: boolean;
+        
+        [topic: string]: boolean;
+    }
+
+    export interface WebGLHyperRendererParameters
+    {
+        canvas?: HTMLCanvasElement;
+        useFullResolutionGBuffer?: boolean;
+        useFPBuffer?: boolean;
+        log?: WebGLHyperRendererLogParameters | boolean;
+    }
 	
 	export class ReflectionProbe extends THREE.Object3D
 	{

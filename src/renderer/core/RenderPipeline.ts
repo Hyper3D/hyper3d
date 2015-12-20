@@ -3,6 +3,7 @@
 import { IDisposable } from '../utils/Utils';
 import { Map } from '../utils/Map';
 import { RendererCore } from './RendererCore';
+import { Logger } from '../utils/Logger';
 
 export interface RenderOperation
 {
@@ -439,11 +440,14 @@ export class RenderPipeline
 	private renderBuffers: RenderBufferInfoMap<RealizedRenderBufferGroup>;
 	private phases: RenderPhase[];
 	private operators: RenderOperator[];
+    private logger: Logger;
 	
 	outputBuffers: RenderBuffer[];
 	
 	constructor(public core: RendererCore)
 	{
+        this.logger = core.log.getLogger('pipeline');
+        
 		this.renderBuffers = new RenderBufferInfoMap<RealizedRenderBufferGroup>();
 		this.phases = [];
 		this.operators = [];
@@ -812,7 +816,6 @@ export class RenderPipeline
 						// allocate
 						const alloc = allocMap.getOrCreate(input).get();
 						phase.inputs.push(alloc);
-						// console.log(`${op.name}: allocated ${alloc.info} ${alloc.index}`);
 						
 						needed.push({
 							binding: {
@@ -828,14 +831,6 @@ export class RenderPipeline
 				if (phase.inputs.length != op.inputs.length ||
 					phase.outputs.length != op.outputs.length)
 					throw new Error();
-					
-				/*console.log(`--- OP ${op.name} ---`);
-				for (let i = 0; i < op.inputs.length; ++i) {
-					console.log(`IN  ${i} : ${phase.inputs[i].info}[${phase.inputs[i].index}]`);
-				}
-				for (let i = 0; i < op.outputs.length; ++i) {
-					console.log(`OUT ${i} : ${phase.outputs[i].info}[${phase.outputs[i].index}]`);
-				}*/
 				
 				// deallocate output
 				for (let j = 0; j < op.outputs.length; ++j) {
@@ -860,7 +855,6 @@ export class RenderPipeline
 					
 					if (bound < 0) {
 						// not bound to output
-						// console.log(`${op.name}: deallocated ${phase.outputs[j].info} ${phase.outputs[j].index}`);
 						if (phase.outputs[j]) 
 							allocMap.getOrCreate(phase.outputs[j].info).release(phase.outputs[j]);
 					}
@@ -873,19 +867,21 @@ export class RenderPipeline
 		
 		this.phases = phases;
 		
-		console.log("--- Pipeline Compilation Done ----");
-		for (const phase of phases) {
-			console.log(phase.outputs.map((a)=> a ? `${a.info.physicalFormatDescription}[${a.index}]` : '_').join(', ') +
-				" := " + phase.operation.name + "(" +
-				phase.inputs.map((a)=>`${a.info.physicalFormatDescription}[${a.index}]`).join(', ') + ")");
-		}
-		let ttlCost = 0;
-		allocMap.forEach((info, allocMapEntry) => {
-			console.log(`${allocMapEntry.info.physicalFormatDescription} (cost=${allocMapEntry.info.cost}) x ${allocMapEntry.maxNumAllocated} = ` +
-				`${allocMapEntry.maxNumAllocated * allocMapEntry.info.cost}`);
-			ttlCost += allocMapEntry.maxNumAllocated * allocMapEntry.info.cost;
-		});
-		console.log(`Total Cost = ${ttlCost}`);
+        if (this.logger.isEnabled) {
+            this.logger.log("--- Pipeline Compilation Done ----");
+            for (const phase of phases) {
+                this.logger.log(phase.outputs.map((a)=> a ? `${a.info.physicalFormatDescription}[${a.index}]` : '_').join(', ') +
+                    " := " + phase.operation.name + "(" +
+                    phase.inputs.map((a)=>`${a.info.physicalFormatDescription}[${a.index}]`).join(', ') + ")");
+            }
+            let ttlCost = 0;
+            allocMap.forEach((info, allocMapEntry) => {
+                this.logger.log(`${allocMapEntry.info.physicalFormatDescription} (cost=${allocMapEntry.info.cost}) x ${allocMapEntry.maxNumAllocated} = ` +
+                    `${allocMapEntry.maxNumAllocated * allocMapEntry.info.cost}`);
+                ttlCost += allocMapEntry.maxNumAllocated * allocMapEntry.info.cost;
+            });
+            this.logger.log(`Total Cost = ${ttlCost}`);
+        }
 		
 		// realize buffers.
 		// first, delet unneeded buffers

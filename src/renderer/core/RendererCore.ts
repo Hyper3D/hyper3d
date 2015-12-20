@@ -25,7 +25,10 @@ import { ResampleFilterRenderer } from '../postfx/ResampleFilter';
 import { SSAORenderer } from '../postfx/SSAORenderer';
 import { TemporalAAFilterRenderer } from '../postfx/TemporalAAFilter';
 import { BloomFilterRenderer } from '../postfx/BloomFilter';
-import { WebGLHyperRendererParameters } from '../public/WebGLHyperRenderer';
+import { 
+    WebGLHyperRendererParameters,
+    WebGLHyperRendererLogParameters
+} from '../public/WebGLHyperRenderer';
 import { 
 	RenderOperation,
 	RenderOperator,
@@ -52,6 +55,7 @@ import {
 } from '../utils/Geometry';
 import { validateSRGBCompliance } from '../validator/SRGBValidator';
 import { validateHalfFloatColorBuffer } from '../validator/FPColorBufferValidator';
+import { LogManager, Logger } from '../utils/Logger';
 
 export enum HdrMode
 {
@@ -112,9 +116,28 @@ export class RendererCore
 	
 	renderWidth: number;
 	renderHeight: number;
+    
+    log: LogManager;
 	
 	constructor(public gl: WebGLRenderingContext, private params: WebGLHyperRendererParameters)
 	{
+        if (params == null) {
+            this.params = params = {};
+        }
+        
+        this.log = new LogManager();
+        
+        if (typeof params.log === 'object') {
+            const topics = <WebGLHyperRendererLogParameters> params.log;
+            for (const key in topics) {
+                if (topics[key]) {
+                    this.log.enableTopic(key);
+                }
+            }
+        } else if (typeof params.log === 'boolean' && params.log) {
+            this.log.enableAllTopics();
+        }
+        
 		this.useFullResolutionGBuffer = params.useFullResolutionGBuffer == null ? false :
 			params.useFullResolutionGBuffer;
 		
@@ -327,8 +350,9 @@ export class RendererCore
 		let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 		
 		// visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
-		
-		console.log(dumpRenderOperationAsDot(ops));
+		const logger = this.log.getLogger('pipeline');
+        if (logger.isEnabled)
+		    logger.log(dumpRenderOperationAsDot(ops));
 		
 		this.renderBuffers.setup(ops, [visualized]);
 		
