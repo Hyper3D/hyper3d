@@ -696,7 +696,7 @@ class LightPassRenderer implements RenderOperator
                             lightDir.x, lightDir.y, lightDir.z, 0,
                             0, 0, 0, 1);
                 camera.matrixWorld.getInverse(camMat);
-                camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, minY - midY, maxY - midY, minZ, maxZ);
+                camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, maxY - midY, minY - midY, minZ, maxZ);
 
                 const gen = this.inShadowMaps;
                 gen.prepareShadowMap(light.shadowCamera, ShadowMapType.Normal);

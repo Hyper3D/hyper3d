@@ -352,7 +352,7 @@ class ShadowMapTextureRenderer extends BaseGeometryPassRenderer
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
         this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled |
             GLStateFlags.ColorWriteDisabled;
-        gl.polygonOffset(4, 2);
+        gl.polygonOffset(2, 2);
         gl.enable(gl.POLYGON_OFFSET_FILL);
 
         this.renderGeometry(camera.matrixWorldInverse,
