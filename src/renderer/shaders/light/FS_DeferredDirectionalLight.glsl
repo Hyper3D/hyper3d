@@ -25,7 +25,6 @@ void main()
 
     highp vec3 viewPos = viewPos;
     highp vec3 shadowCoord = (u_shadowMapMatrix * vec4(viewPos, 1.)).xyz; // w is always 1 for orthographic camera
-    shadowCoord.z -= 0.002;
 
     float shadowValue = 0.;
     vec4 jitter1 = texture2D(u_jitter, v_ditherCoord.xy) - 0.5;
