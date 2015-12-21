@@ -800,7 +800,8 @@ class LightPassRenderer implements RenderOperator
                 gl.activeTexture(gl.TEXTURE5);
                 gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
 
-                gl.uniform2f(p.uniforms["u_jitterAmount"], 8 / gen.shadowMapWidth, 8 / gen.shadowMapHeight);
+                gl.uniform4f(p.uniforms["u_jitterAmount"], 4 / gen.shadowMapWidth, 4 / gen.shadowMapHeight,
+                    1 / gen.shadowMapWidth, 1 / gen.shadowMapHeight);
             }
 
             const quad = this.parent.renderer.quadRenderer;

@@ -12,7 +12,7 @@ uniform vec3 u_lightDir;
 uniform highp sampler2D u_shadowMap;
 uniform sampler2D u_jitter;
 uniform mat4 u_shadowMapMatrix;
-uniform vec2 u_jitterAmount;
+uniform vec4 u_jitterAmount;
 varying vec2 v_jitterCoord;
 #endif
 
@@ -33,16 +33,38 @@ void main()
     jitter1 *= u_jitterAmount.xyxy;
     jitter2 *= u_jitterAmount.xyxy;
 
-    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.xy, 0.));
-    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.zw, 0.));
-    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.xy, 0.));
-    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.zw, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(u_jitterAmount.z, u_jitterAmount.w, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(u_jitterAmount.z, -u_jitterAmount.w, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(-u_jitterAmount.z, u_jitterAmount.w, 0.));
+    shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(-u_jitterAmount.z, -u_jitterAmount.w, 0.));
 
     if (shadowValue < 0.0001) {
         discard;
     }
 
-    shadowValue *= 1. / 4.;
+    if (shadowValue < 3.9) {
+        // near border; many samples
+        shadowValue = 0.;
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.xy, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.zw, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.xy, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.zw, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.xw, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.zy, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.xw, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.zy, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.yx, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.wz, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.yx, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.wz, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.wx, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter1.yz, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.wx, 0.));
+        shadowValue += shadowTexture2D(u_shadowMap, shadowCoord + vec3(jitter2.yz, 0.));
+        shadowValue *= 1. / 16.;
+    } else {
+        shadowValue *= 1. / 4.;
+    }
 
 #else // c_hasShadowMap
 
