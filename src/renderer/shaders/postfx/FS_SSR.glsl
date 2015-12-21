@@ -66,7 +66,7 @@ vec3 doSSR(out float confidence)
         u_globalInvRenderSize,
         u_stride,
         0.5 + jitter,
-        64. + baseDepth * 4.,
+        64. + baseDepth * 64.,
         hitPixel,
         hitPoint,
         hitSteps

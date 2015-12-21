@@ -535,7 +535,7 @@ export class SSRRenderer implements RenderOperator
             this.viewVec.coefX.x, this.viewVec.coefX.y);
         gl.uniform2f(p.uniforms["u_viewDirCoefY"],
             this.viewVec.coefY.x, this.viewVec.coefY.y);
-        gl.uniform1f(p.uniforms["u_stride"], Math.ceil(this.inLinearDepth.height / 40));
+        gl.uniform1f(p.uniforms["u_stride"], Math.ceil(this.inLinearDepth.height / 20));
         gl.uniform2f(p.uniforms["u_jitterCoordScale"],
             this.inLinearDepth.width / this.parent.renderer.uniformDitherJitter.size * (this.useHdrMosaic ? 0.5 : 1),
             this.inLinearDepth.height / this.parent.renderer.uniformDitherJitter.size * (this.useHdrMosaic ? 0.5 : 1));
