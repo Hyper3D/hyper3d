@@ -27,8 +27,10 @@ import { TemporalAAFilterRenderer } from "../postfx/TemporalAAFilter";
 import { BloomFilterRenderer } from "../postfx/BloomFilter";
 import {
     WebGLHyperRendererParameters,
+    WebGLHyperRendererCreationParameters,
     WebGLHyperRendererLogParameters
 } from "../public/WebGLHyperRenderer";
+import { RendererCoreParameters } from "./RendererParameters";
 import {
     RenderOperation,
     RenderPipeline,
@@ -70,6 +72,8 @@ export class RendererCore
     renderBuffers: RenderPipeline;
     vertexAttribs: VertexAttribState;
     state: GLState;
+
+    parameters: WebGLHyperRendererParameters;
 
     geometryRenderer: GeometryRenderer;
     shadowRenderer: ShadowMapRenderer;
@@ -113,7 +117,7 @@ export class RendererCore
 
     log: LogManager;
 
-    constructor(public gl: WebGLRenderingContext, private params: WebGLHyperRendererParameters)
+    constructor(public gl: WebGLRenderingContext, private params: WebGLHyperRendererCreationParameters)
     {
         if (params == null) {
             this.params = params = {};
@@ -131,6 +135,8 @@ export class RendererCore
         } else if (typeof params.log === "boolean" && params.log) {
             this.log.enableAllTopics();
         }
+
+        this.parameters = new RendererCoreParameters(this);
 
         this.useFullResolutionGBuffer = params.useFullResolutionGBuffer == null ? false :
             params.useFullResolutionGBuffer;

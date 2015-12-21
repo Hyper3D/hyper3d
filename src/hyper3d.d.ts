@@ -8,7 +8,7 @@ declare module Hyper
         [topic: string]: boolean;
     }
 
-    export interface WebGLHyperRendererParameters
+    export interface WebGLHyperRendererCreationParameters
     {
         canvas?: HTMLCanvasElement;
         useFullResolutionGBuffer?: boolean;
@@ -16,6 +16,19 @@ declare module Hyper
         log?: WebGLHyperRendererLogParameters | boolean;
     }
 
+    export interface WebGLHyperRendererParameters
+    {
+        bloomAmount: number;
+        bloomSaturation: number;
+        bloomTexture: THREE.Texture;
+        motionBlurAmount: number;
+        vignette: number;
+        autoExposureEnabled: boolean;
+        exposureBias: number;
+        color: THREE.Vector3;
+        highlightCrush: number;
+        contrast: number;
+    }
     export class ReflectionProbe extends THREE.Object3D
     {
         distance: number;
@@ -29,11 +42,13 @@ declare module Hyper
 
     export class WebGLHyperRenderer implements THREE.Renderer
     {
-        constructor(params?: WebGLHyperRendererParameters);
+        constructor(params?: WebGLHyperRendererCreationParameters);
 
         render(scene: THREE.Scene, camera: THREE.Camera): void;
         setSize(width:number, height:number, updateStyle?:boolean): void;
         domElement: HTMLCanvasElement;
+        
+        parameters: WebGLHyperRendererParameters;
     }
 
     export enum MaterialShadingModel

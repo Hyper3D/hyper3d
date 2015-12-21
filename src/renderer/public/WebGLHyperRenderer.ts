@@ -13,12 +13,26 @@ export interface WebGLHyperRendererLogParameters
     [topic: string]: boolean;
 }
 
-export interface WebGLHyperRendererParameters
+export interface WebGLHyperRendererCreationParameters
 {
     canvas?: HTMLCanvasElement;
     useFullResolutionGBuffer?: boolean;
     useFPBuffer?: boolean;
     log?: WebGLHyperRendererLogParameters | boolean;
+}
+
+export interface WebGLHyperRendererParameters
+{
+    bloomAmount: number;
+    bloomSaturation: number;
+    bloomTexture: three.Texture;
+    motionBlurAmount: number;
+    vignette: number;
+    autoExposureEnabled: boolean;
+    exposureBias: number;
+    color: three.Vector3;
+    highlightCrush: number;
+    contrast: number;
 }
 
 export class WebGLHyperRenderer implements three.Renderer
@@ -29,7 +43,7 @@ export class WebGLHyperRenderer implements three.Renderer
 
     private core: RendererCore;
 
-    constructor(params?: WebGLHyperRendererParameters)
+    constructor(params?: WebGLHyperRendererCreationParameters)
     {
         console.log("Hyper.WebGLHyperRenderer", REVISION);
 
@@ -82,5 +96,9 @@ export class WebGLHyperRenderer implements three.Renderer
     get domElement(): HTMLCanvasElement
     {
         return this.canvas;
+    }
+    get parameters(): WebGLHyperRendererParameters
+    {
+        return this.core.parameters;
     }
 }

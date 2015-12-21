@@ -37,6 +37,7 @@ export interface BloomFilterParameters
 {
     amount: number;
     saturation: number;
+    texture: three.Texture;
 }
 export class BloomFilterRenderer
 {
@@ -50,7 +51,8 @@ export class BloomFilterRenderer
     {
         this.params = {
             amount: 0.5,
-            saturation: 1
+            saturation: 1,
+            texture: null
         };
 
         this.resampler = new ResampleFilterRenderer(renderer);
