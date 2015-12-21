@@ -685,7 +685,7 @@ class LightPassRenderer implements RenderOperator
                 }
 
                 // extend near limit
-                minZ -= computeFarDepthFromProjectionMatrix(this.parent.renderer.currentCamera.projectionMatrix); // FIXME: heuristics
+                maxZ += computeFarDepthFromProjectionMatrix(this.parent.renderer.currentCamera.projectionMatrix); // FIXME: heuristics
 
                 // make matricies
                 const midX = (minX + maxX) * 0.5;
@@ -696,7 +696,7 @@ class LightPassRenderer implements RenderOperator
                             lightDir.x, lightDir.y, lightDir.z, 0,
                             0, 0, 0, 1);
                 camera.matrixWorld.getInverse(camMat);
-                camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, maxY - midY, minY - midY, minZ, maxZ);
+                camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, maxY - midY, minY - midY, -maxZ, -minZ);
 
                 const gen = this.inShadowMaps;
                 gen.prepareShadowMap(light.shadowCamera, ShadowMapType.Normal);
