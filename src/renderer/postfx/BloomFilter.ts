@@ -38,6 +38,7 @@ export interface BloomFilterParameters
     amount: number;
     saturation: number;
     texture: three.Texture;
+    textureZoom: number;
 }
 export class BloomFilterRenderer
 {
@@ -52,7 +53,8 @@ export class BloomFilterRenderer
         this.params = {
             amount: 0.5,
             saturation: 1,
-            texture: null
+            texture: null,
+            textureZoom: 1
         };
 
         this.resampler = new ResampleFilterRenderer(renderer);
@@ -245,6 +247,13 @@ class BloomDownsampleRenderer implements RenderOperator
         this.fb.dispose();
     }
 }
+
+const enum BloomFinalPassProgramFlags
+{
+    Default = 0,
+    HasTexture = 1 << 0
+}
+
 class BloomFinalPassRenderer implements RenderOperator
 {
     private fb: GLFramebuffer;
@@ -253,7 +262,7 @@ class BloomFinalPassRenderer implements RenderOperator
         program: GLProgram;
         uniforms: GLProgramUniforms;
         attributes: GLProgramAttributes;
-    };
+    }[];
 
     constructor(
         private parent: BloomFilterRenderer,
@@ -272,22 +281,26 @@ class BloomFinalPassRenderer implements RenderOperator
             ]
         });
 
-        {
+        this.program = [];
+        for (let i = 0; i < 2; ++i) {
             const program = parent.renderer.shaderManager.get("VS_Bloom", "FS_Bloom",
                 ["a_position"], {
-                    useLogRGB
+                    useLogRGB,
+                    hasTexture: (i & BloomFinalPassProgramFlags.HasTexture) != 0
                 });
-            this.program = {
+            this.program.push({
                 program,
                 uniforms: program.getUniforms([
                     "u_input",
                     "u_bloom",
+                    "u_texture",
 
                     "u_strength",
-                    "u_saturation"
+                    "u_saturation",
+                    "u_dustScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
-            };
+            });
         }
     }
     beforeRender(): void
@@ -308,10 +321,22 @@ class BloomFinalPassRenderer implements RenderOperator
         gl.bindTexture(gl.TEXTURE_2D, this.bloom.texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-        const p = this.program;
+        const tex = this.parent.renderer.textures.get(this.parent.params.texture);
+        if (tex) {
+            gl.activeTexture(gl.TEXTURE2);
+            tex.bind();
+        }
+
+        let flags = BloomFinalPassProgramFlags.Default;
+        if (tex) {
+            flags |= BloomFinalPassProgramFlags.HasTexture;
+        }
+
+        const p = this.program[flags];
         p.program.use();
         gl.uniform1i(p.uniforms["u_input"], 0);
         gl.uniform1i(p.uniforms["u_bloom"], 1);
+        gl.uniform1i(p.uniforms["u_texture"], 2);
 
         const params = this.parent.params;
         gl.uniform1f(p.uniforms["u_strength"], params.amount * this.gain);
@@ -321,9 +346,16 @@ class BloomFinalPassRenderer implements RenderOperator
             0.5 / this.input.width,
             0.5 / this.input.height);
 
+        gl.uniform2f(p.uniforms["u_dustScale"],
+            0.5 * this.input.width /
+                (Math.max(this.input.width, this.input.height) * params.textureZoom),
+            0.5 * this.input.height /
+                (Math.max(this.input.width, this.input.height) * params.textureZoom));
+
         const quad = this.parent.renderer.quadRenderer;
         quad.render(p.attributes["a_position"]);
 
+        gl.activeTexture(gl.TEXTURE1);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     }

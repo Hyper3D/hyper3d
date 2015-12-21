@@ -23,6 +23,10 @@ export class TextureManager
 
     get(tex: three.Texture): Texture
     {
+        if (tex == null) {
+            return null;
+        }
+
         let t = this.map.get(tex);
         if (t == null) {
             if (tex instanceof three.CubeTexture) {
