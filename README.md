@@ -1,6 +1,8 @@
 HYPER3D WebGL Renderer
 ======================
 
+Examples — Documentation — [Roadmap](https://trello.com/b/GN81FAP9/hyper3d-roadmap)
+
 (put a very nice and catchy image here)
 
 HYPER3D is a high-end (unofficial) renderer for [three.js](http://threejs.org/).
@@ -28,7 +30,7 @@ npm run-script lib
 
 Compiled code is stored in the `dist` directory.
 
-Now the library is compiled to JavaScript and can be used as a npm package. 
+Now the library is compiled to JavaScript and can be used as a npm package.
 For example, you can make this library available in other projects on your computer
 by running `sudo npm link` in this directory and then running `npm link hyper3d` in
 your project.
@@ -36,7 +38,7 @@ your project.
 ### Build as standalone JS library
 
 If you are intend to use this library for a standard website, and you aren't using
-a package system like Browserify or WebPack, then you might want a single JS file 
+a package system like Browserify or WebPack, then you might want a single JS file
 containing everything. In this case, use the following command to bundle up all
 required modules into a single file.
 
