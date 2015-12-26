@@ -62,6 +62,11 @@ import { ShadowMapType } from "./ShadowMapRenderer";
 
 import DirectionalLightShadowRenderer from "./DirectionalLightShadowRenderer";
 
+import {
+    ScreenSpaceSoftShadowRendererInstance,
+    ScreenSpaceSoftShadowDirection
+} from "./ScreenSpaceSoftShadowFilter";
+
 export interface LightPassInput
 {
     g0: GBuffer0TextureRenderBufferInfo;
@@ -96,6 +101,9 @@ export class LightRenderer
                 TextureRenderBufferFormat.RGBAF16);
 
         const lightbuf = new HdrMosaicTextureRenderBufferInfo("Light Buffer", width, height,
+                TextureRenderBufferFormat.R8);
+
+        const lightbuf2 = new HdrMosaicTextureRenderBufferInfo("Light Temporary Buffer", width, height,
                 TextureRenderBufferFormat.R8);
 
         const depthCullEnabled =
@@ -133,7 +141,8 @@ export class LightRenderer
             },
             outputs: {
                 lit: outp,
-                light: lightbuf
+                light: lightbuf,
+                light2: lightbuf2
             },
             bindings: [],
             optionalOutputs: [],
@@ -150,6 +159,7 @@ export class LightRenderer
                 <TextureRenderBuffer> cfg.inputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["light"],
+                <TextureRenderBuffer> cfg.outputs["light2"],
                 HdrMode.NativeHdr)
         });
         return outp;
@@ -171,6 +181,9 @@ export class LightRenderer
                     TextureRenderBufferFormat.RGBA8);
 
         const lightbuf = new HdrMosaicTextureRenderBufferInfo("Light Buffer", width, height,
+                TextureRenderBufferFormat.R8);
+
+        const lightbuf2 = new HdrMosaicTextureRenderBufferInfo("Light Temporary Buffer", width, height,
                 TextureRenderBufferFormat.R8);
 
         const depthCullEnabled =
@@ -208,7 +221,8 @@ export class LightRenderer
             },
             outputs: {
                 lit: outp,
-                light: lightbuf
+                light: lightbuf,
+                light2: lightbuf2
             },
             bindings: [],
             optionalOutputs: [],
@@ -225,6 +239,7 @@ export class LightRenderer
                 <TextureRenderBuffer> cfg.inputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["light"],
+                <TextureRenderBuffer> cfg.outputs["light2"],
                 HdrMode.MobileHdr)
         });
         return outp;
@@ -359,6 +374,8 @@ class LightPassRenderer implements RenderOperator
     private frustumCorners: three.Vector3[];
 
     private directionalLightShadowRenderer: DirectionalLightShadowRenderer;
+    private ssssRenderer1: ScreenSpaceSoftShadowRendererInstance;
+    private ssssRenderer2: ScreenSpaceSoftShadowRendererInstance;
 
     constructor(
         private parent: LightRenderer,
@@ -373,6 +390,7 @@ class LightPassRenderer implements RenderOperator
         private inLit: TextureRenderBuffer,
         private outLit: TextureRenderBuffer,
         private tmpLight: TextureRenderBuffer,
+        private tmpLight2: TextureRenderBuffer,
         private hdrMode: HdrMode
     )
     {
@@ -400,6 +418,15 @@ class LightPassRenderer implements RenderOperator
         this.directionalLightShadowRenderer = new DirectionalLightShadowRenderer(
             parent.renderer, tmpLight,
             inDepth, inLinearDepth, inShadowMaps
+        );
+
+        this.ssssRenderer1 = new ScreenSpaceSoftShadowRendererInstance(
+            parent.renderer, tmpLight, inLinearDepth,
+            tmpLight2, ScreenSpaceSoftShadowDirection.Horitonzal
+        );
+        this.ssssRenderer2 = new ScreenSpaceSoftShadowRendererInstance(
+            parent.renderer, tmpLight2, inLinearDepth,
+            tmpLight, ScreenSpaceSoftShadowDirection.Vertical
         );
 
         for (let i = 0; i < 4; ++i) {
@@ -514,6 +541,10 @@ class LightPassRenderer implements RenderOperator
 
         // traverse scene
         this.prepareTree(scene);
+
+        // suboperation
+        this.ssssRenderer1.beforeRender();
+        this.ssssRenderer2.beforeRender();
     }
     private setState(): void
     {
@@ -725,6 +756,9 @@ class LightPassRenderer implements RenderOperator
                 const gen = this.directionalLightShadowRenderer;
                 gen.render(light);
 
+                this.ssssRenderer1.perform();
+                this.ssssRenderer2.perform();
+
                 this.setState(); // DirectionalLightShadowRenderer might change the state
                 gl.activeTexture(gl.TEXTURE6);
                 gl.bindTexture(gl.TEXTURE_2D, gen.lightBuffer.texture);
@@ -872,9 +906,15 @@ class LightPassRenderer implements RenderOperator
 
     afterRender(): void
     {
+        // suboperation
+        this.ssssRenderer1.afterRender();
+        this.ssssRenderer2.afterRender();
     }
     dispose(): void
     {
         this.fb.dispose();
+        this.ssssRenderer1.dispose();
+        this.ssssRenderer2.dispose();
+        this.directionalLightShadowRenderer.dispose();
     }
 }
