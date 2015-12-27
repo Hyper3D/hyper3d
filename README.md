@@ -56,4 +56,4 @@ Generated files can be found at the `build` directory. You can use it like this:
 License
 -------
 
-
+MIT.
