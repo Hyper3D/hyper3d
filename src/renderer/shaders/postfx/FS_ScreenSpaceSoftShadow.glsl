@@ -14,8 +14,7 @@ uniform sampler2D u_linearDepth;
 varying highp vec2 v_texCoord;
 varying highp vec2 v_viewDir;
 
-uniform highp vec2 u_viewDirCoefX;
-uniform highp vec2 u_viewDirCoefY;
+uniform vec3 u_covSScale;
 
 uniform float u_maxBlur;
 
@@ -48,23 +47,21 @@ void main()
     // mW2S = [ 1 / w    0    -x/w^2 ]
     //        [   0    1 / w  -y/w^2 ]
     highp float baseDepthInv = 1. / baseDepth;
-    vec2 mW2S1 = vec2(baseDepthInv);
-    vec2 mW2S2 = -baseViewPos.xy * baseDepthInv * baseDepthInv;
+    vec2 mW2Spart = -baseViewPos.xy * (baseDepthInv * baseDepthInv);
     vec3 covS = vec3(
         covW[0][0] * (baseDepthInv * baseDepthInv) +
-            baseDepthInv * mW2S2.x * (covW[2][0] * covW[0][2]) +
-            covW[2][2] * (mW2S2.x * mW2S2.x),   // sigma x ^ 2
+            baseDepthInv * mW2Spart.x * (covW[0][2] * covW[0][2]) +
+            covW[2][2] * (mW2Spart.x * mW2Spart.x),   // sigma x ^ 2
         covW[1][1] * (baseDepthInv * baseDepthInv) +
-            baseDepthInv * mW2S2.y * (covW[2][1] * covW[1][2]) +
-            covW[2][2] * (mW2S2.y * mW2S2.y),   // sigma y ^ 2
-        baseDepthInv * baseDepthInv * covW[1][0] +
-        baseDepthInv * mW2S2.x * covW[1][2] +
-        baseDepthInv * mW2S2.y * covW[2][0] +
-        mW2S2.x * mW2S2.y * covW[2][2]  // sigma xy
+            baseDepthInv * mW2Spart.y * (covW[1][2] * covW[1][2]) +
+            covW[2][2] * (mW2Spart.y * mW2Spart.y),   // sigma y ^ 2
+        baseDepthInv * baseDepthInv * covW[0][1] +
+        baseDepthInv * mW2Spart.x * covW[1][2] +
+        baseDepthInv * mW2Spart.y * covW[0][2] +
+        mW2Spart.x * mW2Spart.y * covW[2][2]  // sigma xy
     );
 
-    vec2 scale = 1. / vec2(u_viewDirCoefX.x, u_viewDirCoefY.y);
-    covS *= scale.xyx * scale.xyy;
+    covS *= u_covSScale;
 
     // Compute cross convolution axis
     vec2 axis1, axis2;
@@ -73,15 +70,21 @@ void main()
     axis2.x = covS.z / axis2.y;
     axis1.x = sqrt(max(0., covS.x - axis2.x * axis2.x));
 
+    float cx = dot(v_texCoord, axis1 / dot(axis1, axis1));
+    float cy = dot(v_texCoord, axis2 / dot(axis2, axis2));
+
+    float maxlen = max(dot(axis1, axis1), dot(axis2, axis2));
+    if (maxlen > u_maxBlur) {
+        float scale = sqrt(u_maxBlur / maxlen);
+        axis1 *= scale; axis2 *= scale;
+    }
+
     // Bilateral filtering
     highp float weightScale = 30. / baseDepth;
 
     vec2 sum = vec2(0.);
 
     highp vec2 coordOffset = c_direction != 0 ? axis1 : axis2;
-    if (length(coordOffset) > u_maxBlur) {
-        coordOffset = normalize(coordOffset) * u_maxBlur;
-    }
     highp vec2 coord = v_texCoord - coordOffset * 0.5;
     coordOffset *= 1. / float(c_numSamples);
 

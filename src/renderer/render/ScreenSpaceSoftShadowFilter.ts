@@ -93,6 +93,7 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
                     "u_input", "u_linearDepth",
                     "u_maxBlur",
                     "u_viewDirOffset", "u_viewDirCoefX", "u_viewDirCoefY",
+                    "u_covSScale",
                     "u_lightU", "u_lightV", "u_lightDir",
                     "u_jitter", "u_jitterScale"
                 ]),
@@ -147,6 +148,12 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
             this.viewVec.coefX.x, this.viewVec.coefX.y);
         gl.uniform2f(p.uniforms["u_viewDirCoefY"],
             this.viewVec.coefY.x, this.viewVec.coefY.y);
+        const invCoefX = 1 / this.viewVec.coefX.x;
+        const invCoefY = 1 / this.viewVec.coefY.y;
+        gl.uniform3f(p.uniforms["u_covSScale"],
+            invCoefX * invCoefX,
+            invCoefY * invCoefY,
+            -invCoefX * invCoefY);
 
         gl.uniform2f(p.uniforms["u_jitterScale"],
             this.out.width / jitter.size,
@@ -180,7 +187,7 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
             Vector4Pool.free(v2);
         }
 
-        gl.uniform1f(p.uniforms["u_maxBlur"], 0.05);
+        gl.uniform1f(p.uniforms["u_maxBlur"], 0.1 * 0.1);
 
         const quad = this.core.quadRenderer;
         quad.render(p.attributes["a_position"]);
