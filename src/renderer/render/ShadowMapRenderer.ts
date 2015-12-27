@@ -61,7 +61,7 @@ export class ShadowMapRenderer
 
         const gl = renderer.gl;
 
-        this.normalShadowMapSize = 1024;
+        this.normalShadowMapSize = 2048;
         this.cubeShadowMapSize = 512;
 
         const ext = renderer.ext.get("WEBGL_depth_texture");

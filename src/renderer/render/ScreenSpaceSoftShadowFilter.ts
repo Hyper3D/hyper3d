@@ -187,7 +187,7 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
             Vector4Pool.free(v2);
         }
 
-        gl.uniform1f(p.uniforms["u_maxBlur"], 0.1 * 0.1);
+        gl.uniform1f(p.uniforms["u_maxBlur"], 0.05 * 0.05);
 
         const quad = this.core.quadRenderer;
         quad.render(p.attributes["a_position"]);

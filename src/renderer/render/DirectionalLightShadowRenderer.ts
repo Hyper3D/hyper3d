@@ -9,6 +9,7 @@ import {
 
 import {
     Vector3Pool,
+    Vector4Pool,
     Matrix4Pool
 } from "../utils/ObjectPool";
 
@@ -83,7 +84,8 @@ export default class DirectionalLightShadowRenderer
                     "u_viewDirCoefX", "u_viewDirCoefY", "u_viewDirOffset",
                     "u_shadowMap", "u_shadowMapMatrix",
                     "u_depthValue",
-                    "u_farPlane", "u_nearPlane"
+                    "u_farPlane", "u_nearPlane",
+                    "u_shadowMapZScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
             });
@@ -287,6 +289,12 @@ export default class DirectionalLightShadowRenderer
             m2.makeScale(.5, .5, .5).multiply(m1);
             m3.makeTranslation(.5, .5, .5).multiply(m2);
             gl.uniformMatrix4fv(p.uniforms["u_shadowMapMatrix"], false, m3.elements);
+
+            const v = Vector4Pool.alloc();
+            v.set(light.position.x, light.position.y, light.position.z, 0); v.normalize();
+            v.applyMatrix4(m3);
+            gl.uniform1f(p.uniforms["u_shadowMapZScale"], 1 / v.length());
+            Vector4Pool.free(v);
 
             Matrix4Pool.free(m1);
             Matrix4Pool.free(m2);

@@ -29,6 +29,10 @@ void main()
     highp vec3 baseViewPos = baseDepth * vec3(v_viewDir, 1.);
     vec3 normal = computeNormalFromDepthUsingStandardDerivatives(u_linearDepth, v_texCoord, vec3(v_viewDir, 1.));
 
+    // Read penumbra size
+    vec4 inValue = texture2D(u_input, v_texCoord);
+    float penumbraSize = (inValue.y + 0.005) * baseDepth * 0.05; // FIXME: make this adjustable
+
     // Penumbra matrix + normal row (world space), transposed
     mat3 mW2PT = mat3(u_lightU, u_lightV, normal);
     // Inverse
@@ -36,7 +40,7 @@ void main()
 
     // Covariance matrix on world space = mP2W * SigmaP * mP2WT
     // SigmaP is defined as SigmaP * (x, y, z) = (sigma * x, sigma * y, 0)
-    float sigma = 0.01; // FIXME: use the appropriate value
+    float sigma = penumbraSize;
     mat3 sigmaP = mat3(
         sigma, 0., 0.,
         0., sigma, 0.,
@@ -67,7 +71,7 @@ void main()
     vec2 axis1, axis2;
     axis1.y = 0.;
     axis2.y = sqrt(covS.y);
-    axis2.x = covS.z / axis2.y;
+    axis2.x = covS.z / (axis2.y + 0.00001);
     axis1.x = sqrt(max(0., covS.x - axis2.x * axis2.x));
 
     float cx = dot(v_texCoord, axis1 / dot(axis1, axis1));
@@ -82,7 +86,7 @@ void main()
     // Bilateral filtering
     highp float weightScale = 30. / baseDepth;
 
-    vec2 sum = vec2(0.);
+    vec2 sum = vec2(1., 1.) * 0.001;
 
     highp vec2 coordOffset = c_direction != 0 ? axis1 : axis2;
     highp vec2 coord = v_texCoord - coordOffset * 0.5;
@@ -112,5 +116,5 @@ void main()
     }
 
     float result = sum.x / sum.y;
-    gl_FragColor = vec4(vec3(result), 1.);
+    gl_FragColor = vec4(result, inValue.yzw);
 }
