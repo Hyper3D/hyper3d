@@ -70,7 +70,7 @@ void main()
     // Compute cross convolution axis
     vec2 axis1, axis2;
     axis1.y = 0.;
-    axis2.y = sqrt(covS.y);
+    axis2.y = sqrt(max(0., covS.y));
     axis2.x = covS.z / (axis2.y + 0.00001);
     axis1.x = sqrt(max(0., covS.x - axis2.x * axis2.x));
 
