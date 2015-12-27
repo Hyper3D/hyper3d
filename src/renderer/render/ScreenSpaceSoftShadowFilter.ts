@@ -93,7 +93,8 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
                     "u_input", "u_linearDepth",
                     "u_maxBlur",
                     "u_viewDirOffset", "u_viewDirCoefX", "u_viewDirCoefY",
-                    "u_lightU", "u_lightV", "u_lightDir"
+                    "u_lightU", "u_lightV", "u_lightDir",
+                    "u_jitter", "u_jitterScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
             });
@@ -116,11 +117,15 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
         this.core.state.flags =
             GLStateFlags.DepthWriteDisabled;
 
+        const jitter = this.core.uniformJitter;
+
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.input.texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, jitter.texture);
 
         const light = this.light;
 
@@ -134,6 +139,7 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
         p.program.use();
         gl.uniform1i(p.uniforms["u_input"], 0);
         gl.uniform1i(p.uniforms["u_linearDepth"], 1);
+        gl.uniform1i(p.uniforms["u_jitter"], 2);
 
         gl.uniform2f(p.uniforms["u_viewDirOffset"],
             this.viewVec.offset.x, this.viewVec.offset.y);
@@ -141,6 +147,10 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
             this.viewVec.coefX.x, this.viewVec.coefX.y);
         gl.uniform2f(p.uniforms["u_viewDirCoefY"],
             this.viewVec.coefY.x, this.viewVec.coefY.y);
+
+        gl.uniform2f(p.uniforms["u_jitterScale"],
+            this.out.width / jitter.size,
+            this.out.height / jitter.size);
 
         if (light instanceof three.DirectionalLight) {
             const v2 = Vector4Pool.alloc();
@@ -175,6 +185,7 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
         const quad = this.core.quadRenderer;
         quad.render(p.attributes["a_position"]);
 
+        gl.activeTexture(gl.TEXTURE0);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     }
     afterRender(): void

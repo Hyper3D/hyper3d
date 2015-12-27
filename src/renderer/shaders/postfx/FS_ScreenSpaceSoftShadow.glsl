@@ -21,6 +21,9 @@ uniform float u_maxBlur;
 
 uniform vec3 u_lightU, u_lightV, u_lightDir;
 
+uniform sampler2D u_jitter;
+varying highp vec2 v_jitterCoord;
+
 void main()
 {
     highp float baseDepth = fetchDepth(u_linearDepth, v_texCoord);
@@ -62,7 +65,7 @@ void main()
 
     vec2 scale = 1. / vec2(u_viewDirCoefX.x, u_viewDirCoefY.y);
     covS *= scale.xyx * scale.xyy;
-    
+
     // Compute cross convolution axis
     vec2 axis1, axis2;
     axis1.y = 0.;
@@ -80,9 +83,17 @@ void main()
         coordOffset = normalize(coordOffset) * u_maxBlur;
     }
     highp vec2 coord = v_texCoord - coordOffset * 0.5;
-    coordOffset *= 1. / float(c_numSamples - 1);
+    coordOffset *= 1. / float(c_numSamples);
 
     float shift = -0.5;
+
+#if c_direction
+    float jitter = texture2D(u_jitter, v_jitterCoord).x;
+#else
+    float jitter = texture2D(u_jitter, v_jitterCoord).y;
+#endif
+    coord += coordOffset * jitter;
+    shift += (1. / float(c_numSamples)) * jitter;
 
     for (int i = 0; i < c_numSamples; ++i) {
         float value = texture2D(u_input, coord).x;
@@ -94,7 +105,7 @@ void main()
         sum += vec2(value, 1.) * weight;
 
         coord += coordOffset;
-        shift += 1. / float(c_numSamples - 1);
+        shift += 1. / float(c_numSamples);
     }
 
     float result = sum.x / sum.y;
