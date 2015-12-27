@@ -28,6 +28,11 @@ import {
     ViewVectors
 } from "../utils/Geometry";
 
+import {
+    Vector3Pool,
+    Vector4Pool
+} from "../utils/ObjectPool";
+
 export const enum ScreenSpaceSoftShadowDirection
 {
     Horitonzal,
@@ -86,8 +91,9 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
                 program,
                 uniforms: program.getUniforms([
                     "u_input", "u_linearDepth",
-                    "u_texCoordOffset",
-                    "u_viewDirOffset", "u_viewDirCoefX", "u_viewDirCoefY"
+                    "u_maxBlur",
+                    "u_viewDirOffset", "u_viewDirCoefX", "u_viewDirCoefY",
+                    "u_lightU", "u_lightV", "u_lightDir"
                 ]),
                 attributes: program.getAttributes(["a_position"])
             });
@@ -136,9 +142,35 @@ export class ScreenSpaceSoftShadowRendererInstance implements RenderOperator
         gl.uniform2f(p.uniforms["u_viewDirCoefY"],
             this.viewVec.coefY.x, this.viewVec.coefY.y);
 
-        let offsX = 21 / this.out.width;
-        let offsY = 21 / this.out.height;
-        gl.uniform2f(p.uniforms["u_texCoordOffset"], offsX, offsY);
+        if (light instanceof three.DirectionalLight) {
+            const v2 = Vector4Pool.alloc();
+            v2.set(light.position.x, light.position.y, light.position.z, 0);
+            v2.applyMatrix4(this.core.currentCamera.matrixWorldInverse);
+            v2.normalize();
+
+            const v = Vector3Pool.alloc();
+            const up = Vector3Pool.alloc();
+            v.set(v2.x, v2.y, v2.z);
+            gl.uniform3f(p.uniforms["u_lightDir"],
+                v.x, v.y, v.z);
+            if (Math.abs(v.z) > 0.5) {
+                up.set(1, 0, 0);
+            } else {
+                up.set(0, 0, 1);
+            }
+            v.cross(up); v.normalize();
+            gl.uniform3f(p.uniforms["u_lightU"],
+                v.x, v.y, v.z);
+            up.set(v2.x, v2.y, v2.z);
+            v.cross(up);
+            gl.uniform3f(p.uniforms["u_lightV"],
+                v.x, v.y, v.z);
+            Vector3Pool.free(v);
+            Vector3Pool.free(up);
+            Vector4Pool.free(v2);
+        }
+
+        gl.uniform1f(p.uniforms["u_maxBlur"], 0.05);
 
         const quad = this.core.quadRenderer;
         quad.render(p.attributes["a_position"]);

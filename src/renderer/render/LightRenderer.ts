@@ -756,6 +756,8 @@ class LightPassRenderer implements RenderOperator
                 const gen = this.directionalLightShadowRenderer;
                 gen.render(light);
 
+                this.ssssRenderer1.light = light;
+                this.ssssRenderer2.light = light;
                 this.ssssRenderer1.perform();
                 this.ssssRenderer2.perform();
 

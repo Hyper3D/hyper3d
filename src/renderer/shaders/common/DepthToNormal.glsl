@@ -9,7 +9,7 @@ vec3 computeNormalFromDepthUsingStandardDerivatives(sampler2D texDepth, highp ve
 	highp float depth = fetchDepth(texDepth, texCoord);
 	highp vec3 viewPos = depth * viewDir;
 
-	vec3 dx = normalize(dFdx(viewPos)), dy = normalize(dFdy(viewPos));
+	vec3 dx = dFdx(viewPos), dy = dFdy(viewPos);
 
 	return normalize(cross(dx, dy));
 }
