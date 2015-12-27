@@ -43,6 +43,8 @@
 		"src/renderer/render/ShadowMapRenderer.ts",
 		"src/renderer/render/SkinningShader.ts",
 		"src/renderer/render/TextureManager.ts",
+		"src/renderer/render/DirectionalLightShadowRenderer.ts",
+		"src/renderer/render/ScreenSpaceSoftShadowFilter.ts",
 		"src/renderer/utils/BitArray.ts",
 		"src/renderer/utils/Geometry.ts",
 		"src/renderer/utils/IdWeakMap.ts",

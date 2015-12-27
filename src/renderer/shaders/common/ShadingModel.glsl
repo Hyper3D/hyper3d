@@ -63,8 +63,8 @@ float evaluateSchlickFresnel(float hlDot)
 float evaluateBeckmannGeometryShadowing(float nlDot, float nvDot, float roughness)
 {
     // http://graphicrants.blogspot.jp/2013/08/specular-brdf-reference.html
-    float lct = .5 / (roughness * sqrt(1. - nlDot * nlDot));
-    float vct = .5 / (roughness * sqrt(1. - nvDot * nvDot));
+    float lct = .5 / (roughness * sqrt(1. - nlDot * nlDot) + 0.00001);
+    float vct = .5 / (roughness * sqrt(1. - nvDot * nvDot) + 0.00001);
     float lc = lct * nlDot, vc = vct * nvDot;
     float a = 3.353 * lc + 2.181 * lc * lc; // not typo
     a *= 3.353 * vct + 2.181 * vct * vc;

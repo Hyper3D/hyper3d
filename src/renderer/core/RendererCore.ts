@@ -47,7 +47,9 @@ import {
     GLProgramAttributes
 } from "../core/GLProgram";
 import {
-    computeFarDepthFromProjectionMatrix
+    computeFarDepthFromProjectionMatrix,
+    ObjectBoundingBoxCalculator,
+    ShadowCastingObjectBoundingBoxCalculator
 } from "../utils/Geometry";
 import { validateSRGBCompliance } from "../validator/SRGBValidator";
 import { validateHalfFloatColorBuffer } from "../validator/FPColorBufferValidator";
@@ -99,6 +101,9 @@ export class RendererCore
     currentScene: three.Scene;
     currentCamera: three.Camera;
     depthFar: number;
+
+    sceneBounds: three.Box3;
+    shadowCasterBounds: three.Box3;
 
     /** Objects removed from the scene tree are deleted as soon as possible.
         * Setting this to true prevents this behavior.
@@ -163,6 +168,9 @@ export class RendererCore
 
         this.deferGC = false;
         this.depthFar = 1000;
+
+        this.shadowCasterBounds = null;
+        this.sceneBounds = null;
 
         this.setup();
     }
@@ -399,6 +407,12 @@ export class RendererCore
         this.gaussianJitter.update();
         this.uniformDitherJitter.update();
         this.gaussianDitherJitter.update();
+
+        // compute bounding box
+        this.sceneBounds = new ObjectBoundingBoxCalculator()
+            .computeBoundingBox(scene, this.sceneBounds);
+        this.shadowCasterBounds = new ShadowCastingObjectBoundingBoxCalculator()
+            .computeBoundingBox(scene, this.shadowCasterBounds);
 
         // compute depth far
         {

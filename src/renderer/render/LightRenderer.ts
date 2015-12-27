@@ -60,6 +60,13 @@ import { PointLight } from "../public/Lights";
 
 import { ShadowMapType } from "./ShadowMapRenderer";
 
+import DirectionalLightShadowRenderer from "./DirectionalLightShadowRenderer";
+
+import {
+    ScreenSpaceSoftShadowRendererInstance,
+    ScreenSpaceSoftShadowDirection
+} from "./ScreenSpaceSoftShadowFilter";
+
 export interface LightPassInput
 {
     g0: GBuffer0TextureRenderBufferInfo;
@@ -92,6 +99,12 @@ export class LightRenderer
 
         const outp = new LinearRGBTextureRenderBufferInfo("Lit Color", width, height,
                 TextureRenderBufferFormat.RGBAF16);
+
+        const lightbuf = new HdrMosaicTextureRenderBufferInfo("Light Buffer", width, height,
+                TextureRenderBufferFormat.R8);
+
+        const lightbuf2 = new HdrMosaicTextureRenderBufferInfo("Light Temporary Buffer", width, height,
+                TextureRenderBufferFormat.R8);
 
         const depthCullEnabled =
             input.depth.width == width &&
@@ -127,7 +140,9 @@ export class LightRenderer
                 lit: em
             },
             outputs: {
-                lit: outp
+                lit: outp,
+                light: lightbuf,
+                light2: lightbuf2
             },
             bindings: [],
             optionalOutputs: [],
@@ -143,6 +158,8 @@ export class LightRenderer
                 (<ShadowMapRenderBuffer> cfg.inputs["shadowMaps"]).service,
                 <TextureRenderBuffer> cfg.inputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["lit"],
+                <TextureRenderBuffer> cfg.outputs["light"],
+                <TextureRenderBuffer> cfg.outputs["light2"],
                 HdrMode.NativeHdr)
         });
         return outp;
@@ -162,6 +179,12 @@ export class LightRenderer
                 this.renderer.supportsSRGB ?
                     TextureRenderBufferFormat.SRGBA8 :
                     TextureRenderBufferFormat.RGBA8);
+
+        const lightbuf = new HdrMosaicTextureRenderBufferInfo("Light Buffer", width, height,
+                TextureRenderBufferFormat.R8);
+
+        const lightbuf2 = new HdrMosaicTextureRenderBufferInfo("Light Temporary Buffer", width, height,
+                TextureRenderBufferFormat.R8);
 
         const depthCullEnabled =
             input.depth.width == width &&
@@ -197,7 +220,9 @@ export class LightRenderer
                 lit: em
             },
             outputs: {
-                lit: outp
+                lit: outp,
+                light: lightbuf,
+                light2: lightbuf2
             },
             bindings: [],
             optionalOutputs: [],
@@ -213,6 +238,8 @@ export class LightRenderer
                 (<ShadowMapRenderBuffer> cfg.inputs["shadowMaps"]).service,
                 <TextureRenderBuffer> cfg.inputs["lit"],
                 <TextureRenderBuffer> cfg.outputs["lit"],
+                <TextureRenderBuffer> cfg.outputs["light"],
+                <TextureRenderBuffer> cfg.outputs["light2"],
                 HdrMode.MobileHdr)
         });
         return outp;
@@ -305,7 +332,7 @@ class UnlitLightPassRenderer implements RenderOperator
 const enum DirectionalLightProgramFlags
 {
     Default = 0,
-    HasShadowMaps = 1 << 0
+    HasShadow = 1 << 0
 }
 
 const enum PointLightProgramFlags
@@ -346,6 +373,10 @@ class LightPassRenderer implements RenderOperator
 
     private frustumCorners: three.Vector3[];
 
+    private directionalLightShadowRenderer: DirectionalLightShadowRenderer;
+    private ssssRenderer1: ScreenSpaceSoftShadowRendererInstance;
+    private ssssRenderer2: ScreenSpaceSoftShadowRendererInstance;
+
     constructor(
         private parent: LightRenderer,
         private inG0: TextureRenderBuffer,
@@ -358,6 +389,8 @@ class LightPassRenderer implements RenderOperator
         private inShadowMaps: ShadowMapRenderService,
         private inLit: TextureRenderBuffer,
         private outLit: TextureRenderBuffer,
+        private tmpLight: TextureRenderBuffer,
+        private tmpLight2: TextureRenderBuffer,
         private hdrMode: HdrMode
     )
     {
@@ -381,6 +414,20 @@ class LightPassRenderer implements RenderOperator
         for (let i = 0; i < 5; ++i) {
             this.frustumCorners.push(new three.Vector3());
         }
+
+        this.directionalLightShadowRenderer = new DirectionalLightShadowRenderer(
+            parent.renderer, tmpLight,
+            inDepth, inLinearDepth, inShadowMaps
+        );
+
+        this.ssssRenderer1 = new ScreenSpaceSoftShadowRendererInstance(
+            parent.renderer, tmpLight, inLinearDepth,
+            tmpLight2, ScreenSpaceSoftShadowDirection.Horitonzal
+        );
+        this.ssssRenderer2 = new ScreenSpaceSoftShadowRendererInstance(
+            parent.renderer, tmpLight2, inLinearDepth,
+            tmpLight, ScreenSpaceSoftShadowDirection.Vertical
+        );
 
         for (let i = 0; i < 4; ++i) {
             const program = parent.renderer.shaderManager.get("VS_DeferredPointLight", "FS_DeferredPointLight",
@@ -413,7 +460,7 @@ class LightPassRenderer implements RenderOperator
         for (let i = 0; i < 2; ++i) {
             const program = parent.renderer.shaderManager.get("VS_DeferredDirectionalLight", "FS_DeferredDirectionalLight",
                 ["a_position"], {
-                    hasShadowMap: (i & DirectionalLightProgramFlags.HasShadowMaps) != 0,
+                    hasShadow: (i & DirectionalLightProgramFlags.HasShadow) != 0,
                     useHdrMosaic: hdrMode == HdrMode.MobileHdr
                 });
             this.directionalLightProgram.push({
@@ -422,8 +469,7 @@ class LightPassRenderer implements RenderOperator
                     "u_g0", "u_g1", "u_g2", "u_linearDepth",
                     "u_lightDir", "u_lightColor", "u_lightStrength",
                     "u_viewDirCoefX", "u_viewDirCoefY", "u_viewDirOffset",
-                    "u_shadowMap", "u_shadowMapMatrix",
-                    "u_jitter", "u_jitterScale", "u_jitterAmount",
+                    "u_shadow",
                     "u_dither", "u_ditherScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
@@ -490,8 +536,15 @@ class LightPassRenderer implements RenderOperator
             fc.applyMatrix4(invViewMat);
         }
 
+        // reset shadow renderer
+        this.directionalLightShadowRenderer.reset();
+
         // traverse scene
         this.prepareTree(scene);
+
+        // suboperation
+        this.ssssRenderer1.beforeRender();
+        this.ssssRenderer2.beforeRender();
     }
     private setState(): void
     {
@@ -578,9 +631,7 @@ class LightPassRenderer implements RenderOperator
                 this.outLit.width / jitter.size * jitterScale,
                 this.outLit.height / jitter.size * jitterScale);
             gl.uniform1i(p.uniforms["u_linearDepth"], 4);
-            gl.uniform1i(p.uniforms["u_jitter"], 5);
-            // u_jitterScale == u_ditherScale
-            gl.uniform1i(p.uniforms["u_shadowMap"], 6);
+            gl.uniform1i(p.uniforms["u_shadow"], 6);
             gl.uniform2f(p.uniforms["u_viewDirOffset"],
                 this.viewVec.offset.x, this.viewVec.offset.y);
             gl.uniform2f(p.uniforms["u_viewDirCoefX"],
@@ -648,58 +699,7 @@ class LightPassRenderer implements RenderOperator
 
         if (light instanceof three.DirectionalLight) {
             if (light.castShadow) {
-                const camera: three.OrthographicCamera = light.shadowCamera =
-                    <three.OrthographicCamera> light.shadowCamera
-                    || new three.OrthographicCamera(-1, 1, 1, -1);
-
-                // decide shadow map axis direction
-                const lightDir = tV3a.copy(light.position).normalize();
-                const texU = tV3b;
-                if (Math.abs(lightDir.z) > 0.5) {
-                    texU.set(1, 0, 0);
-                } else {
-                    texU.set(0, 0, 1);
-                }
-                texU.cross(lightDir).normalize();
-                const texV = tV3c.crossVectors(texU, lightDir).normalize();
-                texU.crossVectors(texV, lightDir);
-
-                // compute frustrum limit
-                let minX = 0, maxX = 0, minY = 0, maxY = 0;
-                let minZ = 0, maxZ = 0;
-                for (let i = 0; i < 5; ++i) {
-                    const p = this.frustumCorners[i];
-                    const px = p.dot(texU);
-                    const py = p.dot(texV);
-                    const pz = p.dot(lightDir);
-
-                    if (i == 0) {
-                        minX = maxX = px;
-                        minY = maxY = py;
-                        minZ = maxZ = pz;
-                    } else {
-                        minX = Math.min(minX, px); maxX = Math.max(maxX, px);
-                        minY = Math.min(minY, py); maxY = Math.max(maxY, py);
-                        minZ = Math.min(minZ, pz); maxZ = Math.max(maxZ, pz);
-                    }
-                }
-
-                // extend near limit
-                maxZ += computeFarDepthFromProjectionMatrix(this.parent.renderer.currentCamera.projectionMatrix); // FIXME: heuristics
-
-                // make matricies
-                const midX = (minX + maxX) * 0.5;
-                const midY = (minY + maxY) * 0.5;
-                const camMat = camera.matrixWorldInverse;
-                camMat.set(texU.x, texU.y, texU.z, -midX,
-                            texV.x, texV.y, texV.z, -midY,
-                            lightDir.x, lightDir.y, lightDir.z, 0,
-                            0, 0, 0, 1);
-                camera.matrixWorld.getInverse(camMat);
-                camera.projectionMatrix.makeOrthographic(minX - midX, maxX - midX, maxY - midY, minY - midY, -maxZ, -minZ);
-
-                const gen = this.inShadowMaps;
-                gen.prepareShadowMap(light.shadowCamera, ShadowMapType.Normal);
+                this.directionalLightShadowRenderer.prepare(light);
             }
         }
 
@@ -750,20 +750,25 @@ class LightPassRenderer implements RenderOperator
         const tV3c = Vector3Pool.alloc();
 
         if (light instanceof three.DirectionalLight) {
-            const hasShadowMap = light.castShadow;
+            const hasShadow = light.castShadow;
 
-            if (hasShadowMap && light.shadowCamera) {
-                const gen = this.inShadowMaps;
-                gen.renderShadowMap(light.shadowCamera, ShadowMapType.Normal);
+            if (hasShadow ) {
+                const gen = this.directionalLightShadowRenderer;
+                gen.render(light);
 
-                this.setState(); // ShadowMapRenderService might change the state
+                this.ssssRenderer1.light = light;
+                this.ssssRenderer2.light = light;
+                this.ssssRenderer1.perform();
+                this.ssssRenderer2.perform();
+
+                this.setState(); // DirectionalLightShadowRenderer might change the state
                 gl.activeTexture(gl.TEXTURE6);
-                gl.bindTexture(gl.TEXTURE_2D, gen.currentShadowMapDepth);
+                gl.bindTexture(gl.TEXTURE_2D, gen.lightBuffer.texture);
             }
 
             let flags = DirectionalLightProgramFlags.Default;
-            if (hasShadowMap) {
-                flags |= DirectionalLightProgramFlags.HasShadowMaps;
+            if (hasShadow) {
+                flags |= DirectionalLightProgramFlags.HasShadow;
             }
             const p = this.directionalLightProgram[flags];
             p.program.use();
@@ -778,31 +783,6 @@ class LightPassRenderer implements RenderOperator
 
             gl.uniform3f(p.uniforms["u_lightColor"], colorR, colorG, colorB);
             gl.uniform1f(p.uniforms["u_lightStrength"], light.intensity);
-
-            if (hasShadowMap) {
-                const gen = this.inShadowMaps;
-
-                const m1 = Matrix4Pool.alloc();
-                const m2 = Matrix4Pool.alloc();
-                const m3 = Matrix4Pool.alloc();
-
-                m2.multiplyMatrices(light.shadowCamera.projectionMatrix,
-                    light.shadowCamera.matrixWorldInverse);
-                m1.multiplyMatrices(m2, this.parent.renderer.currentCamera.matrixWorld);
-                m2.makeScale(.5, .5, .5).multiply(m1);
-                m3.makeTranslation(.5, .5, .5).multiply(m2);
-                gl.uniformMatrix4fv(p.uniforms["u_shadowMapMatrix"], false, m3.elements);
-
-                Matrix4Pool.free(m1);
-                Matrix4Pool.free(m2);
-                Matrix4Pool.free(m3);
-
-                gl.activeTexture(gl.TEXTURE5);
-                gl.bindTexture(gl.TEXTURE_2D, this.parent.renderer.gaussianJitter.texture);
-
-                gl.uniform4f(p.uniforms["u_jitterAmount"], 4 / gen.shadowMapWidth, 4 / gen.shadowMapHeight,
-                    1 / gen.shadowMapWidth, 1 / gen.shadowMapHeight);
-            }
 
             const quad = this.parent.renderer.quadRenderer;
             gl.depthFunc(gl.GREATER);
@@ -928,21 +908,15 @@ class LightPassRenderer implements RenderOperator
 
     afterRender(): void
     {
-        /*
-        // debug: dump shadow maps
-        const pt = this.parent.renderer.passthroughRenderer;
-        const gl = this.parent.renderer.gl;
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.inShadowMaps.currentShadowMapDepth);
-
-        this.parent.renderer.state.flags =
-            GLStateFlags.BlendEnabled;
-
-        gl.blendFunc(gl.DST_COLOR, gl.ZERO);
-        pt.render(); // */
+        // suboperation
+        this.ssssRenderer1.afterRender();
+        this.ssssRenderer2.afterRender();
     }
     dispose(): void
     {
         this.fb.dispose();
+        this.ssssRenderer1.dispose();
+        this.ssssRenderer2.dispose();
+        this.directionalLightShadowRenderer.dispose();
     }
 }
