@@ -163,6 +163,7 @@ export class RendererCore
         this.ext.get("OES_texture_float_linear");
         this.ext.get("OES_texture_half_float");
         this.ext.get("OES_texture_half_float_linear");
+        this.ext.get("EXT_shader_texture_lod");
         this.ext.get("OES_standard_derivatives");
         this.ext.get("EXT_frag_depth");
         if (!this.ext.get("WEBGL_depth_texture")) {
