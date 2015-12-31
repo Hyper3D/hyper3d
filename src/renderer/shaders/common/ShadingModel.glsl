@@ -35,7 +35,7 @@ float evaluateGGXSpecularDistribution(float nhDot, float roughness)
     highp float aa = a * a;
     highp float t = nhDot * nhDot * (aa - 1.) + 1.;
     return aa /
-        (t * t);
+        (t * t + 0.000001);
 }
 
 float evaluateLambertDiffuse(float nlDot)
