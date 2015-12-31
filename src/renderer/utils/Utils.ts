@@ -38,3 +38,11 @@ export function getKeysOfObject(obj: any): string[]
     return ret;
 }
 
+export function using<T extends IDisposable, U>(obj: T, fn: (obj: T) => U): U
+{
+    try {
+        return fn(obj);
+    } finally {
+        obj.dispose();
+    }
+}

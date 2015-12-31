@@ -27,15 +27,15 @@ struct MaterialInfo
     float materialId;
 };
 
-float evaluateGGXSpecularDistribution(float nhDot, float roughness)
+float evaluateGGXSpecularDistribution(float nhDot, highp float roughness)
 {
     // Walter et al. 2007, "Microfacet models for refraction through rough surfaces"
     // http://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
-    float a = roughness * roughness;
+    highp float a = roughness * roughness;
     highp float aa = a * a;
     highp float t = nhDot * nhDot * (aa - 1.) + 1.;
     return aa /
-        (t * t);
+        (t * t + 1.e-20);
 }
 
 float evaluateLambertDiffuse(float nlDot)
@@ -95,7 +95,7 @@ vec3 evaluatePointLight(
     vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
     vec3 refl = mix(minRefl, vec3(1.), fresnel);
 
-    vec3 diffuseMix = 1. - refl;
+    float diffuseMix = 1. - mix(mix(material.specular, 1., material.metallic), 1., fresnel);
     diffuseMix *= evaluateDisneyPrincipledDiffuse(params.nlDot, params.nvDot, params.hlDot, material.roughness);
 
     float specular = evaluateGGXSpecularDistribution(params.nhDot, material.roughness);
@@ -113,7 +113,7 @@ vec3 evaluatePointLight(
         ccspecular *= evaluateBeckmannGeometryShadowing(params.nlDot, params.nvDot, material.clearCoatRoughness);
         ccspecular *= params.nlDot;
         float refl = mix(0.03, 1., fresnel);
-        final += ccspecular * refl;
+        final = mix(final, vec3(ccspecular), refl);
     }
 
     return final * lightColor;
@@ -134,7 +134,7 @@ vec3 evaluateUniformLight(
     vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
     vec3 refl = mix(minRefl, vec3(1.), fresnel);
 
-    vec3 diffuseMix = 1. - refl;
+    float diffuseMix = 1. - mix(mix(material.specular, 1., material.metallic), 1., fresnel);
 
     vec3 diffuse = material.albedo;
 
@@ -161,12 +161,12 @@ vec4 evaluateReflection(
     return refl;
 }
 
-float evaluateReflectionForClearCoat(
+vec2 evaluateReflectionForClearCoat(
     float nvDot,
     MaterialInfo material)
 {
     if (!isMaterialClearCoat(material)) {
-        return 0.;
+        return vec2(0.);
     }
 
     // assume h = n now
@@ -174,9 +174,10 @@ float evaluateReflectionForClearCoat(
 
     float refl = mix(0.03, 1., fresnel);
 
-    refl *= evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.clearCoatRoughness); // FIXME: optimize?
+    float reflShadowed = refl * 
+        evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.clearCoatRoughness); // FIXME: optimize?
 
-    return refl;
+    return vec2(reflShadowed, refl);
 }
 
 PointLightBRDFParameters computePointLightBRDFParameters(
