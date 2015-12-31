@@ -2,6 +2,12 @@
 
 import * as three from "three";
 import { TextureManager } from "../render/TextureManager";
+import {
+    Texture2DProvider,
+    TextureCubeProvider,
+    Texture2D,
+    TextureCube
+} from "../render/TextureProvider";
 import { BitArray } from "../utils/BitArray";
 import { GeometryRenderer } from "../render/GeometryRenderer";
 import { ShadowMapRenderer } from "../render/ShadowMapRenderer";
@@ -70,7 +76,8 @@ export class RendererCore
     supportsHdrRenderingBuffer: boolean;
     hdrMode: HdrMode;
 
-    textures: TextureManager;
+    textures: TextureManager<Texture2D>;
+    textureCubes: TextureManager<TextureCube>;
     renderBuffers: RenderPipeline;
     vertexAttribs: VertexAttribState;
     state: GLState;
@@ -215,7 +222,8 @@ export class RendererCore
         // global uniform values
         this.updateGlobalUniforms();
 
-        this.textures = new TextureManager(this);
+        this.textures = new TextureManager<Texture2D>(this, new Texture2DProvider());
+        this.textureCubes = new TextureManager<TextureCube>(this, new TextureCubeProvider());
         this.geometryManager = new GeometryManager(this);
         this.renderBuffers = new RenderPipeline(this);
         this.uniformJitter = new UniformJitterTexture(this.gl);

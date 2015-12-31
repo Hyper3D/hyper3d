@@ -220,7 +220,7 @@ export class Shader extends three.EventDispatcher
             const texStages = this.parameterTextureStages;
             const unifMap = this.glProgram.getUniforms(unifNames);
             const parts: string[] = [];
-            parts.push("(function (s, gl, tm) { return function (matInst) {");
+            parts.push("(function (s, gl, tm, tcm) { return function (matInst) {");
             parts.push("var params = matInst.parameters;");
             let i = 0;
             for (const name in params) {
@@ -243,12 +243,19 @@ export class Shader extends three.EventDispatcher
                         parts.push(`gl.uniform4f(s.${unifName}, ${v}[0], ${v}[1], ${v}[2], ${v}[3]);`);
                         break;
                     case MaterialParameterType.Texture2D:
-                    case MaterialParameterType.TextureCube:
                         {
                             const texStage = texStages.indexOf(name);
                             parts.push(`gl.uniform1i(s.${unifName}, ${texStage});`);
                             parts.push(`gl.activeTexture(gl.TEXTURE0 + ${texStage});`);
                             parts.push(`tm.get(${v}).bind();`);
+                        }
+                        break;
+                    case MaterialParameterType.TextureCube:
+                        {
+                            const texStage = texStages.indexOf(name);
+                            parts.push(`gl.uniform1i(s.${unifName}, ${texStage});`);
+                            parts.push(`gl.activeTexture(gl.TEXTURE0 + ${texStage});`);
+                            parts.push(`tcm.get(${v}).bind();`);
                         }
                         break;
                     default:
@@ -259,7 +266,7 @@ export class Shader extends three.EventDispatcher
             parts.push("}; })");
 
             return this.parameterUniformSetter_ =
-                eval(parts.join("\n"))(unifMap, gl, this.manager.core.textures);
+                eval(parts.join("\n"))(unifMap, gl, this.manager.core.textures, this.manager.core.textureCubes);
         }
         return this.parameterUniformSetter_;
     }

@@ -372,11 +372,7 @@ class ImageBasedLightRenderer implements RenderOperator
     {
         const gl = this.parent.renderer.gl;
         const isAmbient = !isFinite(probe.distance);
-        const tex = this.parent.renderer.textures.get(probe.texture);
-
-        if (tex.textureTarget != gl.TEXTURE_CUBE_MAP) {
-            throw new Error("reflection texture is not cubemap!");
-        }
+        const tex = this.parent.renderer.textureCubes.get(probe.texture);
 
         let flags = IBLShaderFlags.Default;
         if (isBlendPass) {
