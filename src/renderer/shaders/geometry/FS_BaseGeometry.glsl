@@ -18,7 +18,7 @@ void evaluateMaterial()
     m_albedo = vec3(1.);
     m_roughness = 0.2;
     m_metallic = 0.2;
-    m_specular = 0.;
+    m_specular = 0.03;
     m_normal = vec3(0., 0., 1.);
     m_emissive = vec3(0.);
     m_materialId = 0.;
