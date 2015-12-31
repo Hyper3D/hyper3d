@@ -27,15 +27,15 @@ struct MaterialInfo
     float materialId;
 };
 
-float evaluateGGXSpecularDistribution(float nhDot, float roughness)
+float evaluateGGXSpecularDistribution(float nhDot, highp float roughness)
 {
     // Walter et al. 2007, "Microfacet models for refraction through rough surfaces"
     // http://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
-    float a = roughness * roughness;
+    highp float a = roughness * roughness;
     highp float aa = a * a;
     highp float t = nhDot * nhDot * (aa - 1.) + 1.;
     return aa /
-        (t * t + 0.000001);
+        (t * t + 1.e-20);
 }
 
 float evaluateLambertDiffuse(float nlDot)
