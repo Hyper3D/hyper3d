@@ -113,7 +113,7 @@ vec3 evaluatePointLight(
         ccspecular *= evaluateBeckmannGeometryShadowing(params.nlDot, params.nvDot, material.clearCoatRoughness);
         ccspecular *= params.nlDot;
         float refl = mix(0.03, 1., fresnel);
-        final += ccspecular * refl;
+        final = mix(final, vec3(ccspecular), refl);
     }
 
     return final * lightColor;
@@ -161,12 +161,12 @@ vec4 evaluateReflection(
     return refl;
 }
 
-float evaluateReflectionForClearCoat(
+vec2 evaluateReflectionForClearCoat(
     float nvDot,
     MaterialInfo material)
 {
     if (!isMaterialClearCoat(material)) {
-        return 0.;
+        return vec2(0.);
     }
 
     // assume h = n now
@@ -174,9 +174,10 @@ float evaluateReflectionForClearCoat(
 
     float refl = mix(0.03, 1., fresnel);
 
-    refl *= evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.clearCoatRoughness); // FIXME: optimize?
+    float reflShadowed = refl * 
+        evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.clearCoatRoughness); // FIXME: optimize?
 
-    return refl;
+    return vec2(reflShadowed, refl);
 }
 
 PointLightBRDFParameters computePointLightBRDFParameters(

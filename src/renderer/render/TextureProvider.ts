@@ -141,6 +141,7 @@ export class Texture2D extends Texture
 export class TextureCube extends Texture
 {
     setupDone: boolean;
+    size: number;
 
     constructor(manager: BaseTextureManager,
         source: three.CubeTexture)
@@ -148,6 +149,7 @@ export class TextureCube extends Texture
         super(manager, source, manager.gl.TEXTURE_CUBE_MAP);
 
         this.setupDone = false;
+        this.size = 0;
     }
 
     setup(): boolean
@@ -193,6 +195,8 @@ export class TextureCube extends Texture
                 this.manager.typeForTexture(this.source),
                 image);
         }
+
+        this.size = images[0].width;
 
         if (this.source.generateMipmaps) {
             gl.generateMipmap(this.textureTarget);

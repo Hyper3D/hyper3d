@@ -8,6 +8,10 @@ import {
     Texture2D,
     TextureCube
 } from "../render/TextureProvider";
+import {
+    ReflectionTextureCubeProvider,
+    ReflectionTextureCube
+} from "../render/ReflectionTextureProvider";
 import { BitArray } from "../utils/BitArray";
 import { GeometryRenderer } from "../render/GeometryRenderer";
 import { ShadowMapRenderer } from "../render/ShadowMapRenderer";
@@ -78,6 +82,7 @@ export class RendererCore
 
     textures: TextureManager<Texture2D>;
     textureCubes: TextureManager<TextureCube>;
+    reflectionTextures: TextureManager<ReflectionTextureCube>;
     renderBuffers: RenderPipeline;
     vertexAttribs: VertexAttribState;
     state: GLState;
@@ -224,6 +229,8 @@ export class RendererCore
 
         this.textures = new TextureManager<Texture2D>(this, new Texture2DProvider());
         this.textureCubes = new TextureManager<TextureCube>(this, new TextureCubeProvider());
+        this.reflectionTextures = new TextureManager<ReflectionTextureCube>(this,
+            new ReflectionTextureCubeProvider(this));
         this.geometryManager = new GeometryManager(this);
         this.renderBuffers = new RenderPipeline(this);
         this.uniformJitter = new UniformJitterTexture(this.gl);

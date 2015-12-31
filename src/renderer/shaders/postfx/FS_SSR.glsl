@@ -119,11 +119,11 @@ void main()
     if (isMaterialClearCoat(mat)) {
         roughness = min(roughness, mat.clearCoatRoughness);
     }
-    roughness *= roughness;
-    float ssrAmount = min(1., 1.5 - roughness * 8.);
+    float ssrAmount = min(1., 1.5 - roughness * 6.);
     if (ssrAmount > 0.) {
         vec4 reflAmt = evaluateReflection(nvDot, mat);
-        reflAmt += evaluateReflectionForClearCoat(nvDot, mat);
+        vec2 ccRefl = evaluateReflectionForClearCoat(nvDot, mat);
+        reflAmt = reflAmt * (1. - ccRefl.y) + ccRefl.x;
         if (reflAmt.w > 0.00001) {
             ssrAmount = 1.;
 

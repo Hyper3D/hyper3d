@@ -41,6 +41,8 @@ import { Matrix4Pool } from "../utils/ObjectPool";
 
 import { GLFramebuffer } from "../core/GLFramebuffer";
 
+import { ReflectionTextureCube } from "./ReflectionTextureProvider";
+
 import {
     GLProgram,
     GLProgramUniforms,
@@ -238,7 +240,8 @@ class ImageBasedLightRenderer implements RenderOperator
                 program,
                 uniforms: program.getUniforms([
                     "u_g0", "u_g1", "u_g2", "u_linearDepth", "u_ssao", "u_reflection",
-                    "u_viewDirCoefX", "u_viewDirCoefY", "u_viewDirOffset", "u_reflectionMatrix",
+                    "u_viewDirCoefX", "u_viewDirCoefY", "u_viewDirOffset",
+                    "u_reflectionMatrix", "u_reflectionLodBias",
                     "u_dither", "u_ditherScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
@@ -340,6 +343,7 @@ class ImageBasedLightRenderer implements RenderOperator
 
             // compute maximum possible luminance value
             // FIXME: hard edge might be visible
+            // FIXME: RGB is ignored, so different shader must be used for performance
             this.parent.renderer.state.flags =
                 GLStateFlags.DepthTestEnabled |
                 GLStateFlags.DepthWriteDisabled |
@@ -368,11 +372,15 @@ class ImageBasedLightRenderer implements RenderOperator
             this.renderTree(child);
         }
     }
+    private computeReflectionLodBias(tex: ReflectionTextureCube): number
+    {
+        return tex.log2Size - 19;
+    }
     private renderProbe(probe: ReflectionProbe, isBlendPass: boolean): void
     {
         const gl = this.parent.renderer.gl;
         const isAmbient = !isFinite(probe.distance);
-        const tex = this.parent.renderer.textureCubes.get(probe.texture);
+        const tex = this.parent.renderer.reflectionTextures.get(probe.texture);
 
         let flags = IBLShaderFlags.Default;
         if (isBlendPass) {
@@ -389,6 +397,9 @@ class ImageBasedLightRenderer implements RenderOperator
 
             gl.uniformMatrix4fv(p.uniforms["u_reflectionMatrix"], false,
                 reflMat.elements);
+
+            gl.uniform1f(p.uniforms["u_reflectionLodBias"],
+                this.computeReflectionLodBias(tex));
 
             gl.activeTexture(gl.TEXTURE6);
             tex.bind();

@@ -6,6 +6,8 @@
 #pragma parameter isBlendPass
 #pragma parameter useHdrMosaic
 
+#extension GL_EXT_shader_texture_lod : require
+
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
 uniform sampler2D u_g2;
@@ -18,6 +20,7 @@ varying mediump vec2 v_viewDir;
 uniform samplerCube u_reflection;
 
 uniform mat4 u_reflectionMatrix;
+uniform float u_reflectionLodBias;
 
 uniform sampler2D u_dither;
 varying highp vec2 v_ditherCoord;
@@ -74,20 +77,22 @@ void main()
     ssao = mix(1., ssao, min(mat.roughness * 4., 1.));
 
     // sampling from image
-    // TODO: lod bias dependent of texture resolution
-    // TODO: correct lod bias
-    vec3 refl = textureCube(u_reflection, reflVector, mat.roughness * 14.).xyz;
+    float lod = u_reflectionLodBias + 19. * sqrt(sqrt(mat.roughness));
+    vec3 refl = textureCubeLodEXT(u_reflection, reflVector, lod).xyz;
     refl.xyz *= refl.xyz; // linearize
 
     refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
 
     if (isMaterialClearCoat(mat)) {
         // second specular lobe
-        vec3 reflcc = textureCube(u_reflection, reflVector, mat.clearCoatRoughness * 14.).xyz;
+        float lodcc = u_reflectionLodBias + 19. * sqrt(sqrt(mat.clearCoatRoughness));
+        vec3 reflcc = textureCubeLodEXT(u_reflection, reflVector, lodcc).xyz;
         reflcc.xyz *= reflcc.xyz; // linearize
 
-        reflcc *= evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
+        vec2 reflFactorCC = evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
+        reflcc *= reflFactorCC.x;
 
+        refl *= 1. - reflFactorCC.y;
         refl += reflcc;
     }
 
