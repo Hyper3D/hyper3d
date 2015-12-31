@@ -174,7 +174,8 @@ function buildReflectionPyramid(core: RendererCore, inTex: WebGLTexture, inSize:
         "u_axisMajor", "u_axisU", "u_axisV",
         "u_texture", "u_textureLod", "u_roughness", "u_textureSize",
         "u_sampleRange",
-        "u_borderCoord", "u_axisIsMinor"
+        "u_borderCoord", "u_axisIsMinor",
+        "u_jitter", "u_jitterScale"
     ]);
     const attrs = program.getAttributes(["a_position"]);
     const gl = core.gl;
@@ -202,13 +203,19 @@ function buildReflectionPyramid(core: RendererCore, inTex: WebGLTexture, inSize:
     gl.uniform1i(uniforms["u_texture"], 0);
     gl.uniform1f(uniforms["u_textureSize"], inSize);
 
+    const jitter = core.uniformJitter;
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, jitter.texture);
+    gl.uniform1i(uniforms["u_jitter"], 1);
+
     // Render levels
     for (let i = 0; i <= outSize; ++i) {
         const curSize = 1 << (outSize - i);
         gl.uniform1f(uniforms["u_borderCoord"], 1 - 2 / curSize);
-        gl.uniform1f(uniforms["u_sampleRange"],  Math.min(8 / curSize, Math.SQRT1_2));
-        gl.uniform1f(uniforms["u_textureLod"], i);
+        gl.uniform1f(uniforms["u_sampleRange"],  Math.min(16 / curSize, 0.7));
+        gl.uniform1f(uniforms["u_textureLod"], i + 2);
         gl.uniform1f(uniforms["u_roughness"], roughnessForMipLevel(outSize, i));
+        gl.uniform1f(uniforms["u_jitterScale"], curSize * 0.5 / jitter.size);
         for (const face of faces) {
             gl.viewport(face.x * curSize, face.y * curSize, curSize, curSize);
             gl.uniform3i(uniforms["u_axisIsMinor"],
