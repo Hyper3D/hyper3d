@@ -1,9 +1,10 @@
-#extension GL_EXT_shader_texture_lod : require
 #pragma require ShadingModel
+#pragma require TextureLod
 #pragma parameter seamless
 
 uniform samplerCube u_texture;
 uniform float u_textureLod;
+uniform float u_textureSize;
 uniform float u_roughness;
 uniform float u_borderCoord;
 uniform bvec3 u_axisIsMinor;
@@ -63,7 +64,7 @@ void main()
 			vec3 rdir = lrdir.z * dir + lrdir.y * dirU + lrdir.x * dirV;
 			float nhDot = lrdir.z;
 			highp float chance = evaluateGGXSpecularDistribution(nhDot, u_roughness);
-			vec4 value = textureCubeLodEXT(u_texture, rdir, u_textureLod);
+			vec4 value = myTextureCubeLod(u_texture, rdir, u_textureLod, u_textureSize);
 			highp vec3 color = value.xyz * value.xyz; // linearize
 			sum += vec4(color, 1.) * chance;
 		}

@@ -241,7 +241,7 @@ class ImageBasedLightRenderer implements RenderOperator
                 uniforms: program.getUniforms([
                     "u_g0", "u_g1", "u_g2", "u_linearDepth", "u_ssao", "u_reflection",
                     "u_viewDirCoefX", "u_viewDirCoefY", "u_viewDirOffset",
-                    "u_reflectionMatrix", "u_reflectionLodBias",
+                    "u_reflectionMatrix", "u_reflectionLodBias", "u_reflectionSize",
                     "u_dither", "u_ditherScale"
                 ]),
                 attributes: program.getAttributes(["a_position"])
@@ -400,6 +400,9 @@ class ImageBasedLightRenderer implements RenderOperator
 
             gl.uniform1f(p.uniforms["u_reflectionLodBias"],
                 this.computeReflectionLodBias(tex));
+
+            gl.uniform1f(p.uniforms["u_reflectionSize"],
+                1 << tex.log2Size);
 
             gl.activeTexture(gl.TEXTURE6);
             tex.bind();

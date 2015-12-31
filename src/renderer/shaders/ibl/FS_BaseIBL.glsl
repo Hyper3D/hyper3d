@@ -3,10 +3,9 @@
 #pragma require ShadingModel
 #pragma require HdrMosaic
 #pragma require DepthFetch
+#pragma require TextureLod
 #pragma parameter isBlendPass
 #pragma parameter useHdrMosaic
-
-#extension GL_EXT_shader_texture_lod : require
 
 uniform sampler2D u_g0;
 uniform sampler2D u_g1;
@@ -18,6 +17,7 @@ varying highp vec2 v_texCoord;
 varying mediump vec2 v_viewDir;
 
 uniform samplerCube u_reflection;
+uniform float u_reflectionSize;
 
 uniform mat4 u_reflectionMatrix;
 uniform float u_reflectionLodBias;
@@ -78,7 +78,7 @@ void main()
 
     // sampling from image
     float lod = u_reflectionLodBias + 19. * sqrt(sqrt(mat.roughness));
-    vec3 refl = textureCubeLodEXT(u_reflection, reflVector, lod).xyz;
+    vec3 refl = myTextureCubeLod(u_reflection, reflVector, lod, u_reflectionSize).xyz;
     refl.xyz *= refl.xyz; // linearize
 
     refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
@@ -86,7 +86,7 @@ void main()
     if (isMaterialClearCoat(mat)) {
         // second specular lobe
         float lodcc = u_reflectionLodBias + 19. * sqrt(sqrt(mat.clearCoatRoughness));
-        vec3 reflcc = textureCubeLodEXT(u_reflection, reflVector, lodcc).xyz;
+        vec3 reflcc = myTextureCubeLod(u_reflection, reflVector, lodcc, u_reflectionSize).xyz;
         reflcc.xyz *= reflcc.xyz; // linearize
 
         vec2 reflFactorCC = evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);

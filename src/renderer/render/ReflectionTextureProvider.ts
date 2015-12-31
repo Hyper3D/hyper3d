@@ -172,7 +172,7 @@ function buildReflectionPyramid(core: RendererCore, inTex: WebGLTexture, inSize:
         });
     const uniforms = program.getUniforms([
         "u_axisMajor", "u_axisU", "u_axisV",
-        "u_texture", "u_textureLod", "u_roughness",
+        "u_texture", "u_textureLod", "u_roughness", "u_textureSize",
         "u_sampleRange",
         "u_borderCoord", "u_axisIsMinor"
     ]);
@@ -200,6 +200,7 @@ function buildReflectionPyramid(core: RendererCore, inTex: WebGLTexture, inSize:
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, inTex);
     gl.uniform1i(uniforms["u_texture"], 0);
+    gl.uniform1f(uniforms["u_textureSize"], inSize);
 
     // Render levels
     for (let i = 0; i <= outSize; ++i) {
