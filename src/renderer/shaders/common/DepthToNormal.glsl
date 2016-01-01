@@ -1,9 +1,8 @@
 #pragma require DepthFetch
 
-#extension GL_OES_standard_derivatives : enable
+#extension GL_OES_standard_derivatives : require
 
 // screen coord [0, 1] must be provided to texCoord.
-#if GL_OES_standard_derivatives
 vec3 computeNormalFromDepthUsingStandardDerivatives(sampler2D texDepth, highp vec2 texCoord, highp vec3 viewDir)
 {
 	highp float depth = fetchDepth(texDepth, texCoord);
@@ -13,6 +12,3 @@ vec3 computeNormalFromDepthUsingStandardDerivatives(sampler2D texDepth, highp ve
 
 	return normalize(cross(dx, dy));
 }
-#else
-// Non-GL_OES_standard_derivatives version is not implemented yet.
-#endif
