@@ -494,6 +494,8 @@ export function getUniformDeclarationsForMaterial(mat: Material): string
             case MaterialParameterType.TextureCube:
                 parts.push(`uniform samplerCube p_${name};`);
                 break;
+            default:
+                throw new Error(`unknown param type: ${param.type}`);
         }
     }
 
