@@ -363,7 +363,7 @@ export function dumpRenderOperationAsDot(raw: RenderOperation[]): string
 
     const parts: string[] = [];
     parts.push("digraph G {");
-    parts.push(`rankdir="TB";\n`);
+    parts.push(`rankdir="LR";\n`);
     parts.push("node [shape=none];\n");
 
     let nextID = 1;
@@ -378,7 +378,7 @@ export function dumpRenderOperationAsDot(raw: RenderOperation[]): string
 
     function writeRBI(rb: RenderBufferInfo)
     {
-        parts.push(`"${getID(rb)}" [ label="${rb.toString()}", shape=none ];\n`);
+        parts.push(`"${getID(rb)}" [ label="${rb.toString().replace(/ : /g, "\n")}", shape=none ];\n`);
     }
 
     // make sure all render buffer info is assigned a ID
