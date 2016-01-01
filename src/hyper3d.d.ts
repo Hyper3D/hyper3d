@@ -47,7 +47,11 @@ declare module Hyper
         render(scene: THREE.Scene, camera: THREE.Camera): void;
         setSize(width:number, height:number, updateStyle?:boolean): void;
         domElement: HTMLCanvasElement;
-        
+
+        rendererInfo: string;
+        rendererName: string;
+        rendererVersion: string;
+
         parameters: WebGLHyperRendererParameters;
     }
 

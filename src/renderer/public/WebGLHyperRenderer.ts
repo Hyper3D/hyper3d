@@ -43,9 +43,17 @@ export class WebGLHyperRenderer implements three.Renderer
 
     private core: RendererCore;
 
+    rendererInfo: string;
+    rendererName: string;
+    rendererVersion: string;
+
     constructor(params?: WebGLHyperRendererCreationParameters)
     {
-        console.log("Hyper.WebGLHyperRenderer", REVISION);
+        this.rendererName = "Hyper.WebGLHyperRenderer";
+        this.rendererVersion = REVISION;
+        this.rendererInfo = `${this.rendererName} ${this.rendererVersion}`;
+
+        console.log(this.rendererInfo);
 
         params = params || {};
 
