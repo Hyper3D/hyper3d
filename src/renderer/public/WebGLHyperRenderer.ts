@@ -43,16 +43,8 @@ export class WebGLHyperRenderer implements three.Renderer
 
     private core: RendererCore;
 
-    rendererInfo: string;
-    rendererName: string;
-    rendererVersion: string;
-
     constructor(params?: WebGLHyperRendererCreationParameters)
     {
-        this.rendererName = "Hyper.WebGLHyperRenderer";
-        this.rendererVersion = REVISION;
-        this.rendererInfo = `${this.rendererName} ${this.rendererVersion}`;
-
         console.log(this.rendererInfo);
 
         params = params || {};
@@ -88,6 +80,26 @@ export class WebGLHyperRenderer implements three.Renderer
     private setup(): void
     {
 
+    }
+
+    get rendererName(): string
+    {
+        return "Hyper.WebGLHyperRenderer";
+    }
+
+    get rendererVersion(): string
+    {
+        return REVISION;
+    }
+
+    get rendererInfo(): string
+    {
+        return `${this.rendererName} ${this.rendererVersion}`;
+    }
+
+    get context(): WebGLRenderingContext
+    {
+        return this.core.gl;
     }
 
     render(scene: three.Scene, camera: three.Camera): void

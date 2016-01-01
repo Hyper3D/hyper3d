@@ -52,6 +52,8 @@ declare module Hyper
         rendererName: string;
         rendererVersion: string;
 
+        context: WebGLRenderingContext;
+
         parameters: WebGLHyperRendererParameters;
     }
 
