@@ -3,7 +3,7 @@ HYPER3D WebGL Renderer
 
 [Examples](https://hyper3d.github.io/hyper3d-examples/) — Documentation — [Roadmap](https://trello.com/b/GN81FAP9/hyper3d-roadmap)
 
-![](https://dl.dropboxusercontent.com/u/37804131/github/Screen%20Shot%202016-01-02%20at%209.24.33%20PM.jpg)
+![](https://dl.dropboxusercontent.com/u/37804131/github/Screen%20Shot%202016-01-03%20at%202.16.45%20AM.jpg)
 
 HYPER3D is a high-end (unofficial) renderer for [three.js](http://threejs.org/).
 
