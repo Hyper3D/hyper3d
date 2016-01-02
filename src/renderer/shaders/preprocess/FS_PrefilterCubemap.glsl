@@ -76,6 +76,8 @@ void main()
 			vec3 rdir = lrdir.z * dir + lrdir.y * dirU + lrdir.x * dirV;
 			float nhDot = lrdir.z;
 			highp float chance = evaluateGGXSpecularDistribution(nhDot, u_roughness);
+			chance *= max(0., nhDot);
+			chance *= evaluateBeckmannGeometryShadowingSingleSide(nhDot, u_roughness);
 			vec4 value = myTextureCubeLod(u_texture, rdir, u_textureLod, u_textureSize);
 			highp vec3 color = value.xyz * value.xyz; // linearize
 			sum += vec4(color, 1.) * chance * chance2;

@@ -72,6 +72,15 @@ float evaluateBeckmannGeometryShadowing(float nlDot, float nvDot, float roughnes
     b *= 1. + 2.276 * vc + 2.577 * vc * vc;
     return a / b;
 }
+float evaluateBeckmannGeometryShadowingSingleSide(float nlDot, float roughness)
+{
+    // http://graphicrants.blogspot.jp/2013/08/specular-brdf-reference.html
+    float lct = .5 / (roughness * sqrt(1. - nlDot * nlDot) + 0.00001);
+    float lc = lct * nlDot;
+    float a = 3.353 * lc + 2.181 * lc * lc; // not typo
+    float b = 1. + 2.276 * lc + 2.577 * lc * lc;
+    return a / b;
+}
 
 bool isMaterialClearCoat(MaterialInfo material)
 {
@@ -156,7 +165,7 @@ vec4 evaluateReflection(
     vec3 minRefl = mix(vec3(material.specular), material.albedo, material.metallic);
     vec4 refl = vec4(mix(minRefl, vec3(1.), fresnel), 1.);
 
-    refl *= evaluateBeckmannGeometryShadowing(nvDot, nvDot, material.roughness); // FIXME: optimize?
+    refl *= evaluateBeckmannGeometryShadowingSingleSide(nvDot, material.roughness);
 
     return refl;
 }
