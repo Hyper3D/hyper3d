@@ -40,6 +40,17 @@ declare module Hyper
         constructor();
     }
 
+    export interface WebGLHyperRendererProfilerPhase
+    {
+        name: string;
+        time: number;
+    }
+
+    export interface WebGLHyperRendererProfilerResult
+    {
+        phases: WebGLHyperRendererProfilerPhase[];
+    }
+
     export class WebGLHyperRenderer implements THREE.Renderer
     {
         constructor(params?: WebGLHyperRendererCreationParameters);
@@ -51,6 +62,9 @@ declare module Hyper
         rendererInfo: string;
         rendererName: string;
         rendererVersion: string;
+
+        startProfiling(cb: (result: WebGLHyperRendererProfilerResult) => void): void;
+        stopProfiling(): void;
 
         context: WebGLRenderingContext;
 

@@ -228,6 +228,9 @@ export default class DirectionalLightShadowRenderer
         const info = this.infoMap.get(light);
         const cameras: three.Camera[] = <any> light.shadowCamera;
         const gl = this.core.gl;
+        const profiler = this.core.profiler;
+
+        profiler.begin("Light Buffer Generation");
 
         const eye = this.core.currentCamera;
         const eyeProjMat = eye.projectionMatrix;
@@ -310,6 +313,8 @@ export default class DirectionalLightShadowRenderer
 
             this.core.quadRenderer.render(p.attributes["a_position"]);
         }
+
+        profiler.end();
     }
 
     private computeMinZByShadowCasterBounds(dir: three.Vector3): number

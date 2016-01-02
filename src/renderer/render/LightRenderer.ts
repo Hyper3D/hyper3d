@@ -576,6 +576,7 @@ class LightPassRenderer implements RenderOperator
     {
         const scene = this.parent.renderer.currentScene;
         const gl = this.parent.renderer.gl;
+        const profiler = this.parent.renderer.profiler;
 
         this.fb.bind();
         gl.viewport(0, 0, this.outLit.width, this.outLit.height);
@@ -666,6 +667,8 @@ class LightPassRenderer implements RenderOperator
         {
             const t = this.totalAmbient;
             if (t.r > 0 || t.g > 0 || t.b > 0) {
+                profiler.begin("Ambient");
+
                 const p = this.ambientLightProgram;
                 p.program.use();
 
@@ -678,6 +681,8 @@ class LightPassRenderer implements RenderOperator
                 gl.depthFunc(gl.GREATER);
                 quad.render(p.attributes["a_position"]);
                 gl.depthFunc(gl.LESS);
+
+                profiler.end();
             }
         }
     }
@@ -741,6 +746,8 @@ class LightPassRenderer implements RenderOperator
     private renderLight(light: three.Light): void
     {
         const gl = this.parent.renderer.gl;
+        const profiler = this.parent.renderer.profiler;
+
         let colorR = light.color.r;
         let colorG = light.color.g;
         let colorB = light.color.b;
@@ -750,6 +757,8 @@ class LightPassRenderer implements RenderOperator
         const tV3c = Vector3Pool.alloc();
 
         if (light instanceof three.DirectionalLight) {
+            profiler.begin("Directional");
+
             const hasShadow = light.castShadow;
 
             if (hasShadow ) {
@@ -758,8 +767,14 @@ class LightPassRenderer implements RenderOperator
 
                 this.ssssRenderer1.light = light;
                 this.ssssRenderer2.light = light;
+
+                profiler.begin("Screen-space Soft Shadow");
                 this.ssssRenderer1.perform();
+                profiler.end();
+
+                profiler.begin("Screen-space Soft Shadow");
                 this.ssssRenderer2.perform();
+                profiler.end();
 
                 this.setState(); // DirectionalLightShadowRenderer might change the state
                 gl.activeTexture(gl.TEXTURE6);
@@ -788,9 +803,13 @@ class LightPassRenderer implements RenderOperator
             gl.depthFunc(gl.GREATER);
             quad.render(p.attributes["a_position"]);
             gl.depthFunc(gl.LESS);
+
+            profiler.end();
         }
 
         if (light instanceof three.PointLight) {
+            profiler.begin("Point");
+
             let radius = light.distance;
 
             if (radius == 0) {
@@ -888,6 +907,8 @@ class LightPassRenderer implements RenderOperator
                 // TODO: light geometry cull
             }
             gl.depthFunc(gl.LESS);
+
+            profiler.end();
         }
 
         if (light instanceof three.SpotLight) {

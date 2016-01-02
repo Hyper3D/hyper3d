@@ -442,6 +442,7 @@ export class RenderPipeline
     private logger: Logger;
 
     outputBuffers: RenderBuffer[];
+    allRenderBuffers: RenderBuffer[];
 
     constructor(public core: RendererCore)
     {
@@ -451,6 +452,7 @@ export class RenderPipeline
         this.phases = [];
         this.operators = [];
         this.outputBuffers = [];
+        this.allRenderBuffers = [];
     }
 
     dispose(): void
@@ -892,6 +894,8 @@ export class RenderPipeline
             }
         });
 
+        this.allRenderBuffers = [];
+
         const newRenderBuffers = new RenderBufferInfoMap<RealizedRenderBufferGroup>();
         allocMap.forEach((info, allocMapEntry) => {
             const existingRenderBufferEntry = this.renderBuffers.get(info);
@@ -903,6 +907,9 @@ export class RenderPipeline
             newRenderBuffers.set(info, {
                 renderBuffers: existingBuffers
             });
+            for (const buf of existingBuffers) {
+                this.allRenderBuffers.push(buf);
+            }
         });
 
         // realize each render phase's input/output.
@@ -918,15 +925,42 @@ export class RenderPipeline
 
     render(): void
     {
-        for (const op of this.operators) {
-            op.beforeRender();
+        this.renderPartial(this.numPhases);
+    }
+
+    get numPhases(): number
+    {
+        return this.operators.length;
+    }
+
+    getPhaseName(index: number): string
+    {
+        return this.phases[index].operation.name;
+    }
+
+    renderPartial(numPhases: number): void
+    {
+        const profiler = this.core.profiler;
+
+        profiler.begin("Before Render");
+        for (let i = 0; i < numPhases; ++i) {
+            this.operators[i].beforeRender();
         }
-        for (const op of this.operators) {
-            op.perform();
+        profiler.end();
+
+        profiler.begin("Render");
+        for (let i = 0; i < numPhases; ++i) {
+            profiler.begin(this.getPhaseName(i));
+            this.operators[i].perform();
+            profiler.end();
         }
-        for (const op of this.operators) {
-            op.afterRender();
+        profiler.end();
+
+        profiler.begin("After Render");
+        for (let i = 0; i < numPhases; ++i) {
+            this.operators[i].afterRender();
         }
+        profiler.end();
     }
 
     private clearPipeline(): void
@@ -936,6 +970,7 @@ export class RenderPipeline
         }
         this.operators = [];
         this.outputBuffers = [];
+        this.allRenderBuffers = [];
     }
 
     releaseAll(): void

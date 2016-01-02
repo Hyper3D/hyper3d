@@ -35,6 +35,17 @@ export interface WebGLHyperRendererParameters
     contrast: number;
 }
 
+export interface WebGLHyperRendererProfilerPhase
+{
+    name: string;
+    time: number;
+}
+
+export interface WebGLHyperRendererProfilerResult
+{
+    phases: WebGLHyperRendererProfilerPhase[];
+}
+
 export class WebGLHyperRenderer implements three.Renderer
 {
     private canvas: HTMLCanvasElement;
@@ -80,6 +91,16 @@ export class WebGLHyperRenderer implements three.Renderer
     private setup(): void
     {
 
+    }
+
+    startProfiling(cb: (result: WebGLHyperRendererProfilerResult) => void): void
+    {
+        this.core.startProfiling(cb);
+    }
+
+    stopProfiling(): void
+    {
+        this.core.stopProfiling();
     }
 
     get rendererName(): string

@@ -38,7 +38,8 @@ import { BloomFilterRenderer } from "../postfx/BloomFilter";
 import {
     WebGLHyperRendererParameters,
     WebGLHyperRendererCreationParameters,
-    WebGLHyperRendererLogParameters
+    WebGLHyperRendererLogParameters,
+    WebGLHyperRendererProfilerResult
 } from "../public/WebGLHyperRenderer";
 import { RendererCoreParameters } from "./RendererParameters";
 import {
@@ -64,6 +65,7 @@ import {
 import { validateSRGBCompliance } from "../validator/SRGBValidator";
 import { validateHalfFloatColorBuffer } from "../validator/FPColorBufferValidator";
 import { LogManager } from "../utils/Logger";
+import { Profiler } from "./Profiler";
 
 export enum HdrMode
 {
@@ -86,6 +88,7 @@ export class RendererCore
     renderBuffers: RenderPipeline;
     vertexAttribs: VertexAttribState;
     state: GLState;
+    profiler: Profiler;
 
     parameters: WebGLHyperRendererParameters;
 
@@ -198,6 +201,7 @@ export class RendererCore
         this.shaderManager = createShaderManager(this);
         this.vertexAttribs = new VertexAttribState(this.gl);
         this.state = new GLState(this.gl);
+        this.profiler = new Profiler(this, this.log.getLogger("profiler"));
 
         // this is required by WebGL comformance test
         this.quadRenderer = new QuadRenderer(this);
@@ -293,6 +297,7 @@ export class RendererCore
         this.uniformJitter.dispose();
         this.gaussianJitter.dispose();
         this.shaderManager.dispose();
+        this.profiler.dispose();
     }
 
     compilePipeline(): void
@@ -379,7 +384,16 @@ export class RendererCore
             logger.log(dumpRenderOperationAsDot(ops));
 
         this.renderBuffers.setup(ops, [visualized]);
+    }
 
+    startProfiling(callback: (result: WebGLHyperRendererProfilerResult) => void): void
+    {
+        this.profiler.startProfiling(callback);
+    }
+
+    stopProfiling(): void
+    {
+        this.profiler.stopProfiling();
     }
 
     invalidateFramebuffer(...attachments: number[]): void
@@ -456,7 +470,9 @@ export class RendererCore
 
         camera.matrixWorldInverse.getInverse(camera.matrixWorld);
 
+        this.profiler.beginFrame();
         this.renderBuffers.render();
+        this.profiler.finalizeFrame();
     }
     setSize(width: number, height: number): void
     {

@@ -314,10 +314,16 @@ class ShadowMapRenderServiceImpl implements RenderOperator, ShadowMapRenderServi
 
     renderShadowMap(camera: three.Camera | three.CubeCamera, type: ShadowMapType): void
     {
+        const profiler = this.parent.renderer.profiler;
+
         if (camera instanceof three.Camera) {
+            profiler.begin("Normal Shadow Maps");
             this.normalRenderer.render(camera);
+            profiler.end();
         } else if (camera instanceof three.CubeCamera) {
+            profiler.begin("Cube Shadow Maps");
             this.cubeRenderer.render(camera);
+            profiler.end();
         } else {
             throw new Error("unknown camera type");
         }
@@ -387,16 +393,24 @@ class ShadowMapCubeTextureRenderer extends BaseGeometryPassRenderer
 
     render(camera: three.CubeCamera): void
     {
+        const profiler = this.parent.renderer.profiler;
+
+        profiler.begin("Setup");
+
         const gl = this.parent.renderer.gl;
         gl.viewport(0, 0, this.parent.cubeShadowMapSize, this.parent.cubeShadowMapSize);
         this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled | GLStateFlags.FrontFaceCW;
         gl.clearColor(1, 1, 1, 1); // far away
+
+        profiler.end();
 
         for (let i = 0; i < 6; ++i) {
             this.parent.cubeShadowMapFramebuffer[i].bind();
 
             const cam = camera.children[i];
             if (cam instanceof three.PerspectiveCamera) {
+                profiler.begin("Face");
+
                 gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
                 cam.matrixWorldInverse.getInverse(cam.matrixWorld);
@@ -405,6 +419,8 @@ class ShadowMapCubeTextureRenderer extends BaseGeometryPassRenderer
 
                 this.renderGeometry(cam.matrixWorldInverse,
                     cam.projectionMatrix);
+
+                profiler.end();
             } else {
                 throw new Error("child of CubeCamera wasn't camera");
             }

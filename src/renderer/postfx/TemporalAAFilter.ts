@@ -209,6 +209,10 @@ class TemporalAAFilterRendererInstance implements RenderOperator
     perform(): void
     {
         const gl = this.parent.renderer.gl;
+        const profiler = this.parent.renderer.profiler;
+
+        profiler.begin("Pass 1");
+
         gl.viewport(0, 0, this.out.width, this.out.height);
         this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled;
 
@@ -243,6 +247,9 @@ class TemporalAAFilterRendererInstance implements RenderOperator
             // TODO: set some parameters
             quad.render(p.attributes["a_position"]);
         }
+        profiler.end();
+
+        profiler.begin("Pass 2");
         {
             this.accumFb.bind();
             this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
@@ -262,22 +269,32 @@ class TemporalAAFilterRendererInstance implements RenderOperator
             // TODO: set some parameters
             quad.render(p.attributes["a_position"]);
         }
+        profiler.end();
 
         // copy to accumulation buffer
+        profiler.begin("Pass 3");
+
         this.fb.bind();
         this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.accumTex);
+
         this.parent.renderer.passthroughRenderer.render();
 
+        profiler.end();
+
         // save depth
+        profiler.begin("Pass 4");
+
         this.savedDepthFb.bind();
         this.parent.renderer.invalidateFramebuffer(gl.COLOR_ATTACHMENT0);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
         this.parent.renderer.passthroughRenderer.render();
+
+        profiler.end();
     }
     afterRender(): void
     {

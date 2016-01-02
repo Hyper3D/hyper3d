@@ -12,6 +12,7 @@
 		"src/renderer/core/GLProgram.ts",
 		"src/renderer/core/GLShader.ts",
 		"src/renderer/core/JitterTexture.ts",
+		"src/renderer/core/Profiler.ts",
 		"src/renderer/core/QuadRenderer.ts",
 		"src/renderer/core/RenderBuffers.ts",
 		"src/renderer/core/RendererCore.ts",
