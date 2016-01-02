@@ -30,6 +30,7 @@
 		"src/renderer/postfx/SSAORenderer.ts",
 		"src/renderer/postfx/TemporalAAFilter.ts",
 		"src/renderer/postfx/ToneMappingFilter.ts",
+		"src/renderer/postfx/HdrCompressFilter.ts",
 		"src/renderer/public/Lights.ts",
 		"src/renderer/public/Materials.ts",
 		"src/renderer/public/ReflectionProbe.ts",

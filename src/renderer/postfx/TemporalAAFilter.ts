@@ -55,7 +55,7 @@ export class TemporalAAFilterRenderer
     }
 
     /** input must be LogRGB. */
-    setupFilter<T extends LogRGBTextureRenderBufferInfo | LinearRGBTextureRenderBufferInfo>
+    setupFilter<T extends LinearRGBTextureRenderBufferInfo>
     (input: TemporalAAInput<T>, ops: RenderOperation[]): T
     {
         let width = input.color.width;
@@ -82,8 +82,7 @@ export class TemporalAAFilterRenderer
                 <TextureRenderBuffer> cfg.inputs["g0"],
                 <TextureRenderBuffer> cfg.inputs["g1"],
                 <TextureRenderBuffer> cfg.inputs["linearDepth"],
-                <TextureRenderBuffer> cfg.outputs["output"],
-                input.color instanceof LogRGBTextureRenderBufferInfo)
+                <TextureRenderBuffer> cfg.outputs["output"])
         });
         return <T> outp;
     }
@@ -118,8 +117,7 @@ class TemporalAAFilterRendererInstance implements RenderOperator
         private inG0: TextureRenderBuffer,
         private inG1: TextureRenderBuffer,
         private inLinearDepth: TextureRenderBuffer,
-        private out: TextureRenderBuffer,
-        useLogRGB: boolean
+        private out: TextureRenderBuffer
     )
     {
 
@@ -143,7 +141,7 @@ class TemporalAAFilterRendererInstance implements RenderOperator
         const typ = input.format == TextureRenderBufferFormat.RGBAF16 ?
                 parent.renderer.ext.get("OES_texture_half_float").HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
         gl.texImage2D(gl.TEXTURE_2D, 0, fmt, input.width, input.height, 0,
-            fmt, gl.UNSIGNED_BYTE, null);
+            fmt, typ, null);
 
         this.savedDepthTex = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.savedDepthTex);

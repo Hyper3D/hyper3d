@@ -36,6 +36,11 @@ import { SSAORenderer } from "../postfx/SSAORenderer";
 import { TemporalAAFilterRenderer } from "../postfx/TemporalAAFilter";
 import { BloomFilterRenderer } from "../postfx/BloomFilter";
 import {
+    HdrCompressFilter,
+    HdrCompressDirection,
+    HdrOperatorType
+} from "../postfx/HdrCompressFilter";
+import {
     WebGLHyperRendererParameters,
     WebGLHyperRendererCreationParameters,
     WebGLHyperRendererLogParameters,
@@ -112,6 +117,7 @@ export class RendererCore
     temporalAA: TemporalAAFilterRenderer;
     bloom: BloomFilterRenderer;
     motionBlur: MotionBlurFilterRenderer;
+    hdrCompress: HdrCompressFilter;
 
     currentScene: three.Scene;
     currentCamera: three.Camera;
@@ -254,6 +260,7 @@ export class RendererCore
         });
         this.bloom = new BloomFilterRenderer(this);
         this.motionBlur = new MotionBlurFilterRenderer(this);
+        this.hdrCompress = new HdrCompressFilter(this);
 
         this.compilePipeline();
     }
@@ -297,6 +304,7 @@ export class RendererCore
         this.uniformJitter.dispose();
         this.gaussianJitter.dispose();
         this.shaderManager.dispose();
+        this.hdrCompress.dispose();
         this.profiler.dispose();
     }
 
@@ -356,6 +364,20 @@ export class RendererCore
             }, ops) :
             <LinearRGBTextureRenderBufferInfo> reflections;
 
+        if (this.hdrMode == HdrMode.NativeHdr) {
+            demosaiced = this.hdrCompress.setupFilter(demosaiced,
+                HdrOperatorType.Reinhard, HdrCompressDirection.Encode,
+                1, ops);
+            demosaiced = this.temporalAA.setupFilter({
+                color: demosaiced,
+                linearDepth: gbuffer.linearDepth,
+                g0: gbuffer.g0, g1: gbuffer.g1
+            }, ops);
+            demosaiced = this.hdrCompress.setupFilter(demosaiced,
+                HdrOperatorType.Reinhard, HdrCompressDirection.Decode,
+                1, ops);
+        }
+
         demosaiced = this.motionBlur.setupFilter({
             color: demosaiced,
             g0: gbuffer.g0,
@@ -369,13 +391,15 @@ export class RendererCore
 
         let toneMapped = this.toneMapFilter.setupFilter(demosaiced, ops);
 
-        const antialiased = this.temporalAA.setupFilter({
-            color: toneMapped,
-            linearDepth: gbuffer.linearDepth,
-            g0: gbuffer.g0, g1: gbuffer.g1
-        }, ops);
+        if (this.hdrMode == HdrMode.MobileHdr) {
+            toneMapped = this.temporalAA.setupFilter({
+                color: toneMapped,
+                linearDepth: gbuffer.linearDepth,
+                g0: gbuffer.g0, g1: gbuffer.g1
+            }, ops);
+        }
 
-        const visualizedBuf = antialiased;
+        const visualizedBuf = toneMapped;
         let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
 
         // visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
