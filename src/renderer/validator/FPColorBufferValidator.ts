@@ -17,6 +17,7 @@ export function validateHalfFloatColorBuffer(core: RendererCore): boolean
 
     try {
         gl.bindTexture(gl.TEXTURE_2D, tex);
+        while (gl.getError()); // clear error
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 7, 7, 0,
             gl.RGBA, halfFloat.HALF_FLOAT_OES, null);
         if (gl.getError()) {
