@@ -87,7 +87,7 @@ function orderedDither(x: number, y: number, type: number, frame: number): numbe
     if (type & 1) x += 4;
     if (type & 2) y += 4;
     x &= 7; y &= 7;
-    return (pat3[x | (y << 3)] << 2) + bias & 255;
+    return ((pat3[x | (y << 3)] << 2) & 208) + bias & 255;
 }
 
 export class DitherJitterTexture extends JitterTexture
