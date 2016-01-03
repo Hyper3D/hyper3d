@@ -2,7 +2,8 @@ doc-devel
 typings
 src
 tools
-gulpfile.js
+gulpfile.coffee
 tsd.json
 tsconfig.json
 build
+tslint.json
