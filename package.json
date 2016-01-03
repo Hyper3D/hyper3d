@@ -1,6 +1,6 @@
 {
   "name": "hyper3d",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "High-end WebGL renderer for three.js",
   "main": "dist/hyper3d.js",
   "author": "yvt <i@yvt.jp>",
