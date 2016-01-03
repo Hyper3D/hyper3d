@@ -9,7 +9,7 @@ HYPER3D WebGL Renderer
 HYPER3D is a high-end (unofficial) renderer for [three.js](http://threejs.org/).
 
 **Hyper3D is still at a very early stage of development.** You might observe an unexpected behavior including distorted image,
-browser crash, peformance breakdown, and shader compilation failure. APIs may need to change over time.
+browser crash, peformance breakdown, and shader compilation failure. APIs may change over time.
 
 Features
 --------
