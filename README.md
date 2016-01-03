@@ -1,13 +1,70 @@
 HYPER3D WebGL Renderer
 ======================
 
-[Examples](https://hyper3d.github.io/hyper3d-examples/) — Documentation — [Roadmap](https://trello.com/b/GN81FAP9/hyper3d-roadmap)
+[Examples](https://hyper3d.github.io/hyper3d-examples/) — Documentation — [Roadmap](https://trello.com/b/GN81FAP9/hyper3d-roadmap) —
+[jsdo.itで試す](http://jsdo.it/yvt/hyper3d-simple2)
 
 ![](https://dl.dropboxusercontent.com/u/37804131/github/Screen%20Shot%202016-01-03%20at%202.16.45%20AM.jpg)
 
 HYPER3D is a high-end (unofficial) renderer for [three.js](http://threejs.org/).
 
-(TODO: more description here)
+**Hyper3D is still at a very early stage of development.** You might observe an unexpected behavior including distorted image,
+browser crash, peformance breakdown, and shader compilation failure. APIs may need to change over time.
+
+Features
+--------
+
+* Modern rendering engine
+  * Physically based rendering
+  * Roughness-metallic material workflow with support for custom shaders
+  * High dynamic range rendering
+  * High-quality post-effects
+* Development support
+  * Includes TypeScript definition
+  * Integrated GPU Profiler
+
+More features are coming! See [Roadmap](https://trello.com/b/GN81FAP9/hyper3d-roadmap).
+
+Supported three.js Objects
+---------------------------
+
+Following three.js objects can safely be used with Hyper3D.
+
+ * `Mesh`, `SkinnedMesh`
+ * `Geometry`, `BufferGeometry`
+   * Current limitation: when using a `Geometry`, calling `dispose()` on it doesn't reclaim memory.
+ * `PerspectiveCamera`
+ * `AmbientLight`, `DirectionalLight`, `PointLight`
+   * Current limitation: semantics of `PointLight`'s parameters differs significantly.
+     Recommended to use `Hyper.PointLight` instead for future compatibility.
+   * Current limitation: `shadowBias` and `shadowMapSize` is hardcoded.
+   * Shadow can be rendered by setting `castShadow` to `true`. However, most parameters related to the shadow
+     rendering are computed automatically and cannot be overrided.
+   * `shadowDarkness` is not supported because it doesn't have a physical meaning.
+ * `Texture`, `CubeTexture`
+   * Current limitation 1: texture parameters are not respected
+   * Current limitation 2: compressed textures are not supported
+ * `MeshBasicMaterial`, `MeshPhongMaterial`
+   * Current limitation: transparency is not supported at all. Vertex color is not supported.
+   * Colored specular reflection, `wireframe`, `lightMap`, `aoMap` is not supported. Wireframe is not supported.
+   * `specularMap` is treated as a roughness map.
+   * Environment maps are not supported. Use `Hyper.ReflectionProbe` instead.
+   * Most of the properties defined in the base class `Material` are not supported.
+
+
+Hyper3D-specific Objects
+------------------------
+
+ * `Hyper.WebGLHyperRenderer`
+ * `Hyper.ReflectionProbe` (inherits from `THREE.Object3D`)
+   * Current limitation: positional probe is not supported.
+ * `Hyper.Material`
+   * Current limitation: transparency is not supported at all. `discard;` still works
+   * This class allows you to write a custom shader that generates material parameters like `m_albedo` and `m_roughness`.
+     This itself cannot be used as a material. It should be instantiated by creating `Hyper.MaterialInstance`.
+ * `Hyper.MaterialInstance` (inherits from `THREE.Material`)
+ * `Hyper.PointLight` (inherits from `THREE.PointLight`)
+   * Current limitation: sized lights are not supported.
 
 Building
 --------
@@ -58,6 +115,11 @@ npm run-script lib
 
 After running these command this library can be used in your project
 by using `npm link`.
+
+Contributing
+------------
+
+Contributions are always welcome. Feel free to talk to the developers.
 
 License
 -------
