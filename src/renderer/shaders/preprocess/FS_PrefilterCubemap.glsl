@@ -36,19 +36,13 @@ void main()
 
 	// texture cube seam elimination
 	if (u_axisIsMinor.x) {
-		if (abs(dir.x) >= u_borderCoord) {
-			dir.x = sign(dir.x);
-		}
+		dir.x /= u_borderCoord;
 	}
 	if (u_axisIsMinor.y) {
-		if (abs(dir.y) >= u_borderCoord) {
-			dir.y = sign(dir.y);
-		}
+		dir.y /= u_borderCoord;
 	}
 	if (u_axisIsMinor.z) {
-		if (abs(dir.z) >= u_borderCoord) {
-			dir.z = sign(dir.z);
-		}
+		dir.z /= u_borderCoord;
 	}
 
 	vec3 dirU, dirV;

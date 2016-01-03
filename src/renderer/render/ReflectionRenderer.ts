@@ -374,7 +374,7 @@ class ImageBasedLightRenderer implements RenderOperator
     }
     private computeReflectionLodBias(tex: ReflectionTextureCube): number
     {
-        return tex.log2Size - 19;
+        return tex.log2Size - 20;
     }
     private renderProbe(probe: ReflectionProbe, isBlendPass: boolean): void
     {

@@ -78,8 +78,8 @@ export class ReflectionTextureCube
 
         const gl = this.manager.gl;
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.textureHandle);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
         gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -159,8 +159,8 @@ const faces = [
 
 function roughnessForMipLevel(texSizeLog: number, level: number): number
 {
-    const t = level + 19 - texSizeLog;
-    const r = Math.max(Math.min(t / 18.1, 1), 0);
+    const t = level + 20 - texSizeLog;
+    const r = Math.max(Math.min(t / 17.1, 1), 0);
     return (r * r) * (r * r);
 }
 
@@ -211,7 +211,7 @@ function buildReflectionPyramid(core: RendererCore, inTex: WebGLTexture, inSize:
     // Render levels
     for (let i = 0; i <= outSize; ++i) {
         const curSize = 1 << (outSize - i);
-        gl.uniform1f(uniforms["u_borderCoord"], 1 - 2 / curSize);
+        gl.uniform1f(uniforms["u_borderCoord"], 1 - 1 / Math.max(2, curSize));
         gl.uniform1f(uniforms["u_sampleRange"],  Math.min(16 / curSize, 0.7));
         gl.uniform1f(uniforms["u_textureLod"], i + 2);
         gl.uniform1f(uniforms["u_roughness"], roughnessForMipLevel(outSize, i));

@@ -77,16 +77,16 @@ void main()
     ssao = mix(1., ssao, min(mat.roughness * 4., 1.));
 
     // sampling from image
-    float lod = u_reflectionLodBias + 19. * sqrt(sqrt(mat.roughness));
-    vec3 refl = myTextureCubeLod(u_reflection, reflVector, lod, u_reflectionSize).xyz;
+    float lod = u_reflectionLodBias + 17.1 * sqrt(sqrt(mat.roughness));
+    vec3 refl = myTextureCubeLodSeamless(u_reflection, reflVector, lod, u_reflectionSize).xyz;
     refl.xyz *= refl.xyz; // linearize
 
     refl *= evaluateReflection(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat).xyz;
 
     if (isMaterialClearCoat(mat)) {
         // second specular lobe
-        float lodcc = u_reflectionLodBias + 19. * sqrt(sqrt(mat.clearCoatRoughness));
-        vec3 reflcc = myTextureCubeLod(u_reflection, reflVector, lodcc, u_reflectionSize).xyz;
+        float lodcc = u_reflectionLodBias + 17.1 * sqrt(sqrt(mat.clearCoatRoughness));
+        vec3 reflcc = myTextureCubeLodSeamless(u_reflection, reflVector, lodcc, u_reflectionSize).xyz;
         reflcc.xyz *= reflcc.xyz; // linearize
 
         vec2 reflFactorCC = evaluateReflectionForClearCoat(clamp(dot(g.normal, normalize(viewDir)), 0., 1.), mat);
