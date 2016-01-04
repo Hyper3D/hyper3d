@@ -1,4 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
+/// <reference path="../gl/WEBGLDrawBuffers.d.ts" />
 
 import * as three from "three";
 
@@ -80,7 +81,7 @@ export class GeometryRenderer
 
     setupGeometryPass(width: number, height: number, ops: RenderOperation[]): GeometryPassOutput
     {
-        const fullRes = this.renderer.useFullResolutionGBuffer;
+        const fullRes = this.renderer.useFullResolutionGBuffer && !this.renderer.supportsMRT;
         const mosaicked = new GBufferMosaicTextureRenderBufferInfo("Mosaicked G-Buffer",
             fullRes ? width * 2 : width, fullRes ? height * 2 : height,
             TextureRenderBufferFormat.RGBA8);
@@ -105,47 +106,81 @@ export class GeometryRenderer
             depth: rawDepth
         };
 
-        ops.push({
-            inputs: {},
-            outputs: {
-                mosaic: mosaicked,
-                depth: rawDepth
-            },
-            bindings: [],
-            optionalOutputs: ["shadowMapsDepth", "shadowMapsColor"],
-            name: "Geometry Pass",
-            factory: (cfg) => new GeometryPassRenderer(this,
-                <TextureRenderBuffer> cfg.outputs["mosaic"],
-                <TextureRenderBuffer> cfg.outputs["depth"])
-        });
-        ops.push({
-            inputs: {
-                mosaic: mosaicked,
-                depth: rawDepth
-            },
-            outputs: {
-                g0: outp.g0,
-                g1: outp.g1,
-                g2: outp.g2,
-                g3: outp.g3,
-                depth: outp.linearDepth
-            },
-            bindings: [],
-            optionalOutputs: [
-                "g0", "g1", "g2", "g3", "depth"
-            ],
-            name: "Demosaick G-Buffer",
-            factory: (cfg) => new DemosaicGBufferRenderer(this,
-                <TextureRenderBuffer> cfg.inputs["mosaic"],
-                <TextureRenderBuffer> cfg.inputs["depth"],
-                [
-                    <TextureRenderBuffer> cfg.outputs["g0"],
-                    <TextureRenderBuffer> cfg.outputs["g1"],
-                    <TextureRenderBuffer> cfg.outputs["g2"],
-                    <TextureRenderBuffer> cfg.outputs["g3"],
-                    <TextureRenderBuffer> cfg.outputs["depth"]
-                ])
-        });
+        const drawBuffers = <WebGLDrawBuffers> this.renderer.ext.get("WEBGL_draw_buffers");
+        const maxNumBuffers = drawBuffers ? this.renderer.gl.getParameter(drawBuffers.MAX_DRAW_BUFFERS_WEBGL) : 1;
+
+        if (this.renderer.supportsMRT) {
+            ops.push({
+                inputs: {},
+                outputs: {
+                    g0: outp.g0,
+                    g1: outp.g1,
+                    g2: outp.g2,
+                    g3: outp.g3,
+                    depth: rawDepth,
+                    linearDepth: maxNumBuffers >= 5 ? outp.linearDepth : null
+                },
+                bindings: [],
+                optionalOutputs: [],
+                name: "Geometry Pass",
+                factory: (cfg) => new GeometryPassRenderer(this,
+                    null,
+                    [
+                        <TextureRenderBuffer> cfg.outputs["g0"],
+                        <TextureRenderBuffer> cfg.outputs["g1"],
+                        <TextureRenderBuffer> cfg.outputs["g2"],
+                        <TextureRenderBuffer> cfg.outputs["g3"],
+                        maxNumBuffers >= 5 ? <TextureRenderBuffer> cfg.outputs["linearDepth"] : null
+                    ],
+                    <TextureRenderBuffer> cfg.outputs["depth"])
+            });
+        } else {
+            ops.push({
+                inputs: {},
+                outputs: {
+                    mosaic: mosaicked,
+                    depth: rawDepth
+                },
+                bindings: [],
+                optionalOutputs: [],
+                name: "Geometry Pass",
+                factory: (cfg) => new GeometryPassRenderer(this,
+                    <TextureRenderBuffer> cfg.outputs["mosaic"],
+                    null,
+                    <TextureRenderBuffer> cfg.outputs["depth"])
+            });
+        }
+
+        if (!this.renderer.supportsMRT || maxNumBuffers < 5) {
+            ops.push({
+                inputs: {
+                    mosaic: this.renderer.supportsMRT ? null : mosaicked,
+                    depth: rawDepth
+                },
+                outputs: {
+                    g0: this.renderer.supportsMRT ? null : outp.g0,
+                    g1: this.renderer.supportsMRT ? null : outp.g1,
+                    g2: this.renderer.supportsMRT ? null : outp.g2,
+                    g3: this.renderer.supportsMRT ? null : outp.g3,
+                    depth: outp.linearDepth
+                },
+                bindings: [],
+                optionalOutputs: [
+                    "g0", "g1", "g2", "g3", "depth"
+                ],
+                name: "Demosaick G-Buffer",
+                factory: (cfg) => new DemosaicGBufferRenderer(this,
+                    this.renderer.supportsMRT ? null : <TextureRenderBuffer> cfg.inputs["mosaic"],
+                    <TextureRenderBuffer> cfg.inputs["depth"],
+                    [
+                        this.renderer.supportsMRT ? null : <TextureRenderBuffer> cfg.outputs["g0"],
+                        this.renderer.supportsMRT ? null : <TextureRenderBuffer> cfg.outputs["g1"],
+                        this.renderer.supportsMRT ? null : <TextureRenderBuffer> cfg.outputs["g2"],
+                        this.renderer.supportsMRT ? null : <TextureRenderBuffer> cfg.outputs["g3"],
+                        <TextureRenderBuffer> cfg.outputs["depth"]
+                    ])
+            });
+        }
 
         return outp;
     }
@@ -170,7 +205,7 @@ class GeometryPassMaterialManager extends BaseGeometryPassMaterialManager
 {
     constructor(core: RendererCore)
     {
-        super(core, "VS_Geometry", "FS_Geometry");
+        super(core, "VS_Geometry", core.supportsMRT ? "FS_GeometryMRT" : "FS_GeometryNoMRT");
     }
 
     createShader(material: Material, flags: number): Shader // override
@@ -194,17 +229,28 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
     constructor(
         private parent: GeometryRenderer,
         private outMosaic: TextureRenderBuffer,
+        private outBuffers: TextureRenderBuffer[],
         private outDepth: TextureRenderBuffer
     )
     {
         super(parent.renderer, parent.gpMaterials, true);
 
-        this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
-            depth: outDepth.texture,
-            colors: [
-                outMosaic.texture
-            ]
-        });
+        if (outBuffers) {
+            if (outBuffers[4] == null) {
+                outBuffers.pop();
+            }
+            this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+                depth: outDepth.texture,
+                colors: outBuffers.map((buffer) => buffer.texture)
+            });
+        } else {
+            this.fb = GLFramebuffer.createFramebuffer(parent.renderer.gl, {
+                depth: outDepth.texture,
+                colors: [
+                    outMosaic.texture
+                ]
+            });
+        }
 
         this.lastJitX = this.lastJitY = 0;
         this.screenVelOffX = this.screenVelOffY = 0;
@@ -244,10 +290,20 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         this.lastJitY = jitY;
 
         const gl = this.parent.renderer.gl;
-        gl.viewport(0, 0, this.outMosaic.width, this.outMosaic.height);
+        gl.viewport(0, 0, this.outDepth.width, this.outDepth.height);
         gl.clearColor(0.5, 0.5, 0.5, 0.5); // this should be safe value
+        if (this.outBuffers && this.outBuffers.length >= 5) {
+            this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled |
+                GLStateFlags.ColorAttachment1Enabled | GLStateFlags.ColorAttachment2Enabled |
+                GLStateFlags.ColorAttachment3Enabled | GLStateFlags.ColorAttachment4Enabled;
+        } else if (this.outBuffers) {
+            this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled |
+                GLStateFlags.ColorAttachment1Enabled | GLStateFlags.ColorAttachment2Enabled |
+                GLStateFlags.ColorAttachment3Enabled;
+        } else {
+            this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
+        }
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        this.parent.renderer.state.flags = GLStateFlags.DepthTestEnabled;
         this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
             projMat);
 

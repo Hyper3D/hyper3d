@@ -1,4 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
+/// <reference path="../gl/WEBGLDrawBuffers.d.ts" />
 
 import { IDisposable } from "../utils/Utils";
 
@@ -35,9 +36,15 @@ export class GLFramebuffer implements IDisposable
         }
 
         const colors = attachments.colors;
-        for (let i = 0; i < colors.length; ++i) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i,
-                texTarget, colors[i], 0);
+        if (colors.length == 1) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
+                texTarget, colors[0], 0);
+        } else {
+            const ext = <WebGLDrawBuffers> gl.getExtension("WEBGL_draw_buffers");
+            for (let i = 0; i < colors.length; ++i) {
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT0_WEBGL + i,
+                    texTarget, colors[i], 0);
+            }
         }
 
         const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);

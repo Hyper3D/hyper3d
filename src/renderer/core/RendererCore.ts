@@ -1,4 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
+/// <reference path="../gl/WEBGLDrawBuffers" />
 
 import * as three from "three";
 import { TextureManager } from "../render/TextureManager";
@@ -85,6 +86,7 @@ export class RendererCore
     supportsSRGB: boolean;
     supportsHdrTexture: boolean;
     supportsHdrRenderingBuffer: boolean;
+    supportsMRT: boolean;
     hdrMode: HdrMode;
 
     textures: TextureManager<Texture2D>;
@@ -184,8 +186,13 @@ export class RendererCore
         this.supportsSRGB = !!(this.ext.get("EXT_sRGB"));
         this.supportsHdrTexture = !!(this.ext.get("OES_texture_half_float") &&
             this.ext.get("OES_texture_half_float_linear"));
+        this.supportsMRT = !!(this.ext.get("WEBGL_draw_buffers"));
         this.supportsHdrRenderingBuffer = false;
         this.hdrMode = HdrMode.MobileHdr;
+
+        if (this.supportsMRT) {
+            this.useFullResolutionGBuffer = true;
+        }
 
         this.renderWidth = this.width = gl.drawingBufferWidth;
         this.renderHeight = this.height = gl.drawingBufferHeight;
@@ -557,12 +564,23 @@ export const enum GLStateFlags
 
     CullFaceDisabled = 1 << 8,
 
-    FrontFaceCW = 1 << 9
+    FrontFaceCW = 1 << 9,
+
+    ColorAttachment0Disabled = 1 << 10,
+    ColorAttachment1Enabled = 1 << 11,
+    ColorAttachment2Enabled = 1 << 12,
+    ColorAttachment3Enabled = 1 << 13,
+    ColorAttachment4Enabled = 1 << 14,
+
+    ColorAttachmentFlags = ColorAttachment0Disabled | ColorAttachment1Enabled |
+        ColorAttachment2Enabled | ColorAttachment3Enabled | ColorAttachment4Enabled
 }
 
 class GLState
 {
     private flags_: GLStateFlags;
+    private drawBuffers: number[];
+    private extDrawBuffers: WebGLDrawBuffers;
 
     constructor(private gl: WebGLRenderingContext)
     {
@@ -573,6 +591,13 @@ class GLState
         gl.colorMask(true, true, true, true);
         gl.enable(gl.CULL_FACE);
         gl.frontFace(gl.CCW);
+
+        this.extDrawBuffers = gl.getExtension("WEBGL_draw_buffers");
+        this.drawBuffers = this.extDrawBuffers ? [this.extDrawBuffers.COLOR_ATTACHMENT0_WEBGL] : null;
+
+        if (this.drawBuffers) {
+            this.extDrawBuffers.drawBuffersWEBGL(this.drawBuffers);
+        }
 
         this.flags_ = 0;
     }
@@ -639,6 +664,25 @@ class GLState
             } else {
                 gl.frontFace(gl.CCW);
             }
+        }
+        if (diff & GLStateFlags.ColorAttachmentFlags) {
+            this.drawBuffers.length = 0;
+            if (!(diff & GLStateFlags.ColorAttachment0Disabled)) {
+                this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT0_WEBGL);
+            }
+            if (diff & GLStateFlags.ColorAttachment1Enabled) {
+                this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT1_WEBGL);
+            }
+            if (diff & GLStateFlags.ColorAttachment2Enabled) {
+                this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT2_WEBGL);
+            }
+            if (diff & GLStateFlags.ColorAttachment3Enabled) {
+                this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT3_WEBGL);
+            }
+            if (diff & GLStateFlags.ColorAttachment4Enabled) {
+                this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT4_WEBGL);
+            }
+            this.extDrawBuffers.drawBuffersWEBGL(this.drawBuffers);
         }
 
         this.flags_ = newValue;

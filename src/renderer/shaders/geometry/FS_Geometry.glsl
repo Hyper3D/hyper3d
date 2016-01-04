@@ -1,6 +1,5 @@
 #pragma parameter useNormalMap
 #pragma require GBuffer
-#pragma require GBufferMosaic
 #pragma require FS_BaseGeometry
 
 // prevent distorted reflection due to (probably) insufficient normal precision
@@ -13,10 +12,10 @@ varying vec3 v_viewTangent;
 varying vec3 v_viewBitangent;
 #endif
 
-varying highp vec3 v_screenPosition;
+varying highp vec4 v_screenPosition;
 varying highp vec3 v_lastScreenPosition;
 
-void main()
+GBufferContents evaluateGeometry()
 {
     evaluateMaterial();
 
@@ -45,14 +44,5 @@ void main()
     g.materialId = m_materialId;
     g.materialParam = m_materialParam;
 
-    vec4 g0, g1, g2, g3;
-
-    encodeGBuffer(g0, g1, g2, g3, g);
-
-    // mosaiced G-Buffer is not sRGB buffer, so
-    // we have to convert color to gamma space to
-    // prevent the loss of precision
-    g0.xyz = sqrt(g0.xyz);
-
-    gl_FragColor = encodeGBufferMosaic(g0, g1, g2, g3);
+    return g;
 }

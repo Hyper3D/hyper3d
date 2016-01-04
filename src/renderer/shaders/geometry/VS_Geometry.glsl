@@ -10,7 +10,7 @@ varying vec3 v_viewTangent;
 varying vec3 v_viewBitangent;
 #endif
 
-varying vec3 v_screenPosition;
+varying vec4 v_screenPosition;
 varying vec3 v_lastScreenPosition;
 
 uniform mat4 u_lastViewProjectionMatrix;
@@ -22,9 +22,11 @@ void main()
 
     gl_Position = u_viewProjectionMatrix * vec4(worldPosition, 1.);
 
-    v_screenPosition = gl_Position.xyw;
+    v_screenPosition.xyz = gl_Position.xyw;
     v_lastScreenPosition = (u_lastViewProjectionMatrix * vec4(lastWorldPosition, 1.)).xyw;
     v_screenPosition.xy += u_screenVelOffset * v_screenPosition.z;
+
+    v_screenPosition.w = -(u_viewMatrix * vec4(worldPosition, 1.)).z; // depth
 
     v_viewNormal = (u_viewMatrix * vec4(worldNormal, 0.)).xyz;
 #if c_useNormalMap
