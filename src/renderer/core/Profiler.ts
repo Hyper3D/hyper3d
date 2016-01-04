@@ -1,5 +1,5 @@
 /// <reference path="../Prefix.d.ts" />
-/// <reference path="./EXTDisjointTimerQuery.d.ts" />
+/// <reference path="../gl/EXTDisjointTimerQuery.d.ts" />
 
 import { RendererCore } from "./RendererCore";
 
