@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "description": "High-end WebGL renderer for three.js",
   "main": "dist/hyper3d.js",
-  "author": "yvt <i@yvt.jp>",
+  "author": "yvt <i@yvt.jp> (https://yvt.jp/)",
+  "homepage": "https://hyper3d.github.io/",
   "keywords": [
     "WebGL",
     "rendering",
@@ -15,7 +16,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Hyper3D/hyper3d"
+    "url": "https://github.com/Hyper3D/hyper3d.git"
   },
   "license": "MIT",
   "bugs": {
