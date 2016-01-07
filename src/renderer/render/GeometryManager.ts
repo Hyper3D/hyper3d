@@ -126,6 +126,7 @@ export class Geometry extends three.EventDispatcher
     attributes: GeometryAttribute[];
     indexAttribute: GeometryAttribute;
     numFaces: number;
+    numVertices: number;
 
     constructor(private manager: GeometryManager, public source: three.BufferGeometry)
     {
@@ -139,6 +140,7 @@ export class Geometry extends three.EventDispatcher
         this.attributes = [];
         this.indexAttribute = null;
         this.numFaces = 0;
+        this.numVertices = 0;
 
         for (const key of keys) {
             const attr: three.BufferAttribute = attrs[key];
@@ -147,7 +149,11 @@ export class Geometry extends three.EventDispatcher
 
             if (gattr.isIndex) {
                 this.indexAttribute = gattr;
-                this.numFaces = attr.length / 3 | 0;
+                this.numFaces = attr.count / 3 | 0;
+            }
+
+            if (key == "position") {
+                this.numVertices = attr.count;
             }
         }
 
@@ -256,11 +262,11 @@ export class GeometryAttribute
         }
     }
 
-    drawElements(): void
+    drawElements(mode: number): void
     {
         const gl = this.renderer.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffer);
-        gl.drawElements(gl.TRIANGLES, this.source.array.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(mode, this.source.array.length, gl.UNSIGNED_SHORT, 0);
     }
 
     setupVertexAttrib(attribIndex: number): void

@@ -30,6 +30,8 @@ import {
     GLProgramUniforms
 } from "../core/GLProgram";
 
+import { Geometry } from "./GeometryManager";
+
 import { GLShader } from "../core/GLShader";
 
 import { Matrix4Pool } from "../utils/ObjectPool";
@@ -114,6 +116,9 @@ export class BaseGeometryPassRenderer
             if (obj instanceof three.Mesh &&
                 !this.skipsMesh(obj)) {
                 this.renderMesh(obj, geometry);
+            } else if (obj instanceof three.Points &&
+                !this.skipsPoints(obj)) {
+                this.renderPoints(obj, geometry);
             }
         }
 
@@ -131,7 +136,22 @@ export class BaseGeometryPassRenderer
 
         lobj.render(this.state);
     }
+    private renderPoints(points: three.Points, geo: any): void
+    {
+        let lobj: BaseGeometryPassRendererObject = this.objs.get(points.id);
+        if (!lobj) {
+            lobj = new BaseGeometryPassRendererPoints(points, this);
+            this.objs.set(points.id, lobj);
+        }
+
+        lobj.render(this.state);
+    }
     skipsMesh(mesh: three.Mesh): boolean
+    {
+        // to be overrided
+        return false;
+    }
+    skipsPoints(points: three.Points): boolean
     {
         // to be overrided
         return false;
@@ -193,7 +213,6 @@ class BaseGeometryPassRendererObject
 
         this.shaderInst = renderer.materialManager.get(matInst, flags);
         this.shader = <BaseGeometryPassShader> this.shaderInst.shader;
-
     }
 
     get isSkipped(): boolean
@@ -238,17 +257,23 @@ class BaseGeometryPassRendererObject
 
             renderer.setupAdditionalUniforms(obj, shader);
 
-            const index = geo2.indexAttribute;
-            if (index != null) {
-                index.drawElements();
-
-                // TODO: use three.GeometryBuffer.offsets
-            } else {
-                gl.drawArrays(gl.TRIANGLES, 0, geo2.numFaces * 3);
-            }
+            this.glDraw(geo2);
         }
 
         this.save(state.nextToken);
+    }
+
+    glDraw(geo: Geometry): void
+    {
+        const gl = this.renderer.core.gl;
+        const index = geo.indexAttribute;
+        if (index != null) {
+            index.drawElements(gl.TRIANGLES);
+
+            // TODO: use three.GeometryBuffer.offsets
+        } else {
+            gl.drawArrays(gl.TRIANGLES, 0, geo.numFaces * 3);
+        }
     }
 
     private save(token: boolean): void
@@ -305,6 +330,28 @@ class BaseGeometryPassRendererMesh extends BaseGeometryPassRendererObject
 
         BaseGeometryPassRendererObject.prototype.render.call(this, state);
     }
+}
+
+class BaseGeometryPassRendererPoints extends BaseGeometryPassRendererObject
+{
+    constructor(private points: three.Points, renderer: BaseGeometryPassRenderer)
+    {
+        super(points, renderer, BaseGeometryPassShaderFlags.None);
+    }
+
+    glDraw(geo: Geometry): void
+    {
+        const gl = this.renderer.core.gl;
+        const index = geo.indexAttribute;
+        if (index != null) {
+            index.drawElements(gl.POINTS);
+
+            // TODO: use three.GeometryBuffer.offsets
+        } else {
+            gl.drawArrays(gl.POINTS, 0, geo.numVertices);
+        }
+    }
+
 }
 
 export class BaseGeometryPassMaterialManager extends MaterialManager
