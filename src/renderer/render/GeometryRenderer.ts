@@ -195,7 +195,8 @@ class GeometryPassShader extends BaseGeometryPassShader
         super(manager, source, flags);
 
         this.geoUniforms = this.glProgram.getUniforms([
-            "u_screenVelOffset"
+            "u_screenVelOffset",
+            "u_pointSizeMatrix"
         ]);
     }
 }
@@ -222,6 +223,8 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
     private lastJitY: number;
     private screenVelOffX: number;
     private screenVelOffY: number;
+
+    private pointSizeMatrix: Float32Array;
 
     private jitGen: CenteredNoise;
 
@@ -254,6 +257,8 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         this.lastJitX = this.lastJitY = 0;
         this.screenVelOffX = this.screenVelOffY = 0;
 
+        this.pointSizeMatrix = new Float32Array(9);
+
         this.jitGen = new CenteredNoise();
     }
 
@@ -262,6 +267,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         const shd = <GeometryPassShader> shader;
         const gl = this.parent.renderer.gl;
         gl.uniform2f(shd.geoUniforms["u_screenVelOffset"], this.screenVelOffX, this.screenVelOffY);
+        gl.uniformMatrix3fv(shd.geoUniforms["u_pointSizeMatrix"], false, this.pointSizeMatrix);
     }
 
     beforeRender(): void
@@ -287,6 +293,18 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         this.screenVelOffY = this.lastJitY - jitY;
         this.lastJitX = jitX;
         this.lastJitY = jitY;
+
+        const psm = this.pointSizeMatrix;
+        const scale = this.outDepth.width * 0.5;
+        psm[0] = projMat.elements[0] * scale;
+        psm[1] = projMat.elements[2];
+        psm[2] = projMat.elements[3];
+        psm[3] = projMat.elements[8] * scale;
+        psm[4] = projMat.elements[10];
+        psm[5] = projMat.elements[11];
+        psm[6] = projMat.elements[12] * scale;
+        psm[7] = projMat.elements[14];
+        psm[8] = projMat.elements[15];
 
         const gl = this.parent.renderer.gl;
         gl.viewport(0, 0, this.outDepth.width, this.outDepth.height);

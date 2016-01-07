@@ -124,6 +124,7 @@ declare module Hyper
     {
         shadingModel: MaterialShadingModel;
         shader?: string;
+        vertexShader?: string;
         parameters?: MaterialParameters;
         requiredVertexAttributes?: string[];
     }

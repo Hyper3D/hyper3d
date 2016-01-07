@@ -46,7 +46,8 @@ export const enum BaseGeometryPassShaderFlags
 {
     None = 0,
     UseSkinning = 1 << 0,
-    NeedsLastPosition = 1 << 1 // this one must be added in derived BaseGeometryPassMaterialManager
+    UsePointSize = 1 << 1,
+    NeedsLastPosition = 1 << 2, // this one must be added in derived BaseGeometryPassMaterialManager
 }
 
 export function isMaterialShadingModelDeferred(model: MaterialShadingModel): boolean
@@ -336,7 +337,7 @@ class BaseGeometryPassRendererPoints extends BaseGeometryPassRendererObject
 {
     constructor(private points: three.Points, renderer: BaseGeometryPassRenderer)
     {
-        super(points, renderer, BaseGeometryPassShaderFlags.None);
+        super(points, renderer, BaseGeometryPassShaderFlags.UsePointSize);
     }
 
     glDraw(geo: Geometry): void
@@ -398,11 +399,15 @@ export class BaseGeometryPassShader extends Shader
             fsParts.push(`varying vec4 v_${baseName};`); // FIXME: precision?
         }
         fsParts.push(getUniformDeclarationsForMaterial(source));
+        vsParts.push(getUniformDeclarationsForMaterial(source));
         vsParts.push(`void computeExtraValues() {`);
         for (const attr of attrs) {
             let baseName = attr.substr(2);
             vsParts.push(`v_${baseName} = a_${baseName};`);
         }
+        vsParts.push(`}`);
+        vsParts.push(`void evaluateVertexShader() {`);
+        vsParts.push(this.source.vertexShader);
         vsParts.push(`}`);
 
         const vsChunk: ShaderChunk = {
@@ -410,7 +415,7 @@ export class BaseGeometryPassShader extends Shader
             source: vsParts.join("\n")
         };
 
-        fsParts.push(`void evaluateShader() {`);
+        fsParts.push(`void evaluateFragmentShader() {`);
         switch (source.shadingModel) {
             case MaterialShadingModel.Unlit:
                 fsParts.push(`m_materialId = MaterialIdUnlit;`);
@@ -445,7 +450,8 @@ export class BaseGeometryPassShader extends Shader
 
         const shaderParameters: any = {
             useNormalMap: true, // FIXME
-            skinningMode: skinningMode
+            skinningMode: skinningMode,
+            usePointSize: !!(flags & BaseGeometryPassShaderFlags.UsePointSize)
         };
 
         let vs: GLShader = null;
