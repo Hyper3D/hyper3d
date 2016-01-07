@@ -6,7 +6,7 @@
   "bundle": "typings/tsd.d.ts",
   "installed": {
     "threejs/three.d.ts": {
-      "commit": "52b0ea5c9719831eecf6ba7436660e30061a4b3c"
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
     },
     "es6-collections/es6-collections.d.ts": {
       "commit": "8ea42cd8bb11863ed6f242d67c502288ebc45a7b"
