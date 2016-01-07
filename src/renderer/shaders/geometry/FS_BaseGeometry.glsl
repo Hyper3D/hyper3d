@@ -11,6 +11,8 @@ float m_materialParam;
 
 varying highp vec3 v_worldPosition;
 
+vec2 v_pointCoord;
+
 void evaluateShader();
 
 void evaluateMaterial()
@@ -23,6 +25,8 @@ void evaluateMaterial()
     m_emissive = vec3(0.);
     m_materialId = 0.;
     m_materialParam = 0.;
+
+    v_pointCoord = gl_PointCoord;
 
     evaluateShader();
 }

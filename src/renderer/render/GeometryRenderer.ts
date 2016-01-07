@@ -1,8 +1,6 @@
 /// <reference path="../Prefix.d.ts" />
 /// <reference path="../gl/WEBGLDrawBuffers.d.ts" />
 
-import * as three from "three";
-
 import {
     DepthTextureRenderBufferInfo,
     GBuffer0TextureRenderBufferInfo,
@@ -24,7 +22,8 @@ import {
     BaseGeometryPassRenderer,
     BaseGeometryPassShader,
     BaseGeometryPassShaderFlags,
-    BaseGeometryPassMaterialManager
+    BaseGeometryPassMaterialManager,
+    ObjectWithGeometry
 } from "./BaseGeometryPassRenderer";
 
 import {
@@ -258,7 +257,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         this.jitGen = new CenteredNoise();
     }
 
-    setupAdditionalUniforms(mesh: three.Mesh, shader: BaseGeometryPassShader): void // override
+    setupAdditionalUniforms(mesh: ObjectWithGeometry, shader: BaseGeometryPassShader): void // override
     {
         const shd = <GeometryPassShader> shader;
         const gl = this.parent.renderer.gl;

@@ -13,7 +13,8 @@ import {
 import {
     BaseGeometryPassRenderer,
     BaseGeometryPassShader,
-    BaseGeometryPassMaterialManager
+    BaseGeometryPassMaterialManager,
+    ObjectWithGeometry
 } from "./BaseGeometryPassRenderer";
 
 import {
@@ -427,7 +428,7 @@ class ShadowMapCubeTextureRenderer extends BaseGeometryPassRenderer
         }
     }
 
-    setupAdditionalUniforms(mesh: three.Mesh, shader: BaseGeometryPassShader): void // override
+    setupAdditionalUniforms(mesh: ObjectWithGeometry, shader: BaseGeometryPassShader): void // override
     {
         const shd = <ShadowCubeGeometryPassShader> shader;
         const gl = this.parent.renderer.gl;

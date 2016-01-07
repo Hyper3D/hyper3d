@@ -125,7 +125,7 @@ export class BaseGeometryPassRenderer
     {
         let lobj: BaseGeometryPassRendererObject = this.objs.get(mesh.id);
         if (!lobj) {
-            lobj = new BaseGeometryPassRendererObject(mesh, this);
+            lobj = new BaseGeometryPassRendererMesh(mesh, this);
             this.objs.set(mesh.id, lobj);
         }
 
@@ -140,7 +140,7 @@ export class BaseGeometryPassRenderer
     {
         return !isMaterialShadingModelDeferred(mat.material.shadingModel);
     }
-    setupAdditionalUniforms(mesh: three.Mesh, shader: BaseGeometryPassShader): void
+    setupAdditionalUniforms(mesh: ObjectWithGeometry, shader: BaseGeometryPassShader): void
     {
         // to be overrided
     }
@@ -160,6 +160,12 @@ interface GeometryRenderState
     nextToken: boolean;
 }
 
+export interface ObjectWithGeometry extends three.Object3D
+{
+    geometry: THREE.Geometry | THREE.BufferGeometry;
+    material: THREE.Material;
+}
+
 class BaseGeometryPassRendererObject
 {
     token: boolean;
@@ -167,26 +173,16 @@ class BaseGeometryPassRendererObject
     shaderInst: ShaderInstance;
     shader: BaseGeometryPassShader;
 
-    skinning: SkinningShaderInstance;
-
-    constructor(private obj: three.Mesh, private renderer: BaseGeometryPassRenderer)
+    constructor(public obj: ObjectWithGeometry, public renderer: BaseGeometryPassRenderer,
+        flags: BaseGeometryPassShaderFlags)
     {
         this.token = false;
 
         this.lastModelMatrix = null;
         this.shaderInst = null;
         this.shader = null;
-        this.skinning = null;
 
         this.lastModelMatrix = obj.matrixWorld.clone();
-
-        const useSkinning = obj instanceof three.SkinnedMesh;
-
-        let flags = BaseGeometryPassShaderFlags.None;
-
-        if (useSkinning) {
-            flags |= BaseGeometryPassShaderFlags.UseSkinning;
-        }
 
         const matInst = importThreeJsMaterial(obj.material);
 
@@ -198,9 +194,11 @@ class BaseGeometryPassRendererObject
         this.shaderInst = renderer.materialManager.get(matInst, flags);
         this.shader = <BaseGeometryPassShader> this.shaderInst.shader;
 
-        if (this.shader.skinningShader) {
-            this.skinning = this.shader.skinningShader.createInstance(<any> obj);
-        }
+    }
+
+    get isSkipped(): boolean
+    {
+        return this.shader == null;
     }
 
     render(state: GeometryRenderState): void
@@ -238,10 +236,6 @@ class BaseGeometryPassRendererObject
             gl.uniformMatrix4fv(shader.uniforms["u_lastModelMatrix"], false,
                 this.lastModelMatrix.elements);
 
-            if (this.skinning) {
-                this.skinning.update();
-            }
-
             renderer.setupAdditionalUniforms(obj, shader);
 
             const index = geo2.indexAttribute;
@@ -267,6 +261,50 @@ class BaseGeometryPassRendererObject
         this.token = token;
     }
 
+}
+
+class BaseGeometryPassRendererMesh extends BaseGeometryPassRendererObject
+{
+    skinning: SkinningShaderInstance;
+
+    private static computeShaderFlags(mesh: three.Mesh): BaseGeometryPassShaderFlags
+    {
+        let flags = BaseGeometryPassShaderFlags.None;
+
+        const useSkinning = mesh instanceof three.SkinnedMesh;
+
+        if (useSkinning) {
+            flags |= BaseGeometryPassShaderFlags.UseSkinning;
+        }
+
+        return flags;
+    }
+
+    constructor(private mesh: three.Mesh, renderer: BaseGeometryPassRenderer)
+    {
+        super(mesh, renderer, BaseGeometryPassRendererMesh.computeShaderFlags(mesh));
+
+        if (this.isSkipped) {
+            return;
+        }
+
+        if (this.shader.skinningShader) {
+            this.skinning = this.shader.skinningShader.createInstance(<any> mesh);
+        }
+    }
+
+    render(state: GeometryRenderState): void
+    {
+        if (this.isSkipped) {
+            return;
+        }
+
+        if (this.skinning) {
+            this.skinning.update();
+        }
+
+        BaseGeometryPassRendererObject.prototype.render.call(this, state);
+    }
 }
 
 export class BaseGeometryPassMaterialManager extends MaterialManager
