@@ -40,6 +40,12 @@ const enum ProgramFlags
     ClipByNearPlane = 1 << 1,
 }
 
+interface PotentiallyHyperDirectionalLight extends three.DirectionalLight
+{
+    shadowCascadeCount?: number;
+    shadowCamera?: three.Camera[];
+}
+
 export default class DirectionalLightShadowRenderer
 {
     private width: number;
@@ -114,7 +120,7 @@ export default class DirectionalLightShadowRenderer
         this.viewVec = computeViewVectorCoefFromProjectionMatrix(this.core.currentCamera.projectionMatrix);
     }
 
-    prepare(light: three.DirectionalLight): void
+    prepare(light: PotentiallyHyperDirectionalLight): void
     {
         let info = this.infoMap.get(light);
         if (info == null) {
@@ -223,7 +229,7 @@ export default class DirectionalLightShadowRenderer
         }
     }
 
-    render(light: three.DirectionalLight): void
+    render(light: PotentiallyHyperDirectionalLight): void
     {
         const info = this.infoMap.get(light);
         const cameras: three.Camera[] = <any> light.shadowCamera;

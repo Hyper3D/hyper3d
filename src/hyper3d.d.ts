@@ -29,6 +29,23 @@ declare module Hyper
         highlightCrush: number;
         contrast: number;
     }
+
+    export class PointLight extends THREE.PointLight
+    {
+        radius: number;
+        length: number;
+        shadowCameraNear: number;
+
+        constructor(hex?: number, intensity?: number, distance?: number);
+    }
+
+    export class DirectionalLight extends THREE.DirectionalLight
+    {
+        shadowCascadeCount: number;
+
+        constructor(hex?: number | string, intensity?: number);
+    }
+
     export class ReflectionProbe extends THREE.Object3D
     {
         distance: number;

@@ -134,7 +134,7 @@ export class Geometry extends three.EventDispatcher
         source.addEventListener("dispose", this.disposeHandler = () => this.onDispose());
 
         const attrs = <any> source.attributes; // TS: three.d.ts wrong typing?
-        const keys = source.attributesKeys || getKeysOfObject(attrs);
+        const keys = getKeysOfObject(attrs);
 
         this.attributes = [];
         this.indexAttribute = null;
@@ -201,7 +201,7 @@ export class GeometryAttribute
         this.buffer = null;
 
         this.isIndex = name == "index";
-        this.isDynamic = source instanceof three.DynamicBufferAttribute;
+        this.isDynamic = source.dynamic;
 
         this.typedArray = null;
 
@@ -217,7 +217,7 @@ export class GeometryAttribute
 
     private updateTypedArray(): void
     {
-        const srcarr: number[] | Float32Array = this.source.array;
+        const srcarr: ArrayLike<number> = this.source.array;
         const ta = this.typedArray;
 
         if (!this.source.needsUpdate && this.typedArrayValid) {
