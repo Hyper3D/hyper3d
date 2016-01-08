@@ -48,8 +48,6 @@ import {
 
 import { Matrix4Pool } from "../utils/ObjectPool";
 
-import { CenteredNoise } from "../utils/PoissonDiskSampler";
-
 export interface GeometryPassOutput
 {
     g0: GBuffer0TextureRenderBufferInfo;
@@ -219,14 +217,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
 {
     private fb: GLFramebuffer;
 
-    private lastJitX: number;
-    private lastJitY: number;
-    private screenVelOffX: number;
-    private screenVelOffY: number;
-
     private pointSizeMatrix: Float32Array;
-
-    private jitGen: CenteredNoise;
 
     constructor(
         private parent: GeometryRenderer,
@@ -254,19 +245,15 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
             });
         }
 
-        this.lastJitX = this.lastJitY = 0;
-        this.screenVelOffX = this.screenVelOffY = 0;
-
         this.pointSizeMatrix = new Float32Array(9);
-
-        this.jitGen = new CenteredNoise();
     }
 
     setupAdditionalUniforms(mesh: ObjectWithGeometry, shader: BaseGeometryPassShader): void // override
     {
         const shd = <GeometryPassShader> shader;
         const gl = this.parent.renderer.gl;
-        gl.uniform2f(shd.geoUniforms["u_screenVelOffset"], this.screenVelOffX, this.screenVelOffY);
+        const ctrler = this.parent.renderer.ctrler;
+        gl.uniform2f(shd.geoUniforms["u_screenVelOffset"], ctrler.screenVelOffX, ctrler.screenVelOffY);
         gl.uniformMatrix3fv(shd.geoUniforms["u_pointSizeMatrix"], false, this.pointSizeMatrix);
     }
 
@@ -278,21 +265,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         this.fb.bind();
 
         // jitter projection matrix for temporal AA
-        const projMat = Matrix4Pool.alloc();
-        projMat.copy(this.parent.renderer.currentCamera.projectionMatrix);
-
-        const jitScale = (this.parent.renderer.useWiderTemporalAA ? 2 : 1) * 1.5;
-        const jit = this.jitGen.sample();
-        const jitX = jit.x / this.parent.renderer.renderWidth * jitScale;
-        const jitY = jit.y / this.parent.renderer.renderHeight * jitScale;
-        for (let i = 0; i < 4; ++i) {
-            projMat.elements[(i << 2)] += projMat.elements[(i << 2) + 3] * jitX;
-            projMat.elements[(i << 2) + 1] += projMat.elements[(i << 2) + 3] * jitY;
-        }
-        this.screenVelOffX = this.lastJitX - jitX;
-        this.screenVelOffY = this.lastJitY - jitY;
-        this.lastJitX = jitX;
-        this.lastJitY = jitY;
+        const projMat = this.parent.renderer.ctrler.jitteredProjectiveMatrix;
 
         const psm = this.pointSizeMatrix;
         const scale = this.outDepth.width * 0.5;

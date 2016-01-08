@@ -20,6 +20,7 @@ import { GeometryManager } from "../render/GeometryManager";
 import { LightRenderer } from "../render/LightRenderer";
 import { ReflectionRenderer } from "../render/ReflectionRenderer";
 import { HdrDemosaicFilterRenderer } from "../render/HdrDemosaicFilter";
+import { RenderingController } from "../render/RenderingController";
 import {
     JitterTexture,
     UniformJitterTexture,
@@ -99,6 +100,7 @@ export class RendererCore
 
     parameters: WebGLHyperRendererParameters;
 
+    ctrler: RenderingController;
     geometryRenderer: GeometryRenderer;
     shadowRenderer: ShadowMapRenderer;
     geometryManager: GeometryManager;
@@ -248,6 +250,7 @@ export class RendererCore
         this.textureCubes = new TextureManager<TextureCube>(this, new TextureCubeProvider());
         this.reflectionTextures = new TextureManager<ReflectionTextureCube>(this,
             new ReflectionTextureCubeProvider(this));
+        this.ctrler = new RenderingController(this);
         this.geometryManager = new GeometryManager(this);
         this.renderBuffers = new RenderPipeline(this);
         this.uniformJitter = new UniformJitterTexture(this.gl);
@@ -303,6 +306,7 @@ export class RendererCore
         this.bufferVisualizer.dispose();
         this.passthroughRenderer.dispose();
         this.geometryRenderer.dispose();
+        this.ctrler.dispose();
         this.shadowRenderer.dispose();
         this.textures.dispose();
         this.quadRenderer.dispose();
@@ -504,6 +508,7 @@ export class RendererCore
         camera.matrixWorldInverse.getInverse(camera.matrixWorld);
 
         this.profiler.beginFrame();
+        this.ctrler.beforeRender();
         this.renderBuffers.render();
         this.profiler.finalizeFrame();
     }

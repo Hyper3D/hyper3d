@@ -46,6 +46,7 @@
 		"src/renderer/render/SkinningShader.ts",
 		"src/renderer/render/TextureManager.ts",
 		"src/renderer/render/TextureProvider.ts",
+		"src/renderer/render/RenderingController.ts",
 		"src/renderer/render/ReflectionTextureProvider.ts",
 		"src/renderer/render/DirectionalLightShadowRenderer.ts",
 		"src/renderer/render/ScreenSpaceSoftShadowFilter.ts",
