@@ -13,7 +13,7 @@ varying highp vec3 v_worldPosition;
 
 vec2 v_pointCoord;
 
-void evaluateShader();
+void evaluateFragmentShader();
 
 void evaluateMaterial()
 {
@@ -28,5 +28,5 @@ void evaluateMaterial()
 
     v_pointCoord = gl_PointCoord;
 
-    evaluateShader();
+    evaluateFragmentShader();
 }

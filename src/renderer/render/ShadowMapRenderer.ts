@@ -350,6 +350,11 @@ class ShadowMapTextureRenderer extends BaseGeometryPassRenderer
         return !mesh.castShadow;
     }
 
+    skipsPoints(points: three.Points): boolean
+    {
+        return !points.castShadow;
+    }
+
     render(camera: three.Camera): void
     {
         const gl = this.parent.renderer.gl;
@@ -390,6 +395,11 @@ class ShadowMapCubeTextureRenderer extends BaseGeometryPassRenderer
     skipsMesh(mesh: three.Mesh): boolean
     {
         return !mesh.castShadow;
+    }
+
+    skipsPoints(points: three.Points): boolean
+    {
+        return !points.castShadow;
     }
 
     render(camera: three.CubeCamera): void

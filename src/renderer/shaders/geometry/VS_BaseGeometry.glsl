@@ -29,7 +29,10 @@ vec3 lastWorldPosition;
 
 varying highp vec3 v_worldPosition;
 
+float m_pointSize;
+
 void computeExtraValues();
+void evaluateVertexShader();
 
 #if c_skinningMode != SkinningModeNone
 
@@ -81,6 +84,9 @@ void evaluateGeometry()
     lastWorldPosition = (u_lastModelMatrix * vec4(lastPosition, 1.)).xyz;
 
     computeExtraValues();
+
+    m_pointSize = 1.;
+    evaluateVertexShader();
 
     v_worldPosition = worldPosition;
 }

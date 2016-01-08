@@ -370,6 +370,7 @@ interface MaterialMap
     [key: number]: Material;
 }
 const standardMaterials: MaterialMap = [];
+const pointsMaterials: MaterialMap = [];
 
 export interface StandardMaterialAttributes
 {
@@ -467,6 +468,56 @@ function getStandardMaterial(attrs: StandardMaterialAttributes): Material
     return mat;
 }
 
+export interface PointsMaterialAttributes
+{
+    hasMap: boolean;
+}
+
+function getPointsMaterial(attrs: PointsMaterialAttributes): Material
+{
+    let key = 0;
+    if (attrs.hasMap)             key |= 1;
+
+    let mat = pointsMaterials[key];
+    if (!mat) {
+        const parts: string[] = [];
+        const vertAttrs: string[] = [];
+        const params: MaterialParameters = {
+            color: {
+                type: MaterialParameterType.Float3,
+                default: [1, 1, 1]
+            },
+            pointSize: {
+                type: MaterialParameterType.Float,
+                default: 1
+            }
+        };
+
+        parts.push(`m_emissive = p_color;`);
+        if (attrs.hasMap) {
+            params["map"] = {
+                type: MaterialParameterType.Texture2D
+            };
+            parts.push(`vec4 texValue = texture2D(p_map, v_pointCoord.xy);`);
+            parts.push(`if (texValue.w < 0.5) discard;`);
+            parts.push(`m_emissive *= texValue.xyz;`);
+        }
+
+        mat = new Material({
+            shadingModel: MaterialShadingModel.Unlit,
+            shader: parts.join("\n"),
+            parameters: params,
+            requiredVertexAttributes: vertAttrs,
+            vertexShader: `
+                m_pointSize = p_pointSize;
+            `
+        });
+
+        pointsMaterials[key] = mat;
+    }
+    return mat;
+}
+
 export function getUniformDeclarationsForMaterial(mat: Material): string
 {
     const parts: string[] = [];
@@ -477,16 +528,16 @@ export function getUniformDeclarationsForMaterial(mat: Material): string
         // FIXME: precision
         switch (param.type) {
             case MaterialParameterType.Float:
-                parts.push(`uniform float p_${name};`);
+                parts.push(`uniform mediump float p_${name};`);
                 break;
             case MaterialParameterType.Float2:
-                parts.push(`uniform vec2 p_${name};`);
+                parts.push(`uniform mediump vec2 p_${name};`);
                 break;
             case MaterialParameterType.Float3:
-                parts.push(`uniform vec3 p_${name};`);
+                parts.push(`uniform mediump vec3 p_${name};`);
                 break;
             case MaterialParameterType.Float4:
-                parts.push(`uniform vec4 p_${name};`);
+                parts.push(`uniform mediump vec4 p_${name};`);
                 break;
             case MaterialParameterType.Texture2D:
                 parts.push(`uniform sampler2D p_${name};`);
@@ -545,6 +596,8 @@ export function importThreeJsMaterial(mat: three.Material): MaterialInstance
         return inst;
     }
 
+    // TODO: blending
+
     if (mat instanceof three.MeshPhongMaterial) {
         const hMat = getStandardMaterial({
             hasMap: mat.map != null,
@@ -595,6 +648,22 @@ export function importThreeJsMaterial(mat: three.Material): MaterialInstance
         if (mat.alphaMap) {
             inst.parameters["alphaMap"] = mat.alphaMap;
         }
+
+        importedMaterialsCache.set(mat, inst);
+
+        return inst;
+    } else if (mat instanceof three.PointsMaterial) {
+        const hMat = getPointsMaterial({
+            hasMap: mat.map != null
+        });
+
+        inst = new ImportedMaterialInstance(hMat, mat);
+        inst.parameters["color"] = importColor(mat.color);
+        if (mat.map) {
+            inst.parameters["map"] = mat.map;
+        }
+
+        inst.parameters["pointSize"] = mat.size;
 
         importedMaterialsCache.set(mat, inst);
 

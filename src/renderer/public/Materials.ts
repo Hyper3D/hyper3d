@@ -54,6 +54,7 @@ export interface MaterialCreationParameters
 {
     shadingModel: MaterialShadingModel;
     shader?: string; // FIXME: make this something like AST so that it can easily be editted
+    vertexShader?: string;
     parameters?: MaterialParameters;
     requiredVertexAttributes?: string[];
 }
@@ -64,6 +65,7 @@ export class Material
     id: number;
 
     shader: string;
+    vertexShader: string;
     shadingModel: MaterialShadingModel;
     parameters: MaterialParameters;
     requiredVertexAttributes: string[];
@@ -76,6 +78,7 @@ export class Material
         this.parameters = params.parameters;
         this.requiredVertexAttributes = (params.requiredVertexAttributes || []).slice(0);
         this.shader = params.shader;
+        this.vertexShader = params.vertexShader || "";
     }
 }
 
