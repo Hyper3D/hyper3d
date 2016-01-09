@@ -16,6 +16,13 @@ declare module Hyper
         log?: WebGLHyperRendererLogParameters | boolean;
     }
 
+    export enum WebGLHyperRendererVolumetricsMode
+    {
+        Simple,
+        HighQuality
+    }
+
+
     export interface WebGLHyperRendererParameters
     {
         bloomAmount: number;
@@ -28,6 +35,7 @@ declare module Hyper
         color: THREE.Vector3;
         highlightCrush: number;
         contrast: number;
+        volumetricsMode: WebGLHyperRendererVolumetricsMode;
     }
 
     export class PointLight extends THREE.PointLight
@@ -82,6 +90,8 @@ declare module Hyper
 
         startProfiling(cb: (result: WebGLHyperRendererProfilerResult) => void): void;
         stopProfiling(): void;
+
+        compilePipeline(): void;
 
         context: WebGLRenderingContext;
 

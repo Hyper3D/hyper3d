@@ -21,6 +21,12 @@ export interface WebGLHyperRendererCreationParameters
     log?: WebGLHyperRendererLogParameters | boolean;
 }
 
+export enum WebGLHyperRendererVolumetricsMode
+{
+    Simple,
+    HighQuality
+}
+
 export interface WebGLHyperRendererParameters
 {
     bloomAmount: number;
@@ -33,6 +39,7 @@ export interface WebGLHyperRendererParameters
     color: three.Vector3;
     highlightCrush: number;
     contrast: number;
+    volumetricsMode: WebGLHyperRendererVolumetricsMode;
 }
 
 export interface WebGLHyperRendererProfilerPhase
@@ -91,6 +98,11 @@ export class WebGLHyperRenderer implements three.Renderer
     private setup(): void
     {
 
+    }
+
+    compilePipeline(): void
+    {
+        this.core.compilePipeline();
     }
 
     startProfiling(cb: (result: WebGLHyperRendererProfilerResult) => void): void

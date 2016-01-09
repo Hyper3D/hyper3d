@@ -26,12 +26,12 @@ void main()
     vec3 light = sampleVolumeTexture2D(u_lightVolume, lightCoord, u_lightVolumeParams).xyz;
     color *= light;
 
-    float density = m_density;
+    float density = 1.;
 #if c_useThickness
-    density *= min(depth - v_depth, m_thickness);
+    density = min(depth - v_depth, m_thickness);
 #endif
     
-    float alpha = 1. - exp2(-density);
+    float alpha = 1. - exp2(-density * m_density);
     gl_FragColor.w = alpha * .5;
     gl_FragColor.xyz = alpha * color + m_emissive * density;
 }

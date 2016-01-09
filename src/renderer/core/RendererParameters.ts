@@ -1,7 +1,10 @@
 /// <reference path="../Prefix.d.ts" />
 
 import * as three from "three";
-import { WebGLHyperRendererParameters } from "../public/WebGLHyperRenderer";
+import {
+    WebGLHyperRendererParameters,
+    WebGLHyperRendererVolumetricsMode
+} from "../public/WebGLHyperRenderer";
 import { RendererCore } from "./RendererCore";
 
 export class RendererCoreParameters implements WebGLHyperRendererParameters
@@ -94,5 +97,16 @@ export class RendererCoreParameters implements WebGLHyperRendererParameters
     set contrast(value: number)
     {
         this.core.toneMapFilter.params.contrast = value;
+    }
+
+    get volumetricsMode(): WebGLHyperRendererVolumetricsMode
+    {
+        return this.core.volumetricsMode;
+    }
+
+    set volumetricsMode(value: WebGLHyperRendererVolumetricsMode)
+    {
+        this.core.volumetricsMode = value;
+        // TODO: force pipeline recompilation
     }
 }

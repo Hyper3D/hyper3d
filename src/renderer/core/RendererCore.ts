@@ -16,6 +16,8 @@ import {
 import { BitArray } from "../utils/BitArray";
 import { GeometryRenderer } from "../render/GeometryRenderer";
 import { SimpleVolumetricRenderer } from "../render/SimpleVolumetricRenderer";
+import { FomVolumetricRenderer } from "../render/FomVolumetricRenderer";
+import { VolumetricsFomVisibilityRenderer } from "../render/VolumetricsFomVisibilityRenderer";
 import { ShadowMapRenderer } from "../render/ShadowMapRenderer";
 import { GeometryManager } from "../render/GeometryManager";
 import { LightRenderer } from "../render/LightRenderer";
@@ -51,7 +53,8 @@ import {
     WebGLHyperRendererParameters,
     WebGLHyperRendererCreationParameters,
     WebGLHyperRendererLogParameters,
-    WebGLHyperRendererProfilerResult
+    WebGLHyperRendererProfilerResult,
+    WebGLHyperRendererVolumetricsMode
 } from "../public/WebGLHyperRenderer";
 import { RendererCoreParameters } from "./RendererParameters";
 import {
@@ -94,6 +97,7 @@ export class RendererCore
     supportsHdrRenderingBuffer: boolean;
     supportsMRT: boolean;
     hdrMode: HdrMode;
+    volumetricsMode: WebGLHyperRendererVolumetricsMode;
 
     textures: TextureManager<Texture2D>;
     textureCubes: TextureManager<TextureCube>;
@@ -108,6 +112,8 @@ export class RendererCore
     ctrler: RenderingController;
     geometryRenderer: GeometryRenderer;
     simpleVolumetricRenderer: SimpleVolumetricRenderer;
+    fomVolumetricRenderer: FomVolumetricRenderer;
+    fomVisibilityRenderer: VolumetricsFomVisibilityRenderer;
     shadowRenderer: ShadowMapRenderer;
     geometryManager: GeometryManager;
     uniformJitter: JitterTexture;
@@ -199,6 +205,7 @@ export class RendererCore
         this.supportsMRT = !!(this.ext.get("WEBGL_draw_buffers"));
         this.supportsHdrRenderingBuffer = false;
         this.hdrMode = HdrMode.MobileHdr;
+        this.volumetricsMode = WebGLHyperRendererVolumetricsMode.Simple;
 
         if (this.supportsMRT) {
             this.useFullResolutionGBuffer = true;
@@ -262,6 +269,8 @@ export class RendererCore
         this.ctrler = new RenderingController(this);
         this.geometryManager = new GeometryManager(this);
         this.simpleVolumetricRenderer = new SimpleVolumetricRenderer(this);
+        this.fomVolumetricRenderer = new FomVolumetricRenderer(this);
+        this.fomVisibilityRenderer = new VolumetricsFomVisibilityRenderer(this);
         this.renderBuffers = new RenderPipeline(this);
         this.uniformJitter = new UniformJitterTexture(this.gl);
         this.gaussianJitter = new GaussianJitterTexture(this.gl);
@@ -325,6 +334,8 @@ export class RendererCore
         this.quadsRenderer.dispose();
         this.geometryManager.dispose();
         this.simpleVolumetricRenderer.dispose();
+        this.fomVisibilityRenderer.dispose();
+        this.fomVolumetricRenderer.dispose();
         this.renderBuffers.dispose();
         this.uniformDitherJitter.dispose();
         this.gaussianDitherJitter.dispose();
@@ -392,12 +403,25 @@ export class RendererCore
                 lit: lightBuf
             }, ops);
 
+        let fomVisibility: any;
         if (reflections instanceof LinearRGBTextureRenderBufferInfo) {
-            reflections = this.simpleVolumetricRenderer.setup({
-                color: <LinearRGBTextureRenderBufferInfo> reflections,
-                linearDepth: gbuffer.linearDepth,
-                light: volumeLightBuf
-            }, ops).color;
+            if (this.volumetricsMode == WebGLHyperRendererVolumetricsMode.Simple) {
+                reflections = this.simpleVolumetricRenderer.setup({
+                    color: <LinearRGBTextureRenderBufferInfo> reflections,
+                    linearDepth: gbuffer.linearDepth,
+                    light: volumeLightBuf
+                }, ops).color;
+            } else if (this.volumetricsMode == WebGLHyperRendererVolumetricsMode.HighQuality) {
+                const visibility = this.fomVisibilityRenderer.setup({
+                    linearDepth: gbuffer.linearDepth
+                }, ops);fomVisibility = visibility.coefs[0];
+                reflections = this.fomVolumetricRenderer.setup({
+                    color: <LinearRGBTextureRenderBufferInfo> reflections,
+                    linearDepth: gbuffer.linearDepth,
+                    coefs: visibility.coefs,
+                    light: volumeLightBuf
+                }, ops).color;
+            }
         } else {
             // TODO: support HDR mosaic
         }
@@ -445,7 +469,7 @@ export class RendererCore
 
         const visualizedBuf = toneMapped;
         let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
-
+        // visualized = this.bufferVisualizer.setupColorVisualizer(fomVisibility, ops);
         // visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
         const logger = this.log.getLogger("pipeline");
         if (logger.isEnabled)
