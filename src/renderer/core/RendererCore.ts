@@ -703,19 +703,19 @@ class GLState
         }
         if (diff & GLStateFlags.ColorAttachmentFlags) {
             this.drawBuffers.length = 0;
-            if (!(diff & GLStateFlags.ColorAttachment0Disabled)) {
+            if (!(newValue & GLStateFlags.ColorAttachment0Disabled)) {
                 this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT0_WEBGL);
             }
-            if (diff & GLStateFlags.ColorAttachment1Enabled) {
+            if (newValue & GLStateFlags.ColorAttachment1Enabled) {
                 this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT1_WEBGL);
             }
-            if (diff & GLStateFlags.ColorAttachment2Enabled) {
+            if (newValue & GLStateFlags.ColorAttachment2Enabled) {
                 this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT2_WEBGL);
             }
-            if (diff & GLStateFlags.ColorAttachment3Enabled) {
+            if (newValue & GLStateFlags.ColorAttachment3Enabled) {
                 this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT3_WEBGL);
             }
-            if (diff & GLStateFlags.ColorAttachment4Enabled) {
+            if (newValue & GLStateFlags.ColorAttachment4Enabled) {
                 this.drawBuffers.push(this.extDrawBuffers.COLOR_ATTACHMENT4_WEBGL);
             }
             this.extDrawBuffers.drawBuffersWEBGL(this.drawBuffers);
