@@ -24,6 +24,16 @@ export const ulog2: (v: number) => number =
         return i;
     };
 
+export function isPowerOfTwo(num: number): boolean
+{
+    return (num & (num - 1)) == 0;
+}
+
+export function clamp(v: number, min: number, max: number): number
+{
+    return v < min ? min : v > max ? max : max;
+}
+
 export function getKeysOfObject(obj: any): string[]
 {
     const ret: string[] = [];

@@ -1,9 +1,14 @@
 /// <reference path="../Prefix.d.ts" />
 
+import * as three from "three";
+
 import {
     LinearDepthTextureRenderBufferInfo,
-    LinearRGBTextureRenderBufferInfo
+    LinearRGBTextureRenderBufferInfo,
+    VolumeTexture2DLayout
 } from "../core/TypedRenderBuffers";
+
+import { VolumetricLightOutput } from "./VolumetricLightRenderer";
 
 import { Shader } from "./MaterialManager";
 
@@ -46,6 +51,7 @@ export interface SimpleVolumetricPassInput
 {
     color: LinearRGBTextureRenderBufferInfo;
     linearDepth: LinearDepthTextureRenderBufferInfo;
+    light: VolumetricLightOutput;
 }
 
 export interface SimpleVolumetricPassOutput
@@ -82,7 +88,8 @@ export class SimpleVolumetricRenderer
         ops.push({
             inputs: {
                 color: input.color,
-                linearDepth: input.linearDepth
+                linearDepth: input.linearDepth,
+                light: input.light.scatter
             },
             outputs: {
                 color: outp.color
@@ -92,8 +99,10 @@ export class SimpleVolumetricRenderer
             name: "Volumetric Geometry Pass (Simple)",
             factory: (cfg) => new SimpleVolumetricGeometryPassRenderer(this,
                 <TextureRenderBuffer> cfg.inputs["linearDepth"],
+                <TextureRenderBuffer> cfg.inputs["light"],
                 <TextureRenderBuffer> cfg.inputs["color"],
-                <TextureRenderBuffer> cfg.outputs["color"])
+                <TextureRenderBuffer> cfg.outputs["color"],
+                input.light.scatter.layout)
         });
 
         return outp;
@@ -111,7 +120,9 @@ class SimpleVolumetricGeometryPassShader extends BaseGeometryPassShader
 
         this.geoUniforms = this.glProgram.getUniforms([
             "u_pointSizeMatrix",
-            "u_linearDepth"
+            "u_linearDepth",
+            "u_lightVolume",
+            "u_lightVolumeParams"
         ]);
     }
 }
@@ -136,11 +147,15 @@ class SimpleVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impl
 
     private pointSizeMatrix: Float32Array;
 
+    private lightSamplerParams: three.Vector4;
+
     constructor(
         private parent: SimpleVolumetricRenderer,
         private inLinearDepth: TextureRenderBuffer,
+        private inLight: TextureRenderBuffer,
         private inColor: TextureRenderBuffer,
-        private outColor: TextureRenderBuffer
+        private outColor: TextureRenderBuffer,
+        private lightLayout: VolumeTexture2DLayout
     )
     {
         super(parent.renderer, parent.gpMaterials, true);
@@ -152,6 +167,8 @@ class SimpleVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impl
         });
 
         this.pointSizeMatrix = new Float32Array(9);
+
+        this.lightSamplerParams = new three.Vector4();
     }
 
     skipsMaterial(mat: MaterialInstance): boolean // override
@@ -165,9 +182,17 @@ class SimpleVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impl
         const gl = this.parent.renderer.gl;
         gl.uniformMatrix3fv(shd.geoUniforms["u_pointSizeMatrix"], false, this.pointSizeMatrix);
         gl.uniform1i(shd.geoUniforms["u_linearDepth"], shd.numTextureStages);
+        gl.uniform1i(shd.geoUniforms["u_lightVolume"], shd.numTextureStages + 1);
 
         gl.activeTexture(gl.TEXTURE0 + shd.numTextureStages);
         gl.bindTexture(gl.TEXTURE_2D, this.inLinearDepth.texture);
+
+        gl.activeTexture(gl.TEXTURE0 + shd.numTextureStages + 1);
+        gl.bindTexture(gl.TEXTURE_2D, this.inLight.texture);
+
+        gl.uniform4f(shd.geoUniforms["u_lightVolumeParams"],
+            this.lightSamplerParams.x, this.lightSamplerParams.y,
+            this.lightSamplerParams.z, this.lightSamplerParams.w);
     }
 
     beforeRender(): void
@@ -176,6 +201,8 @@ class SimpleVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impl
     perform(): void
     {
         this.fb.bind();
+
+        this.lightLayout.getSamplerParameters(this.lightSamplerParams);
 
         // jitter projection matrix for temporal AA
         const projMat = this.parent.renderer.ctrler.jitteredProjectiveMatrix;
@@ -204,9 +231,20 @@ class SimpleVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impl
         }
         this.parent.renderer.state.flags = GLStateFlags.DepthWriteDisabled | GLStateFlags.BlendEnabled;
 
+        // set texture filter
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.inLight.texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
             projMat);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.inLight.texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     }
     afterRender(): void
     {

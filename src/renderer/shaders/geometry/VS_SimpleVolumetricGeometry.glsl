@@ -9,6 +9,7 @@ uniform mat4 u_viewMatrix;
 uniform mat3 u_pointSizeMatrix;
 #endif
 
+varying vec4 v_position;
 varying float v_depth;
 
 void main()
@@ -16,6 +17,7 @@ void main()
     evaluateGeometry();
 
     gl_Position = u_viewProjectionMatrix * vec4(worldPosition, 1.);
+    v_position = gl_Position;
 
     v_depth = -(u_viewMatrix * vec4(worldPosition, 1.)).z;
 

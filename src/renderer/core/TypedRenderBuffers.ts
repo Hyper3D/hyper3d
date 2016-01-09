@@ -1,6 +1,16 @@
 /// <reference path="../Prefix.d.ts" />
 
-import { TextureRenderBufferInfo } from "./RenderBuffers";
+import * as three from "three";
+
+import {
+    TextureRenderBufferInfo,
+    TextureRenderBufferFormat
+} from "./RenderBuffers";
+
+import {
+    isPowerOfTwo,
+    ulog2
+} from "../utils/Utils";
 
 export interface INearestResampleableRenderBufferInfo<T extends TextureRenderBufferInfo> extends TextureRenderBufferInfo
 {
@@ -30,6 +40,63 @@ export class LinearRGBTextureRenderBufferInfo extends TextureRenderBufferInfo
     cloneWithDimension(name: string, width: number, height: number)
     {
         return new LinearRGBTextureRenderBufferInfo(name, width, height, this.format);
+    }
+}
+
+export class VolumeTexture2DLayout
+{
+    numCols: number;
+    numRows: number;
+    textureWidth: number;
+    textureHeight: number;
+
+    constructor(
+        public volumeWidth: number,
+        public volumeHeight: number,
+        public volumeDepth: number)
+    {
+        if (!isPowerOfTwo(volumeDepth)) {
+            throw new Error("depth must be a power-of-two number.");
+        }
+
+        const depthLog = ulog2(volumeDepth);
+        const colsLog = depthLog >> 1;
+        this.numCols = 1 << colsLog;
+        this.numRows = 1 << (depthLog - colsLog);
+
+        this.textureWidth = volumeWidth * this.numCols;
+        this.textureHeight = volumeHeight * this.numRows;
+    }
+
+    getSamplerParameters(old?: three.Vector4): three.Vector4
+    {
+        if (!old) {
+            old = new three.Vector4();
+        }
+        old.x = 1 / this.numCols;
+        old.y = 1 / this.numRows;
+        old.z = this.volumeDepth;
+        old.w = this.numCols;
+        return old;
+    }
+}
+
+/** Volume texture stored in a 2D texture. */
+export class VolumeTexture2DRenderBufferInfo extends TextureRenderBufferInfo
+{
+
+    constructor(name: string,
+        public layout: VolumeTexture2DLayout, format: TextureRenderBufferFormat)
+    {
+        super(name, layout.textureWidth, layout.textureHeight, format);
+    }
+}
+
+export class LinearRGBVolumeTexture2DRenderBufferInfo extends VolumeTexture2DRenderBufferInfo
+{
+    get logicalFormatDescription(): string
+    {
+        return "Linear RGB";
     }
 }
 

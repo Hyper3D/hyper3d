@@ -19,6 +19,7 @@ import { SimpleVolumetricRenderer } from "../render/SimpleVolumetricRenderer";
 import { ShadowMapRenderer } from "../render/ShadowMapRenderer";
 import { GeometryManager } from "../render/GeometryManager";
 import { LightRenderer } from "../render/LightRenderer";
+import { VolumetricLightRenderer } from "../render/VolumetricLightRenderer";
 import { ReflectionRenderer } from "../render/ReflectionRenderer";
 import { HdrDemosaicFilterRenderer } from "../render/HdrDemosaicFilter";
 import { RenderingController } from "../render/RenderingController";
@@ -29,7 +30,10 @@ import {
     GaussianDitherJitterTexture,
     GaussianJitterTexture
 } from "./JitterTexture";
-import { QuadRenderer } from "./QuadRenderer";
+import {
+    QuadRenderer,
+    QuadsRenderer
+} from "./QuadRenderer";
 import { ShaderManager, createShaderManager } from "./ShaderManager";
 import { BufferVisualizer } from "./Visualizer";
 import { ToneMappingFilterRenderer } from "../postfx/ToneMappingFilter";
@@ -111,10 +115,12 @@ export class RendererCore
     uniformDitherJitter: JitterTexture;
     gaussianDitherJitter: JitterTexture;
     quadRenderer: QuadRenderer;
+    quadsRenderer: QuadsRenderer;
     shaderManager: ShaderManager;
     passthroughRenderer: PassThroughRenderer;
     bufferVisualizer: BufferVisualizer;
     lightRenderer: LightRenderer;
+    volumetricLightRenderer: VolumetricLightRenderer;
     reflectionRenderer: ReflectionRenderer;
     hdrDemosaic: HdrDemosaicFilterRenderer;
     toneMapFilter: ToneMappingFilterRenderer;
@@ -222,8 +228,9 @@ export class RendererCore
         this.state = new GLState(this.gl);
         this.profiler = new Profiler(this, this.log.getLogger("profiler"));
 
-        // this is required by WebGL comformance test
+        // QuadRenderer is required by WebGL comformance test
         this.quadRenderer = new QuadRenderer(this);
+        this.quadsRenderer = new QuadsRenderer(this, 2048);
 
         // check capability
         if (this.supportsSRGB) {
@@ -265,6 +272,7 @@ export class RendererCore
         this.passthroughRenderer = new PassThroughRenderer(this);
         this.bufferVisualizer = new BufferVisualizer(this);
         this.lightRenderer = new LightRenderer(this);
+        this.volumetricLightRenderer = new VolumetricLightRenderer(this);
         this.reflectionRenderer = new ReflectionRenderer(this);
         this.hdrDemosaic = new HdrDemosaicFilterRenderer(this);
         this.ssaoRenderer = new SSAORenderer(this);
@@ -306,6 +314,7 @@ export class RendererCore
         this.hdrDemosaic.dispose();
         this.reflectionRenderer.dispose();
         this.lightRenderer.dispose();
+        this.volumetricLightRenderer.dispose();
         this.bufferVisualizer.dispose();
         this.passthroughRenderer.dispose();
         this.geometryRenderer.dispose();
@@ -313,6 +322,7 @@ export class RendererCore
         this.shadowRenderer.dispose();
         this.textures.dispose();
         this.quadRenderer.dispose();
+        this.quadsRenderer.dispose();
         this.geometryManager.dispose();
         this.simpleVolumetricRenderer.dispose();
         this.renderBuffers.dispose();
@@ -364,6 +374,12 @@ export class RendererCore
                 ssao: ssao.output
             }, ops);
 
+        const volumeLightBuf = this.supportsHdrRenderingBuffer ?
+            this.volumetricLightRenderer.setupNativeHdrVolumetricLightPass({
+                width: (this.width + 7) >> 3, height: (this.height + 7) >> 3, depth: 64,
+                shadowMaps: shadowMaps.shadowMaps
+            }, ops) : null;
+
         let reflections: LinearRGBTextureRenderBufferInfo | HdrMosaicTextureRenderBufferInfo =
             this.reflectionRenderer.setupReflectionPass({
                 g0: gbuffer.g0,
@@ -379,7 +395,8 @@ export class RendererCore
         if (reflections instanceof LinearRGBTextureRenderBufferInfo) {
             reflections = this.simpleVolumetricRenderer.setup({
                 color: <LinearRGBTextureRenderBufferInfo> reflections,
-                linearDepth: gbuffer.linearDepth
+                linearDepth: gbuffer.linearDepth,
+                light: volumeLightBuf
             }, ops).color;
         } else {
             // TODO: support HDR mosaic
