@@ -96,7 +96,8 @@ declare module Hyper
         ClearCoat = 2,
 
         // forward pass only
-        Transparent = 3
+        Volumetric = 3,
+        ThickVolumetric = 4
     }
 
     export enum MaterialParameterType

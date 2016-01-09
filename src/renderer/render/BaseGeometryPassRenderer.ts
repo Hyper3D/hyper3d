@@ -56,6 +56,11 @@ export function isMaterialShadingModelDeferred(model: MaterialShadingModel): boo
         model == MaterialShadingModel.Unlit;
 }
 
+export function isMaterialShadingModelVolumetric(model: MaterialShadingModel): boolean
+{
+    return model == MaterialShadingModel.Volumetric || model == MaterialShadingModel.ThickVolumetric;
+}
+
 export class BaseGeometryPassRenderer
 {
     private state: GeometryRenderState;
@@ -451,7 +456,8 @@ export class BaseGeometryPassShader extends Shader
         const shaderParameters: any = {
             useNormalMap: true, // FIXME
             skinningMode: skinningMode,
-            usePointSize: !!(flags & BaseGeometryPassShaderFlags.UsePointSize)
+            usePointSize: !!(flags & BaseGeometryPassShaderFlags.UsePointSize),
+            useThickness: source.shadingModel == MaterialShadingModel.ThickVolumetric
         };
 
         let vs: GLShader = null;

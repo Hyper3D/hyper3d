@@ -15,6 +15,7 @@ import {
 } from "../render/ReflectionTextureProvider";
 import { BitArray } from "../utils/BitArray";
 import { GeometryRenderer } from "../render/GeometryRenderer";
+import { SimpleVolumetricRenderer } from "../render/SimpleVolumetricRenderer";
 import { ShadowMapRenderer } from "../render/ShadowMapRenderer";
 import { GeometryManager } from "../render/GeometryManager";
 import { LightRenderer } from "../render/LightRenderer";
@@ -102,6 +103,7 @@ export class RendererCore
 
     ctrler: RenderingController;
     geometryRenderer: GeometryRenderer;
+    simpleVolumetricRenderer: SimpleVolumetricRenderer;
     shadowRenderer: ShadowMapRenderer;
     geometryManager: GeometryManager;
     uniformJitter: JitterTexture;
@@ -252,6 +254,7 @@ export class RendererCore
             new ReflectionTextureCubeProvider(this));
         this.ctrler = new RenderingController(this);
         this.geometryManager = new GeometryManager(this);
+        this.simpleVolumetricRenderer = new SimpleVolumetricRenderer(this);
         this.renderBuffers = new RenderPipeline(this);
         this.uniformJitter = new UniformJitterTexture(this.gl);
         this.gaussianJitter = new GaussianJitterTexture(this.gl);
@@ -311,6 +314,7 @@ export class RendererCore
         this.textures.dispose();
         this.quadRenderer.dispose();
         this.geometryManager.dispose();
+        this.simpleVolumetricRenderer.dispose();
         this.renderBuffers.dispose();
         this.uniformDitherJitter.dispose();
         this.gaussianDitherJitter.dispose();
@@ -360,16 +364,26 @@ export class RendererCore
                 ssao: ssao.output
             }, ops);
 
-        const reflections = this.reflectionRenderer.setupReflectionPass({
-            g0: gbuffer.g0,
-            g1: gbuffer.g1,
-            g2: gbuffer.g2,
-            g3: gbuffer.g3,
-            linearDepth: gbuffer.linearDepth,
-            depth: gbuffer.depth,
-            ssao: ssao.output,
-            lit: lightBuf
-        }, ops);
+        let reflections: LinearRGBTextureRenderBufferInfo | HdrMosaicTextureRenderBufferInfo =
+            this.reflectionRenderer.setupReflectionPass({
+                g0: gbuffer.g0,
+                g1: gbuffer.g1,
+                g2: gbuffer.g2,
+                g3: gbuffer.g3,
+                linearDepth: gbuffer.linearDepth,
+                depth: gbuffer.depth,
+                ssao: ssao.output,
+                lit: lightBuf
+            }, ops);
+
+        if (reflections instanceof LinearRGBTextureRenderBufferInfo) {
+            reflections = this.simpleVolumetricRenderer.setup({
+                color: <LinearRGBTextureRenderBufferInfo> reflections,
+                linearDepth: gbuffer.linearDepth
+            }, ops).color;
+        } else {
+            // TODO: support HDR mosaic
+        }
 
         let demosaiced = reflections instanceof HdrMosaicTextureRenderBufferInfo ?
             <LogRGBTextureRenderBufferInfo> this.hdrDemosaic.setupFilter(reflections, {

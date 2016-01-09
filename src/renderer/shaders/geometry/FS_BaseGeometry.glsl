@@ -8,6 +8,8 @@ vec3 m_normal;
 vec3 m_emissive;
 float m_materialId;
 float m_materialParam;
+float m_density;
+float m_thickness;
 
 varying highp vec3 v_worldPosition;
 
@@ -25,6 +27,8 @@ void evaluateMaterial()
     m_emissive = vec3(0.);
     m_materialId = 0.;
     m_materialParam = 0.;
+    m_density = 1.;
+    m_thickness = 1.;
 
     v_pointCoord = gl_PointCoord;
 

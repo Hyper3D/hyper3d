@@ -46,8 +46,6 @@ import {
     GLProgramAttributes
 } from "../core/GLProgram";
 
-import { Matrix4Pool } from "../utils/ObjectPool";
-
 export interface GeometryPassOutput
 {
     g0: GBuffer0TextureRenderBufferInfo;
@@ -296,8 +294,6 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
             projMat);
-
-        Matrix4Pool.free(projMat);
     }
     afterRender(): void
     {
