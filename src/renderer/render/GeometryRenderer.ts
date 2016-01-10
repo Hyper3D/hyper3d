@@ -46,8 +46,6 @@ import {
     GLProgramAttributes
 } from "../core/GLProgram";
 
-import { Matrix4Pool } from "../utils/ObjectPool";
-
 export interface GeometryPassOutput
 {
     g0: GBuffer0TextureRenderBufferInfo;

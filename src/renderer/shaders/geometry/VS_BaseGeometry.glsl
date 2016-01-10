@@ -5,7 +5,7 @@
 #pragma attribute tangent
 
 #pragma require Pack
-
+#pragma require Globals
 #pragma require VS_BaseSkinning
 #pragma require PointSize
 #pragma parameter skinningMode
