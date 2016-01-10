@@ -232,6 +232,25 @@ class ShadowGeometryPassMaterialManager extends BaseGeometryPassMaterialManager
     {
         super(core, "VS_ShadowMapGeometry", "FS_ShadowMapGeometry");
     }
+
+    createShader(material: Material, flags: number): Shader // override
+    {
+        return new ShadowGeometryPassShader(this, material, flags);
+    }
+}
+
+class ShadowGeometryPassShader extends BaseGeometryPassShader
+{
+    geoUniforms: GLProgramUniforms;
+
+    constructor(public manager: BaseGeometryPassMaterialManager, public source: Material, flags: number)
+    {
+        super(manager, source, flags);
+
+        this.geoUniforms = this.glProgram.getUniforms([
+            "u_halfRenderSize"
+        ]);
+    }
 }
 
 class ShadowCubeGeometryPassMaterialManager extends BaseGeometryPassMaterialManager
@@ -256,7 +275,7 @@ class ShadowCubeGeometryPassShader extends BaseGeometryPassShader
         super(manager, source, flags);
 
         this.geoUniforms = this.glProgram.getUniforms([
-            "u_viewPositionScale"
+            "u_viewPositionScale", "u_halfRenderSize"
         ]);
     }
 }
@@ -373,6 +392,14 @@ class ShadowMapTextureRenderer extends BaseGeometryPassRenderer
         gl.disable(gl.POLYGON_OFFSET_FILL);
     }
 
+    setupAdditionalUniforms(mesh: ObjectWithGeometry, shader: BaseGeometryPassShader): void // override
+    {
+        const shd = <ShadowGeometryPassShader> shader;
+        const gl = this.parent.renderer.gl;
+        gl.uniform2f(shd.geoUniforms["u_halfRenderSize"],
+            this.parent.normalShadowMapSize >> 1, this.parent.normalShadowMapSize >> 1);
+    }
+
     dispose(): void
     {
         BaseGeometryPassRenderer.prototype.dispose.call(this);
@@ -443,6 +470,8 @@ class ShadowMapCubeTextureRenderer extends BaseGeometryPassRenderer
         const shd = <ShadowCubeGeometryPassShader> shader;
         const gl = this.parent.renderer.gl;
         gl.uniform1f(shd.geoUniforms["u_viewPositionScale"], this.invFar);
+        gl.uniform2f(shd.geoUniforms["u_halfRenderSize"],
+            this.parent.cubeShadowMapSize >> 1, this.parent.cubeShadowMapSize >> 1);
     }
 
     dispose(): void

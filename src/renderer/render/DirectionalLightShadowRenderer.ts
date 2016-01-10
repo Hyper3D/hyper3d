@@ -373,18 +373,19 @@ export default class DirectionalLightShadowRenderer
         const midX = (minX + maxX) * 0.5;
         const midY = (minY + maxY) * 0.5;
         const midZ = (minZ + maxZ) * 0.5;
-        texU.multiplyScalar(-2 / (maxX - minX));
-        texV.multiplyScalar(2 / (maxY - minY));
         const texW = tmp3.copy(dir);
-        texW.multiplyScalar(-2 / (maxZ - minZ));
 
         const camMat = camera.matrixWorldInverse;
-        camMat.set(texU.x, texU.y, texU.z, midX * 2 / (maxX - minX),
-                    texV.x, texV.y, texV.z, -midY * 2 / (maxY - minY),
-                    texW.x, texW.y, texW.z, midZ * 2 / (maxZ - minZ),
+        camMat.set(texU.x, texU.y, texU.z, -midX,
+                    texV.x, texV.y, texV.z, -midY,
+                    texW.x, texW.y, texW.z, -midZ,
                     0, 0, 0, 1);
         camera.matrixWorld.getInverse(camMat);
-        camera.projectionMatrix.identity();
+        camera.projectionMatrix.set(
+            -2 / (maxX - minX), 0, 0, 0,
+            0, 2 / (maxY - minY), 0, 0,
+            0, 0, -2 / (maxZ - minZ), 0,
+            0, 0, 0, 1);
 
         Vector3Pool.free(tmp1);
         Vector3Pool.free(tmp2);

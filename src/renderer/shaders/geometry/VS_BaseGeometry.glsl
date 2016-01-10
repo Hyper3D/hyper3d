@@ -7,12 +7,18 @@
 #pragma require Pack
 
 #pragma require VS_BaseSkinning
+#pragma require PointSize
 #pragma parameter skinningMode
+#pragma parameter usePointSize
 
 #pragma attribute skinWeights
 #pragma attribute skinIndices
 attribute vec4 a_skinWeights;
 attribute vec4 a_skinIndices;
+
+uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewProjectionMatrix;
+uniform mat4 u_viewMatrix;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_lastModelMatrix;

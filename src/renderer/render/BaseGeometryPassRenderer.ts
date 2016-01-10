@@ -70,6 +70,7 @@ export class BaseGeometryPassRenderer
     {
         this.tmpMat = new three.Matrix4();
         this.state = {
+            projectionMat: new three.Matrix4(),
             projectionViewMat: new three.Matrix4(),
             viewMat: new three.Matrix4(),
             frustum: new three.Frustum(),
@@ -84,6 +85,7 @@ export class BaseGeometryPassRenderer
     {
         const state = this.state;
         state.viewMat.copy(viewMatrix);
+        state.projectionMat.copy(projectionMatrix);
         state.projectionViewMat.multiplyMatrices(
             projectionMatrix,
             viewMatrix
@@ -172,6 +174,7 @@ export class BaseGeometryPassRenderer
 
 interface GeometryRenderState
 {
+    projectionMat: three.Matrix4;
     projectionViewMat: three.Matrix4;
     viewMat: three.Matrix4;
     frustum: three.Frustum;
@@ -237,6 +240,8 @@ class BaseGeometryPassRendererObject
             shaderInst.updateParameterUniforms();
             attrBinding.setupVertexAttribs();
 
+            gl.uniformMatrix4fv(shader.uniforms["u_projectionMatrix"], false,
+                state.projectionMat.elements);
             gl.uniformMatrix4fv(shader.uniforms["u_viewProjectionMatrix"], false,
                 state.projectionViewMat.elements);
             gl.uniformMatrix4fv(shader.uniforms["u_lastViewProjectionMatrix"], false,
@@ -477,6 +482,7 @@ export class BaseGeometryPassShader extends Shader
         }
 
         this.uniforms = this.program.getUniforms([
+            "u_projectionMatrix",
             "u_viewProjectionMatrix",
             "u_lastViewProjectionMatrix",
             "u_modelMatrix",
