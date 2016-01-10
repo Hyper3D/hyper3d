@@ -1,4 +1,3 @@
-#pragma require Globals
 #pragma require VS_BaseGeometry
 #pragma parameter useNormalMap
 #pragma parameter usePointSize
@@ -7,9 +6,6 @@ varying vec3 v_viewNormal;
 #if c_useNormalMap
 varying vec3 v_viewTangent;
 varying vec3 v_viewBitangent;
-#endif
-#if c_usePointSize
-uniform mat3 u_pointSizeMatrix;
 #endif
 
 varying vec4 v_screenPosition;

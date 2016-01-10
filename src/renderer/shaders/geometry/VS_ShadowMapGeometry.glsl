@@ -1,4 +1,3 @@
-
 #pragma require VS_BaseGeometry
 #pragma parameter usePointSize
 

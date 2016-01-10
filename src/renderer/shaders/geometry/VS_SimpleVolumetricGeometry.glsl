@@ -1,7 +1,5 @@
-#pragma parameter useNormalMap
-
-#pragma require Globals
 #pragma require VS_BaseGeometry
+#pragma parameter useNormalMap
 #pragma parameter usePointSize
 
 varying vec4 v_position;
