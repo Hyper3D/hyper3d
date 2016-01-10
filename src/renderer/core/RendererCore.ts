@@ -403,7 +403,6 @@ export class RendererCore
                 lit: lightBuf
             }, ops);
 
-        let fomVisibility: any;
         if (reflections instanceof LinearRGBTextureRenderBufferInfo) {
             if (this.volumetricsMode == WebGLHyperRendererVolumetricsMode.Simple) {
                 reflections = this.simpleVolumetricRenderer.setup({
@@ -414,7 +413,7 @@ export class RendererCore
             } else if (this.volumetricsMode == WebGLHyperRendererVolumetricsMode.HighQuality) {
                 const visibility = this.fomVisibilityRenderer.setup({
                     linearDepth: gbuffer.linearDepth
-                }, ops);fomVisibility = visibility.coefs[0];
+                }, ops);
                 reflections = this.fomVolumetricRenderer.setup({
                     color: <LinearRGBTextureRenderBufferInfo> reflections,
                     linearDepth: gbuffer.linearDepth,
@@ -469,8 +468,7 @@ export class RendererCore
 
         const visualizedBuf = toneMapped;
         let visualized = this.bufferVisualizer.setupColorVisualizer(visualizedBuf, ops);
-        // visualized = this.bufferVisualizer.setupColorVisualizer(fomVisibility, ops);
-        // visualized = this.bufferVisualizer.setupGBufferVisualizer(gbuffer, GBufferAttributeType.Metallic, ops);
+
         const logger = this.log.getLogger("pipeline");
         if (logger.isEnabled)
             logger.log(dumpRenderOperationAsDot(ops));
