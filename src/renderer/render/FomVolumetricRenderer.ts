@@ -262,21 +262,6 @@ class FomVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impleme
 
         this.lightLayout.getSamplerParameters(this.lightSamplerParams);
 
-        // jitter projection matrix for temporal AA
-        const projMat = this.parent.renderer.ctrler.jitteredProjectiveMatrix;
-
-        const psm = this.pointSizeMatrix;
-        const scale = this.outColor.width * 0.5;
-        psm[0] = projMat.elements[0] * scale;
-        psm[1] = projMat.elements[2];
-        psm[2] = projMat.elements[3];
-        psm[3] = projMat.elements[8] * scale;
-        psm[4] = projMat.elements[10];
-        psm[5] = projMat.elements[11];
-        psm[6] = projMat.elements[12] * scale;
-        psm[7] = projMat.elements[14];
-        psm[8] = projMat.elements[15];
-
         const gl = this.parent.renderer.gl;
         gl.viewport(0, 0, this.outColor.width, this.outColor.height);
 
@@ -292,7 +277,7 @@ class FomVolumetricGeometryPassRenderer extends BaseGeometryPassRenderer impleme
 
         gl.blendFunc(gl.ONE, gl.ONE);
         this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
-            projMat);
+            this.parent.renderer.ctrler.jitteredProjectiveMatrix);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.inLight.texture);

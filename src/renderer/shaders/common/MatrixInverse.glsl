@@ -12,7 +12,7 @@ highp mat2 invertMatrix2Highp(highp mat2 m, highp float safeMargin)
 		(determinantOfMatrix2Highp(m) + safeMargin);
 }
 
-mat3 invertMatrix3(mat3 m, float safeMargin)
+mat3 invertMatrix3Transposed(mat3 m, float safeMargin)
 {
 	return mat3(
 		determinantOfMatrix2(mat2(m[1].yz, m[2].yz)),
@@ -27,7 +27,7 @@ mat3 invertMatrix3(mat3 m, float safeMargin)
 	) / (determinantOfMatrix3(m) + safeMargin);
 }
 
-highp mat3 invertMatrix3Highp(highp mat3 m, highp float safeMargin)
+highp mat3 invertMatrix3TransposedHighp(highp mat3 m, highp float safeMargin)
 {
 	return mat3(
 		determinantOfMatrix2Highp(mat2(m[1].yz, m[2].yz)),

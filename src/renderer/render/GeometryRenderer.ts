@@ -191,8 +191,7 @@ class GeometryPassShader extends BaseGeometryPassShader
         super(manager, source, flags);
 
         this.geoUniforms = this.glProgram.getUniforms([
-            "u_screenVelOffset",
-            "u_pointSizeMatrix"
+            "u_screenVelOffset"
         ]);
     }
 }
@@ -252,7 +251,6 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         const gl = this.parent.renderer.gl;
         const ctrler = this.parent.renderer.ctrler;
         gl.uniform2f(shd.geoUniforms["u_screenVelOffset"], ctrler.screenVelOffX, ctrler.screenVelOffY);
-        gl.uniformMatrix3fv(shd.geoUniforms["u_pointSizeMatrix"], false, this.pointSizeMatrix);
     }
 
     beforeRender(): void
@@ -261,21 +259,6 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
     perform(): void
     {
         this.fb.bind();
-
-        // jitter projection matrix for temporal AA
-        const projMat = this.parent.renderer.ctrler.jitteredProjectiveMatrix;
-
-        const psm = this.pointSizeMatrix;
-        const scale = this.outDepth.width * 0.5;
-        psm[0] = projMat.elements[0] * scale;
-        psm[1] = projMat.elements[2];
-        psm[2] = projMat.elements[3];
-        psm[3] = projMat.elements[8] * scale;
-        psm[4] = projMat.elements[10];
-        psm[5] = projMat.elements[11];
-        psm[6] = projMat.elements[12] * scale;
-        psm[7] = projMat.elements[14];
-        psm[8] = projMat.elements[15];
 
         const gl = this.parent.renderer.gl;
         gl.viewport(0, 0, this.outDepth.width, this.outDepth.height);
@@ -293,7 +276,7 @@ class GeometryPassRenderer extends BaseGeometryPassRenderer implements RenderOpe
         }
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.renderGeometry(this.parent.renderer.currentCamera.matrixWorldInverse,
-            projMat);
+            this.parent.renderer.ctrler.jitteredProjectiveMatrix);
     }
     afterRender(): void
     {

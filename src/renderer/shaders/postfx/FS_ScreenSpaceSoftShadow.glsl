@@ -29,23 +29,25 @@ void main()
     highp vec3 baseViewPos = baseDepth * vec3(v_viewDir, 1.);
     vec3 normal = computeNormalFromDepthUsingStandardDerivatives(u_linearDepth, v_texCoord, vec3(v_viewDir, 1.));
 
+    // ISSSS. See issss.ja.md
+
     // Read penumbra size
     vec4 inValue = texture2D(u_input, v_texCoord);
-    float penumbraSize = (inValue.y + 0.005) * baseDepth * 0.05; // FIXME: make this adjustable
+    float penumbraSize = (inValue.y + 0.001) * baseDepth * 0.05; // FIXME: make this adjustable
 
     // Penumbra matrix + normal row (world space), transposed
     mat3 mW2PT = mat3(u_lightU, u_lightV, normal);
     // Inverse
-    mat3 mP2WT = invertMatrix3(mW2PT, 0.01);
+    mat3 mP2W = invertMatrix3Transposed(mW2PT, 0.01);
 
-    // Covariance matrix on world space = mP2W * SigmaP * mP2WT
+    // Covariance matrix on world space = mP2W * SigmaP * mP2W
     // SigmaP is defined as SigmaP * (x, y, z) = (sigma * x, sigma * y, 0)
     float sigma = penumbraSize;
     mat3 sigmaP = mat3(
         sigma, 0., 0.,
         0., sigma, 0.,
         0., 0., 0.);
-    mat3 covW = (mP2WT) * sigmaP * transposeMatrix3(mP2WT);
+    mat3 covW = (mP2W) * sigmaP * transposeMatrix3(mP2W);
 
     // Compute the covariance matrix on screen space
     // mW2S = [ 1 / w    0    -x/w^2 ]
@@ -71,7 +73,7 @@ void main()
     vec2 axis1, axis2;
     axis1.y = 0.;
     axis2.y = sqrt(max(0., covS.y));
-    axis2.x = covS.z / (axis2.y + 0.00001);
+    axis2.x = covS.z / (axis2.y + 0.0000001);
     axis1.x = sqrt(max(0., covS.x - axis2.x * axis2.x));
 
     float cx = dot(v_texCoord, axis1 / dot(axis1, axis1));

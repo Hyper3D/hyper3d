@@ -1,10 +1,8 @@
-#pragma parameter useNormalMap
-
+#pragma require Globals
 #pragma require VS_BaseGeometry
+#pragma parameter useNormalMap
 #pragma parameter usePointSize
 
-uniform mat4 u_viewProjectionMatrix;
-uniform mat4 u_viewMatrix;
 varying vec3 v_viewNormal;
 #if c_useNormalMap
 varying vec3 v_viewTangent;
@@ -39,9 +37,7 @@ void main()
 #endif
 
 #if c_usePointSize
-	vec3 pointSize = u_pointSizeMatrix * vec3(m_pointSize, -v_screenPosition.w, 1.);
-	gl_PointSize = pointSize.x / pointSize.z;
-
+    gl_PointSize = computeProjectedPointSize(m_pointSize, u_projectionMatrix, gl_Position, u_globalHalfRenderSize);
 	v_viewNormal = vec3(0., 0., 1.);
 #if c_useNormalMap
     v_viewTangent = vec3(1., 0., 0.);
