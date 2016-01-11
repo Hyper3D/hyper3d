@@ -31,6 +31,7 @@ Supported three.js Objects
 Following three.js objects can safely be used with Hyper3D.
 
  * `Mesh`, `SkinnedMesh`
+ * `Points`
  * `Geometry`, `BufferGeometry`
    * Current limitation: when using a `Geometry`, calling `dispose()` on it doesn't reclaim memory.
  * `PerspectiveCamera`
@@ -50,7 +51,9 @@ Following three.js objects can safely be used with Hyper3D.
    * `specularMap` is treated as a roughness map.
    * Environment maps are not supported. Use `Hyper.ReflectionProbe` instead.
    * Most of the properties defined in the base class `Material` are not supported.
-
+* `PointsMaterial`
+   * Current limitation 1: transparency is not supported at all. Vertex color is not supported.
+   * Current limitation 2: `sizeAttenuation` is ignored and the point size is always specified in the world-space coordinate system.
 
 Hyper3D-specific Objects
 ------------------------
