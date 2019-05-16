@@ -6,7 +6,7 @@ HYPER3D WebGL Renderer
 
 ![](https://dl.dropboxusercontent.com/u/37804131/github/Screen%20Shot%202016-01-03%20at%202.16.45%20AM.jpg)
 
-**This version of Hyper3D is no longer developed.** Meanwhile, Hyper3D 3, the completely overhauled WebGL framework, is being developed [here](https://github.com/Hyper3D/hyper3d-3)!
+**This version of Hyper3D is no longer developed.** ~~Meanwhile, Hyper3D 3, the completely overhauled WebGL framework, is being developed [here](https://github.com/Hyper3D/hyper3d-3)!~~
 
 HYPER3D is a high-end (unofficial) renderer for [three.js](http://threejs.org/).
 
